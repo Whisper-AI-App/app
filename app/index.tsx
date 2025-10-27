@@ -52,23 +52,23 @@ export default function Index() {
 						>
 							<Stop
 								offset="0"
-								stopColor={"#fc8200ff"}
-								stopOpacity={scheme !== "dark" ? 0.9 : 0.9}
+								stopColor={"#ff9e37ff"}
+								stopOpacity={scheme !== "dark" ? 0.9 : 0.95}
 							/>
 							<Stop
 								offset="0.275"
-								stopColor={"#ff4583ff"}
+								stopColor={"#ff5b91ff"}
 								stopOpacity={scheme !== "dark" ? 0.9 : 0.9}
 							/>
 							<Stop
 								offset="0.3"
 								stopColor={"#ff95ffff"}
-								stopOpacity={scheme !== "dark" ? 0.4 : 0.4}
+								stopOpacity={scheme !== "dark" ? 0.8 : 0.6}
 							/>
 							<Stop
 								offset="0.325"
 								stopColor={"#69b7ffff"}
-								stopOpacity={scheme !== "dark" ? 0.5 : 0.4}
+								stopOpacity={scheme !== "dark" ? 0.7 : 0.6}
 							/>
 							<Stop
 								offset="0.65"
