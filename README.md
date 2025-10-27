@@ -1,9 +1,10 @@
-# Welcome to your Expo app 👋
+# Whisper
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+A 100% private AI Chat app.
 
 ## Tech Stack
 
+- Expo - [Expo](https://expo.dev)
 - UI - [BNA UI](https://ui.ahmedbna.com/docs/components)
 - State - [Tinybase](https://tinybase.org)
 
@@ -33,16 +34,6 @@ You can start developing by editing the files inside the **app** directory. This
 ## Deploy
 
 `npx eas-cli@latest workflow:run create-production-builds.yml`
-
-## Get a fresh project
-
-When you're ready, run:
-
-```bash
-npm run reset-project
-```
-
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
 
 ## Learn more
 
