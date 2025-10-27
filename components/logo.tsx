@@ -16,7 +16,9 @@ export function Logo({ fontSize }: { fontSize: number }) {
 				},
 			]}
 		>
-			<Text style={{ fontFamily: "Inter_500Medium", fontSize }}>Whisper.</Text>
+			<Text style={{ fontFamily: "Inter_600SemiBold", fontSize }}>
+				Whisper.
+			</Text>
 			<Text
 				style={{ fontFamily: "Inter_500Medium", fontSize: fontSize * 0.311 }}
 			>
