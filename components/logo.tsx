@@ -1,15 +1,20 @@
+import Animated, { FadeInUp, FadeOutDown } from "react-native-reanimated";
+
 import { Text } from "./ui/text";
-import { View } from "./ui/view";
 
 export function Logo({ fontSize }: { fontSize: number }) {
 	return (
-		<View
-			style={{
-				flex: 1,
-				justifyContent: "center",
-				alignItems: "center",
-				paddingBottom: fontSize * 0.85,
-			}}
+		<Animated.View
+			entering={FadeInUp}
+			exiting={FadeOutDown}
+			style={[
+				{
+					flex: 1,
+					justifyContent: "center",
+					alignItems: "center",
+					paddingBottom: fontSize * 0.85,
+				},
+			]}
 		>
 			<Text style={{ fontFamily: "Inter_500Medium", fontSize }}>Whisper.</Text>
 			<Text
@@ -17,6 +22,6 @@ export function Logo({ fontSize }: { fontSize: number }) {
 			>
 				Talk freely. Think privately.
 			</Text>
-		</View>
+		</Animated.View>
 	);
 }
