@@ -8,7 +8,8 @@ export const onboardingSteps: OnboardingStep[] = [
 	{
 		id: "1",
 		title: "Your On-Device AI",
-		description: "100% Private AI chat, on your device.",
+		description:
+			"Private conversations. No servers. No tracking. Your thoughts stay 100% yours.",
 		icon: <Logo fontSize={72} />,
 	},
 
@@ -16,7 +17,7 @@ export const onboardingSteps: OnboardingStep[] = [
 		id: "2",
 		title: "Privacy You Deserve",
 		description:
-			"AI only runs on your device, even offline. Your chats stay 100% private.",
+			"Whisper never sends data to the cloud. It works even offline — your chats never leave your device.",
 		icon: (
 			<Icon
 				name={Bird}
@@ -30,7 +31,8 @@ export const onboardingSteps: OnboardingStep[] = [
 	{
 		id: "3",
 		title: "Get Started",
-		description: "We will make Ava Chat yours and download the AIs you need.",
+		description:
+			"We'll prepare your private AI by downloading the model locally. Once ready, you can start chatting — privately, instantly.",
 		icon: (
 			<Icon
 				name={Rocket}
