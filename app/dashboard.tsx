@@ -5,8 +5,14 @@ import { SearchBar } from "@/components/ui/searchbar";
 import { View } from "@/components/ui/view";
 import { ScrollView } from "react-native-gesture-handler";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { useValue } from "tinybase/ui-react";
 
 export default function Dashboard() {
+
+	const version = useValue('version')
+
+	console.log({version})
+
 	return (
 		<SafeAreaView style={{ flex: 1 }}>
 			<View
@@ -30,7 +36,7 @@ export default function Dashboard() {
 				/>
 
 				<Avatar>
-					<AvatarFallback>AB</AvatarFallback>
+					<AvatarFallback>{version}</AvatarFallback>
 				</Avatar>
 			</View>
 

@@ -4,16 +4,26 @@ import { Onboarding } from "@/components/ui/onboarding";
 import { View } from "@/components/ui/view";
 import { useColor } from "@/hooks/useColor";
 import { useColorScheme } from "@/hooks/useColorScheme";
+import { completeOnboarding } from "@/src/actions/settings";
 import { ImageBackground } from "expo-image";
 import { useRouter } from "expo-router";
+import { useEffect } from "react";
 import { Dimensions } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Defs, RadialGradient, Rect, Stop, Svg } from "react-native-svg";
+import { useValue } from "tinybase/ui-react";
 
 export default function Index() {
 	const router = useRouter();
 	const scheme = useColorScheme();
 	const backgroundColor = useColor("background");
+	const onboardedAt = useValue('onboardedAt')
+
+	useEffect(() => {
+		if (onboardedAt) {
+			router.replace('/dashboard')
+		}
+	}, [onboardedAt,])
 
 	return (
 		<View style={{ flex: 1 }}>
@@ -116,7 +126,7 @@ export default function Index() {
 				<Onboarding
 					steps={onboardingSteps}
 					onComplete={() => {
-						router.replace("/dashboard");
+						completeOnboarding()
 					}}
 					showSkip={false}
 				/>
