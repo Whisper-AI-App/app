@@ -1,3 +1,4 @@
+import "react-native-get-random-values";
 import { StatusBar } from "@/components/status-bar";
 import { AIChatProvider } from "@/contexts/AIChatContext";
 import { initStore, store, storeFilePath } from "@/src/store";

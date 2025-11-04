@@ -15,16 +15,18 @@ import { View } from "@/components/ui/view";
 import { useAIChat } from "@/contexts/AIChatContext";
 import { resetEverything } from "@/src/actions/reset";
 import { useRouter } from "expo-router";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { ScrollView } from "react-native-gesture-handler";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { useValue } from "tinybase/ui-react";
+import { useValue, useSortedRowIds, useRow, useRowIds } from "tinybase/ui-react";
+import { store } from "@/src/store";
 
 export default function Dashboard() {
 	const router = useRouter();
 	const version = useValue("version");
 
 	const [settingsOpen, setSettingsOpen] = useState(false);
+	const [selectedChatId, setSelectedChatId] = useState<string | undefined>(undefined);
 
 	const aiChat = useAIChat();
 
@@ -33,6 +35,36 @@ export default function Dashboard() {
 		| string
 		| undefined;
 	const fileUri = useValue("ai_chat_model_fileUri") as string | undefined;
+
+	// Get all chat IDs sorted by creation date (newest first)
+	const chatIds = useSortedRowIds("chats", "createdAt", true);
+
+	// Get all message IDs to find latest message for each chat
+	const messageIds = useRowIds("messages");
+
+	// Create a map of chatId -> latest message for preview
+	const chatPreviews = useMemo(() => {
+		return chatIds.map(chatId => {
+			const chat = store.getRow("chats", chatId);
+
+			// Find the latest message for this chat
+			const chatMessages = messageIds
+				.map(id => store.getRow("messages", id))
+				.filter(msg => msg?.chatId === chatId)
+				.sort((a, b) =>
+					new Date(b?.createdAt || 0).getTime() - new Date(a?.createdAt || 0).getTime()
+				);
+
+			const latestMessage = chatMessages[0];
+
+			return {
+				chatId,
+				name: chat?.name || "Untitled Chat",
+				text: latestMessage?.contents || "No messages yet",
+				date: new Date(chat?.createdAt || Date.now()),
+			};
+		});
+	}, [chatIds, messageIds]);
 
 	// Check for completed model on mount and load it if available
 	useEffect(() => {
@@ -110,21 +142,31 @@ export default function Dashboard() {
 					paddingHorizontal: 16,
 				}}
 			>
-				{Array.from(Array(10).keys()).map((_w, index) => {
-					return (
-						<View key={index.toString()} style={{ paddingBottom: 12 }}>
+				{chatPreviews.length > 0 ? (
+					chatPreviews.map((preview) => (
+						<View key={preview.chatId} style={{ paddingBottom: 12 }}>
 							<ChatPreview
-								date={new Date()}
-								name="Learning about AI"
-								text="There are many different AI archs, such as llama..."
+								chatId={preview.chatId}
+								date={preview.date}
+								name={preview.name}
+								text={preview.text}
+								onPress={() => setSelectedChatId(preview.chatId)}
 							/>
 						</View>
-					);
-				})}
+					))
+				) : (
+					<View style={{ padding: 32, alignItems: "center" }}>
+						<Text style={{ opacity: 0.5 }}>No chats yet. Start a conversation!</Text>
+					</View>
+				)}
 			</ScrollView>
 
 			<View style={{ paddingHorizontal: 16, paddingTop: 16 }}>
-				<Chat />
+				<Chat
+					key={selectedChatId ?? "new"}
+					chatId={selectedChatId}
+					onClose={() => setSelectedChatId(undefined)}
+				/>
 			</View>
 		</SafeAreaView>
 	);

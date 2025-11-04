@@ -109,6 +109,84 @@ const chat = useRow('chats', chatId);
 
 These automatically re-render when values change. No manual subscription management needed.
 
+### TinyBase ui-react Hooks Reference
+
+TinyBase provides a comprehensive set of React hooks in the `tinybase/ui-react` package that automatically subscribe to store changes and trigger re-renders. All hooks handle lifecycle management automatically - listeners are registered on mount and cleaned up on unmount.
+
+#### Reading Data (Auto-subscribing hooks)
+
+**Values:**
+- `useValue(valueId)` - Returns a single value and re-renders on change
+- `useValues()` - Returns all values object
+- `useValueIds()` - Returns array of all value IDs
+
+**Tables & Rows:**
+- `useTable(tableId)` - Returns entire table object with all rows
+- `useTables()` - Returns all tables
+- `useTableIds()` - Returns array of table IDs
+- `useRow(tableId, rowId)` - Returns single row object (all cells in that row)
+- `useRowIds(tableId)` - Returns array of row IDs for a table
+- `useSortedRowIds(tableId, cellId, descending, offset, limit)` - Returns sorted/paginated row IDs (useful for lists sorted by date, etc.)
+
+**Cells:**
+- `useCell(tableId, rowId, cellId)` - Returns single cell value
+- `useCellIds(tableId, rowId)` - Returns cell IDs for a specific row
+- `useTableCellIds(tableId)` - Returns all cell IDs used across entire table
+
+**Existence Checks:**
+- `useHasTables()` - Boolean for any tables existing
+- `useHasTable(tableId)` - Boolean for specific table existing
+- `useHasRow(tableId, rowId)` - Boolean for specific row existing
+- `useHasCell(tableId, rowId, cellId)` - Boolean for specific cell existing
+
+#### Callback Hooks (for mutations triggered by events)
+
+These hooks return callback functions that can be wired to UI events:
+
+- `useSetCellCallback(tableId, rowId, cellId, getCell)` - Returns callback to update a cell based on event parameters
+- `useAddRowCallback(tableId, getRow)` - Returns callback to add new row
+- `useDelRowCallback(tableId, getRowId)` - Returns callback to delete a row
+- `useSetTableCallback(tableId, getTable)` - Returns callback to set entire table
+- `useDelTableCallback(tableId)` - Returns callback to delete a table
+
+#### Store Management
+
+- `useCreateStore()` - Memoizes Store creation to prevent recreation across renders
+- `useStore()` - Retrieves Store from Provider context
+- `useStoreIds()` - Gets IDs of all named Stores in Provider
+
+#### Listener Hooks (for custom side effects)
+
+- `useCellListener(tableId, rowId, cellId, listener)` - Custom listener for cell changes
+- `useRowListener(tableId, rowId, listener)` - Custom listener for row changes
+- `useTableListener(tableId, listener)` - Custom listener for table changes
+- `useValuesListener(listener)` - Custom listener for values changes
+
+#### Best Practices
+
+1. **Automatic Lifecycle Management**: All hooks automatically register listeners on mount and clean them up on unmount. No manual subscription cleanup needed.
+
+2. **Granular Subscriptions**: Use the most specific hook for your needs. For example, prefer `useCell()` over `useRow()` if you only need one cell value - this reduces unnecessary re-renders.
+
+3. **Computed Data**: Use `useMemo()` when transforming TinyBase data (e.g., filtering, mapping) to avoid recomputing on every render. Depend on the specific hook results.
+
+4. **Mutations via Actions**: Direct store mutations should go through action functions (in `src/actions/`), not through callback hooks. Callback hooks are useful when you need event parameters to determine mutation values.
+
+5. **Sorting & Pagination**: `useSortedRowIds()` is ideal for displaying lists sorted by a cell value (like `createdAt` for chat history). It returns just IDs, then use `useRow()` for each item.
+
+6. **Foreign Key Patterns**: When querying related data (e.g., messages for a chat), use `useRowIds()` to get all IDs, then filter/map using the store directly or in `useMemo()`:
+   ```typescript
+   const messageIds = useRowIds('messages');
+   const chatMessages = useMemo(() =>
+     messageIds
+       .map(id => store.getRow('messages', id))
+       .filter(msg => msg?.chatId === currentChatId),
+     [messageIds, currentChatId]
+   );
+   ```
+
+7. **Provider Pattern**: The app uses `<Provider store={store}>` in `_layout.tsx`. All hooks access this store by default. No need to pass store explicitly unless using multiple stores.
+
 ### Resumable Downloads
 
 Downloads use Expo's legacy `createDownloadResumable` API with state serialization. The pattern:

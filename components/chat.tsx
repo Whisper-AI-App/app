@@ -6,6 +6,7 @@ import {
 	type ReactNode,
 	useCallback,
 	useEffect,
+	useMemo,
 	useRef,
 	useState,
 } from "react";
@@ -22,14 +23,48 @@ import { Icon } from "./ui/icon";
 import { Input } from "./ui/input";
 import { SearchButton } from "./ui/searchbutton";
 import { View } from "./ui/view";
+import { useAIChat } from "@/contexts/AIChatContext";
+import { upsertChat } from "@/src/actions/chat";
+import { upsertMessage } from "@/src/actions/message";
+import { useRow, useRowIds } from "tinybase/ui-react";
+import { store } from "@/src/store";
+import { v4 as uuidv4 } from "uuid";
 
 const { height: SCREEN_HEIGHT } = Dimensions.get("window");
 
-export default function Chat({ children }: { children?: ReactNode }) {
+export default function Chat({
+	children,
+	chatId: initialChatId,
+	onClose: onCloseCallback,
+}: {
+	children?: ReactNode;
+	chatId?: string;
+	onClose?: () => void;
+}) {
 	const { isVisible, open, close } = useBottomSheet();
+
+	const handleClose = useCallback(() => {
+		close();
+		onCloseCallback?.();
+	}, [close, onCloseCallback]);
 	const muted = useColor("textMuted");
 	const [isInputFocused, setIsInputFocused] = useState(false);
-	const isAiTyping = false;
+	const [isAiTyping, setIsAiTyping] = useState(false);
+	const [currentChatId, setCurrentChatId] = useState<string | undefined>(initialChatId);
+	const aiChat = useAIChat();
+
+	// Reset currentChatId when initialChatId changes (e.g., when opening different chat)
+	useEffect(() => {
+		setCurrentChatId(initialChatId);
+	}, [initialChatId]);
+
+	// Auto-open bottom sheet when chatId is provided
+	useEffect(() => {
+		if (initialChatId) {
+			open();
+		}
+	}, [initialChatId, open]);
+
 	const {
 		defaultContainerStyle,
 		renderBubble,
@@ -41,13 +76,99 @@ export default function Chat({ children }: { children?: ReactNode }) {
 		isTyping: isAiTyping,
 	});
 
-	const [messages, setMessages] = useState([]);
+	// Load chat data from TinyBase
+	const chatRow = useRow("chats", currentChatId ?? "");
 
-	const onSend = useCallback((messages = []) => {
-		setMessages((previousMessages) =>
-			GiftedChat.append(previousMessages, messages),
+	// Get all message IDs and filter by chatId
+	const allMessageIds = useRowIds("messages");
+
+	// Transform TinyBase messages to GiftedChat format
+	const messages = useMemo(() => {
+		if (!currentChatId) return [];
+
+		const chatMessages = allMessageIds
+			.map(id => {
+				const msg = store.getRow("messages", id);
+				if (msg?.chatId !== currentChatId) return null;
+
+				return {
+					_id: msg.id,
+					text: msg.contents,
+					createdAt: new Date(msg.createdAt),
+					user: {
+						_id: msg.role === "user" ? 1 : 2,
+						name: msg.role === "user" ? "You" : "AI",
+					},
+				} as IMessage;
+			})
+			.filter(Boolean) as IMessage[];
+
+		// Sort by date descending (GiftedChat expects newest first)
+		return chatMessages.sort((a, b) =>
+			new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
 		);
-	}, []);
+	}, [currentChatId, allMessageIds]);
+
+	const onSend = useCallback(async (newMessages: IMessage[] = []) => {
+		if (newMessages.length === 0) return;
+
+		const userMessage = newMessages[0];
+		let chatId = currentChatId;
+
+		// Create new chat if this is the first message
+		if (!chatId) {
+			chatId = uuidv4();
+			const chatName = userMessage.text.slice(0, 50); // Use first 50 chars as name
+			upsertChat(chatId, chatName);
+			setCurrentChatId(chatId);
+		}
+
+		// Save user message
+		const userMessageId = uuidv4();
+		upsertMessage(userMessageId, chatId, userMessage.text, "user");
+
+		// Get AI response
+		if (aiChat.isLoaded) {
+			setIsAiTyping(true);
+
+			try {
+				// Prepare conversation history
+				const conversationMessages = messages.map(msg => ({
+					role: msg.user._id === 1 ? "user" : "system" as const,
+					content: msg.text,
+				}));
+
+				// Add the new user message
+				conversationMessages.unshift({
+					role: "user" as const,
+					content: userMessage.text,
+				});
+
+				// Reverse to chronological order for AI
+				conversationMessages.reverse();
+
+				let aiResponseText = "";
+
+				// Stream AI completion
+				const response = await aiChat.completion(
+					conversationMessages,
+					(token) => {
+						aiResponseText += token;
+					}
+				);
+
+				// Save AI response
+				if (response) {
+					const aiMessageId = uuidv4();
+					upsertMessage(aiMessageId, chatId, response, "system");
+				}
+			} catch (error) {
+				console.error("[Chat] AI completion error:", error);
+			} finally {
+				setIsAiTyping(false);
+			}
+		}
+	}, [currentChatId, messages, aiChat]);
 
 	return (
 		<>
@@ -67,7 +188,7 @@ export default function Chat({ children }: { children?: ReactNode }) {
 
 			<BottomSheet
 				isVisible={isVisible}
-				onClose={close}
+				onClose={handleClose}
 				title="Chat"
 				snapPoints={[0.9]}
 				enableBackdropDismiss
