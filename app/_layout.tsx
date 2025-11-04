@@ -1,4 +1,5 @@
 import { StatusBar } from "@/components/status-bar";
+import { AIChatProvider } from "@/contexts/AIChatContext";
 import { initStore, store, storeFilePath } from "@/src/store";
 import { ThemeProvider } from "@/theme/theme-provider";
 import {
@@ -42,10 +43,12 @@ export default function RootLayout() {
 	return (
 		<GestureHandlerRootView>
 			<Provider store={store as unknown as Store}>
-				<ThemeProvider>
-				<StatusBar />
-				<Stack screenOptions={{ headerShown: false }} />
-			</ThemeProvider>
+				<AIChatProvider>
+					<ThemeProvider>
+						<StatusBar />
+						<Stack screenOptions={{ headerShown: false }} />
+					</ThemeProvider>
+				</AIChatProvider>
 			</Provider>
 		</GestureHandlerRootView>
 	);

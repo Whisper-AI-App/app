@@ -1,17 +1,54 @@
 import Chat from "@/components/chat";
 import { ChatPreview } from "@/components/chat-preview";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Button } from "@/components/ui/button";
 import { SearchBar } from "@/components/ui/searchbar";
+import {
+	Sheet,
+	SheetContent,
+	SheetDescription,
+	SheetHeader,
+	SheetTitle,
+} from "@/components/ui/sheet";
+import { Text } from "@/components/ui/text";
 import { View } from "@/components/ui/view";
+import { useAIChat } from "@/contexts/AIChatContext";
+import { resetEverything } from "@/src/actions/reset";
+import { useRouter } from "expo-router";
+import { useEffect, useState } from "react";
 import { ScrollView } from "react-native-gesture-handler";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useValue } from "tinybase/ui-react";
 
 export default function Dashboard() {
+	const router = useRouter();
+	const version = useValue("version");
 
-	const version = useValue('version')
+	const [settingsOpen, setSettingsOpen] = useState(false);
 
-	console.log({version})
+	const aiChat = useAIChat();
+
+	// Check for completed model using useValue
+	const downloadedAt = useValue("ai_chat_model_downloadedAt") as
+		| string
+		| undefined;
+	const fileUri = useValue("ai_chat_model_fileUri") as string | undefined;
+
+	// Check for completed model on mount and load it if available
+	useEffect(() => {
+		if (downloadedAt && fileUri && !aiChat.isLoaded) {
+			// Model is downloaded but not loaded yet, load it
+			console.log("[Dashboard] Loading model from:", fileUri);
+			aiChat
+				.loadModel({ ggufPath: fileUri })
+				.then(() => {
+					console.log("[Dashboard] Model loaded successfully");
+				})
+				.catch((error) => {
+					console.error("[Dashboard] Failed to load model:", error);
+				});
+		}
+	}, [downloadedAt, fileUri, aiChat]);
 
 	return (
 		<SafeAreaView style={{ flex: 1 }}>
@@ -35,10 +72,37 @@ export default function Dashboard() {
 					containerStyle={{ flex: 1 }}
 				/>
 
-				<Avatar>
-					<AvatarFallback>{version}</AvatarFallback>
-				</Avatar>
+				<Button
+					onPress={() => setSettingsOpen(true)}
+					variant="ghost"
+					size="icon"
+				>
+					<Avatar>
+						<AvatarFallback>{version}</AvatarFallback>
+					</Avatar>
+				</Button>
 			</View>
+
+			<Sheet open={settingsOpen} onOpenChange={setSettingsOpen}>
+				<SheetContent>
+					<SheetHeader>
+						<SheetTitle>Whisper</SheetTitle>
+						<SheetDescription>Settings</SheetDescription>
+					</SheetHeader>
+					<View style={{ paddingHorizontal: 16 }}>
+						<Text>Delete Everything</Text>
+						<Button
+							variant="destructive"
+							onPress={() => {
+								resetEverything();
+								router.replace("/");
+							}}
+						>
+							Burn Everything
+						</Button>
+					</View>
+				</SheetContent>
+			</Sheet>
 
 			<ScrollView
 				style={{

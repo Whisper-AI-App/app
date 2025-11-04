@@ -4,7 +4,6 @@ import { Onboarding } from "@/components/ui/onboarding";
 import { View } from "@/components/ui/view";
 import { useColor } from "@/hooks/useColor";
 import { useColorScheme } from "@/hooks/useColorScheme";
-import { completeOnboarding } from "@/src/actions/settings";
 import { ImageBackground } from "expo-image";
 import { useRouter } from "expo-router";
 import { useEffect } from "react";
@@ -126,7 +125,7 @@ export default function Index() {
 				<Onboarding
 					steps={onboardingSteps}
 					onComplete={() => {
-						completeOnboarding()
+						router.push("/download");
 					}}
 					showSkip={false}
 				/>
