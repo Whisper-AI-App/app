@@ -1,7 +1,12 @@
+import { useAIChat } from "@/contexts/AIChatContext";
 import { useColor } from "@/hooks/useColor";
 import { useColorScheme } from "@/hooks/useColorScheme";
+import { upsertChat } from "@/src/actions/chat";
+import { upsertMessage } from "@/src/actions/message";
+import { store } from "@/src/store";
 import { Colors } from "@/theme/colors";
-import { MessageCircle, SendHorizonal } from "lucide-react-native";
+import { BlurView } from "expo-blur";
+import { MessageCircle, Plus, SendHorizonal } from "lucide-react-native";
 import {
 	type ReactNode,
 	useCallback,
@@ -17,40 +22,45 @@ import {
 	Platform,
 } from "react-native";
 import { Bubble, GiftedChat, type IMessage } from "react-native-gifted-chat";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useRow, useRowIds } from "tinybase/ui-react";
+import { v4 as uuidv4 } from "uuid";
 import { BottomSheet, useBottomSheet } from "./ui/bottom-sheet";
 import { Button } from "./ui/button";
 import { Icon } from "./ui/icon";
 import { Input } from "./ui/input";
 import { SearchButton } from "./ui/searchbutton";
 import { View } from "./ui/view";
-import { useAIChat } from "@/contexts/AIChatContext";
-import { upsertChat } from "@/src/actions/chat";
-import { upsertMessage } from "@/src/actions/message";
-import { useRow, useRowIds } from "tinybase/ui-react";
-import { store } from "@/src/store";
-import { v4 as uuidv4 } from "uuid";
 
 const { height: SCREEN_HEIGHT } = Dimensions.get("window");
 
 export default function Chat({
 	children,
 	chatId: initialChatId,
+	isOpen,
 	onClose: onCloseCallback,
 }: {
 	children?: ReactNode;
 	chatId?: string;
+	isOpen?: boolean;
 	onClose?: () => void;
 }) {
+	const colorScheme = useColorScheme() ?? "light";
+	const theme = Colors[colorScheme];
+	const insets = useSafeAreaInsets();
 	const { isVisible, open, close } = useBottomSheet();
 
 	const handleClose = useCallback(() => {
 		close();
 		onCloseCallback?.();
 	}, [close, onCloseCallback]);
+
 	const muted = useColor("textMuted");
 	const [isInputFocused, setIsInputFocused] = useState(false);
 	const [isAiTyping, setIsAiTyping] = useState(false);
-	const [currentChatId, setCurrentChatId] = useState<string | undefined>(initialChatId);
+	const [currentChatId, setCurrentChatId] = useState<string | undefined>(
+		initialChatId,
+	);
 	const aiChat = useAIChat();
 
 	// Reset currentChatId when initialChatId changes (e.g., when opening different chat)
@@ -58,12 +68,12 @@ export default function Chat({
 		setCurrentChatId(initialChatId);
 	}, [initialChatId]);
 
-	// Auto-open bottom sheet when chatId is provided
+	// Open bottom sheet when isOpen prop changes to true
 	useEffect(() => {
-		if (initialChatId) {
+		if (isOpen && !isVisible) {
 			open();
 		}
-	}, [initialChatId, open]);
+	}, [isOpen, isVisible, open]);
 
 	const {
 		defaultContainerStyle,
@@ -74,6 +84,7 @@ export default function Chat({
 		isInputFocused,
 		setIsInputFocused,
 		isTyping: isAiTyping,
+		isNewChat: !currentChatId,
 	});
 
 	// Load chat data from TinyBase
@@ -87,7 +98,7 @@ export default function Chat({
 		if (!currentChatId) return [];
 
 		const chatMessages = allMessageIds
-			.map(id => {
+			.map((id) => {
 				const msg = store.getRow("messages", id);
 				if (msg?.chatId !== currentChatId) return null;
 
@@ -104,71 +115,75 @@ export default function Chat({
 			.filter(Boolean) as IMessage[];
 
 		// Sort by date descending (GiftedChat expects newest first)
-		return chatMessages.sort((a, b) =>
-			new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+		return chatMessages.sort(
+			(a, b) =>
+				new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
 		);
 	}, [currentChatId, allMessageIds]);
 
-	const onSend = useCallback(async (newMessages: IMessage[] = []) => {
-		if (newMessages.length === 0) return;
+	const onSend = useCallback(
+		async (newMessages: IMessage[] = []) => {
+			if (newMessages.length === 0) return;
 
-		const userMessage = newMessages[0];
-		let chatId = currentChatId;
+			const userMessage = newMessages[0];
+			let chatId = currentChatId;
 
-		// Create new chat if this is the first message
-		if (!chatId) {
-			chatId = uuidv4();
-			const chatName = userMessage.text.slice(0, 50); // Use first 50 chars as name
-			upsertChat(chatId, chatName);
-			setCurrentChatId(chatId);
-		}
-
-		// Save user message
-		const userMessageId = uuidv4();
-		upsertMessage(userMessageId, chatId, userMessage.text, "user");
-
-		// Get AI response
-		if (aiChat.isLoaded) {
-			setIsAiTyping(true);
-
-			try {
-				// Prepare conversation history
-				const conversationMessages = messages.map(msg => ({
-					role: msg.user._id === 1 ? "user" : "system" as const,
-					content: msg.text,
-				}));
-
-				// Add the new user message
-				conversationMessages.unshift({
-					role: "user" as const,
-					content: userMessage.text,
-				});
-
-				// Reverse to chronological order for AI
-				conversationMessages.reverse();
-
-				let aiResponseText = "";
-
-				// Stream AI completion
-				const response = await aiChat.completion(
-					conversationMessages,
-					(token) => {
-						aiResponseText += token;
-					}
-				);
-
-				// Save AI response
-				if (response) {
-					const aiMessageId = uuidv4();
-					upsertMessage(aiMessageId, chatId, response, "system");
-				}
-			} catch (error) {
-				console.error("[Chat] AI completion error:", error);
-			} finally {
-				setIsAiTyping(false);
+			// Create new chat if this is the first message
+			if (!chatId) {
+				chatId = uuidv4();
+				const chatName = userMessage.text.slice(0, 50); // Use first 50 chars as name
+				upsertChat(chatId, chatName);
+				setCurrentChatId(chatId);
 			}
-		}
-	}, [currentChatId, messages, aiChat]);
+
+			// Save user message
+			const userMessageId = uuidv4();
+			upsertMessage(userMessageId, chatId, userMessage.text, "user");
+
+			// Get AI response
+			if (aiChat.isLoaded) {
+				setIsAiTyping(true);
+
+				try {
+					// Prepare conversation history
+					const conversationMessages = messages.map((msg) => ({
+						role: msg.user._id === 1 ? "user" : ("system" as const),
+						content: msg.text,
+					}));
+
+					// Add the new user message
+					conversationMessages.unshift({
+						role: "user" as const,
+						content: userMessage.text,
+					});
+
+					// Reverse to chronological order for AI
+					conversationMessages.reverse();
+
+					let aiResponseText = "";
+
+					// Stream AI completion
+					const response = await aiChat.completion(
+						conversationMessages,
+						(token) => {
+							aiResponseText += token;
+						},
+					);
+
+					// Save AI response
+					if (response) {
+						const aiMessageId = uuidv4();
+						upsertMessage(aiMessageId, chatId, response, "system");
+					}
+				} catch (error) {
+					console.error("[Chat] AI completion error:", error);
+				} finally {
+					setIsAiTyping(false);
+				}
+			}
+		},
+		[currentChatId, messages, aiChat],
+	);
 
 	return (
 		<>
@@ -189,33 +204,104 @@ export default function Chat({
 			<BottomSheet
 				isVisible={isVisible}
 				onClose={handleClose}
-				title="Chat"
 				snapPoints={[0.9]}
 				enableBackdropDismiss
+				disableKeyboardHandling
 				style={{ flex: 1 }}
 			>
-				<View style={{ height: SCREEN_HEIGHT * 0.9 - 128 }}>
-					<GiftedChat
-						messages={messages}
-						onSend={(messages) => onSend(messages)}
-						user={{
-							_id: 1,
+				<View style={{ flex: 1, position: "relative" }}>
+					<View
+						style={{
+							position: "absolute",
+							top: 0,
+							left: 0,
+							width: "100%",
+							marginTop: -32,
+							borderTopStartRadius: 20,
+							borderTopEndRadius: 20,
+							overflow: "hidden",
+							zIndex: 2,
 						}}
-						renderAvatar={null}
-						alwaysShowSend
-						isTyping={isAiTyping}
-						bottomOffset={0}
-						minInputToolbarHeight={60}
-						renderBubble={renderBubble}
-						renderInputToolbar={renderInputToolbar}
-						renderFooter={renderFooter}
-						messagesContainerStyle={defaultContainerStyle}
-						keyboardShouldPersistTaps="handled"
-						inverted={true}
-					/>
-					{Platform.OS === "android" && (
-						<KeyboardAvoidingView behavior="padding" />
-					)}
+					>
+						<BlurView
+							intensity={100}
+							style={{
+								borderRadius: 20,
+							}}
+						>
+							<View
+								style={{
+									width: "100%",
+									paddingHorizontal: 16,
+									paddingTop: 12,
+									paddingBottom: 6,
+									display: "flex",
+									flexDirection: "row",
+									justifyContent: "space-between",
+									borderRadius: 20,
+								}}
+							>
+								<Button
+									size="sm"
+									variant="ghost"
+									onPress={() => {
+										handleClose();
+									}}
+								>
+									Close
+								</Button>
+								{messages.length > 0 && (
+									<Button
+										size="icon"
+										variant="ghost"
+										onPress={() => {
+											setCurrentChatId(undefined);
+										}}
+									>
+										<Plus color={theme.text} />
+									</Button>
+								)}
+							</View>
+						</BlurView>
+					</View>
+
+					<View
+						style={{
+							height: SCREEN_HEIGHT * 0.9 - 50,
+							zIndex: 1,
+							marginTop: -4,
+						}}
+					>
+						<GiftedChat
+							key={currentChatId || "new-chat"}
+							messages={messages.map(
+								(message) =>
+									({
+										_id: message._id,
+										text: message.text,
+										user: message.user,
+									}) as IMessage,
+							)}
+							onSend={(messages) => onSend(messages)}
+							user={{
+								_id: 1,
+							}}
+							renderAvatar={null}
+							alwaysShowSend
+							isTyping={isAiTyping}
+							bottomOffset={insets.bottom}
+							minInputToolbarHeight={60}
+							renderBubble={renderBubble}
+							renderInputToolbar={renderInputToolbar}
+							renderFooter={renderFooter}
+							messagesContainerStyle={defaultContainerStyle}
+							keyboardShouldPersistTaps="handled"
+							inverted={true}
+						/>
+						{Platform.OS === "android" && (
+							<KeyboardAvoidingView behavior="padding" />
+						)}
+					</View>
 				</View>
 			</BottomSheet>
 		</>
@@ -226,19 +312,26 @@ interface ChatUIProps {
 	isInputFocused: boolean;
 	setIsInputFocused: (focused: boolean) => void;
 	isTyping?: boolean;
+	isNewChat?: boolean;
 }
 
 export const useCustomChatUI = ({
 	isInputFocused,
 	setIsInputFocused,
 	isTyping = false,
+	isNewChat = false,
 }: ChatUIProps) => {
 	const colorScheme = useColorScheme() ?? "light";
 	const theme = Colors[colorScheme];
+	const insets = useSafeAreaInsets();
 
 	const renderBubble = useCallback(
 		(props: any) => {
 			const message = props.currentMessage;
+
+			console.log({ props });
+
+			const marginTop = JSON.stringify(props.previousMessage) === "{}" ? 92 : 4;
 
 			return (
 				<Bubble
@@ -246,18 +339,18 @@ export const useCustomChatUI = ({
 					wrapperStyle={{
 						left: {
 							backgroundColor: theme.background,
-							borderRadius: 16,
+							borderRadius: 24,
 							marginBottom: 4,
-							marginTop: 4,
+							marginTop,
 							paddingVertical: 8,
 							paddingRight: 4,
 							paddingLeft: 4,
 						},
 						right: {
 							backgroundColor: theme.tint,
-							borderRadius: 16,
+							borderRadius: 24,
 							marginBottom: 4,
-							marginTop: 4,
+							marginTop,
 							paddingVertical: 8,
 							paddingRight: 4,
 							paddingLeft: 4,
@@ -270,7 +363,7 @@ export const useCustomChatUI = ({
 							marginRight: 8,
 						},
 						right: {
-							color: "#ffffff",
+							color: theme.background,
 							marginLeft: 8,
 							marginRight: 8,
 						},
@@ -287,7 +380,7 @@ export const useCustomChatUI = ({
 				<View
 					style={{
 						paddingTop: 8,
-						paddingBottom: Platform.OS === "ios" ? 24 : 16,
+						paddingBottom: Platform.OS === "ios" ? insets.bottom : 16,
 						minHeight: 60,
 						flexDirection: "row",
 						alignItems: "flex-end",
@@ -304,7 +397,7 @@ export const useCustomChatUI = ({
 							onChangeText={props.onTextChanged}
 							multiline={true}
 							inputStyle={{ paddingVertical: 12 }}
-							autoFocus
+							autoFocus={isNewChat}
 							onFocus={() => setIsInputFocused(true)}
 							onBlur={() => setIsInputFocused(false)}
 							editable={!isTyping}
@@ -331,7 +424,7 @@ export const useCustomChatUI = ({
 				</View>
 			);
 		},
-		[theme, isTyping, setIsInputFocused],
+		[theme, isTyping, setIsInputFocused, insets, isNewChat],
 	);
 
 	const renderFooter = useCallback(() => {

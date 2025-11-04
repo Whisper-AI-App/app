@@ -122,6 +122,7 @@ type BottomSheetProps = {
 	title?: string;
 	style?: ViewStyle;
 	disablePanGesture?: boolean;
+	disableKeyboardHandling?: boolean;
 };
 
 export function BottomSheet({
@@ -133,6 +134,7 @@ export function BottomSheet({
 	title,
 	style,
 	disablePanGesture = false,
+	disableKeyboardHandling = false,
 }: BottomSheetProps) {
 	const cardColor = useColor("card");
 	const mutedColor = useColor("muted");
@@ -178,6 +180,11 @@ export function BottomSheet({
 
 	// --- START: NEW KEYBOARD HANDLING LOGIC ---
 	useEffect(() => {
+		// Skip keyboard handling if disabled (e.g., when using GiftedChat)
+		if (disableKeyboardHandling) {
+			return;
+		}
+
 		// Update the shared value whenever keyboardHeight changes
 		keyboardHeightSV.value = keyboardHeight;
 
@@ -195,7 +202,7 @@ export function BottomSheet({
 			}
 			scrollTo(destination);
 		}
-	}, [keyboardHeight, isKeyboardVisible, isVisible]);
+	}, [keyboardHeight, isKeyboardVisible, isVisible, disableKeyboardHandling]);
 	// --- END: NEW KEYBOARD HANDLING LOGIC ---
 
 	const findClosestSnapPoint = (currentY: number) => {
