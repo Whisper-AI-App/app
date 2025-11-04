@@ -1,67 +1,71 @@
 {
-  "expo": {
-    "name": "whisper",
-    "slug": "whisper",
-    "version": "1.0.0",
-    "orientation": "portrait",
-    "icon": "./assets/images/icon.png",
-    "scheme": "whisper",
-    "userInterfaceStyle": "automatic",
-    "newArchEnabled": true,
-    "ios": {
-      "supportsTablet": true,
-      "bundleIdentifier": "org.avatechnologies.whisper",
-      "infoPlist": {
-        "ITSAppUsesNonExemptEncryption": false
-      },
-      "appleTeamId": "6PT3Z9F32F"
-    },
-    "android": {
-      "edgeToEdgeEnabled": true,
-      "predictiveBackGestureEnabled": false,
-      "package": "org.avatechnologies.whisper"
-    },
-    "web": {
-      "output": "static",
-      "favicon": "./assets/images/favicon.png"
-    },
-    "plugins": [
-      "expo-router",
-      [
-        "expo-splash-screen",
-        {
-          "image": "./assets/images/splash-icon.png",
-          "imageWidth": 200,
-          "resizeMode": "contain",
-          "backgroundColor": "#ffffff",
-          "dark": {
-            "image": "./assets/images/splash-icon-dark.png",
-            "backgroundColor": "#000000"
-          }
-        }
-      ],
-      "expo-font",
-      [
-        "llama.rn",
-        {
-          "enableEntitlements": true,
-          "entitlementsProfile": "production",
-          "forceCxx20": true,
-          "enableOpenCL": true
-        }
-      ],
-      "expo-web-browser"
-    ],
-    "experiments": {
-      "typedRoutes": true,
-      "reactCompiler": true
-    },
-    "extra": {
-      "router": {},
-      "eas": {
-        "projectId": "e036d11a-77b7-4130-adeb-9b4886f1d394"
-      }
-    },
-    "owner": "ava-technologies"
-  }
+	"expo": {
+		"name": "whisper",
+		"slug": "whisper",
+		"version": "1.0.0",
+		"orientation": "portrait",
+		"icon": "./assets/images/icon.png",
+		"scheme": "whisper",
+		"userInterfaceStyle": "automatic",
+		"newArchEnabled": true,
+		"ios": {
+			"supportsTablet": true,
+			"bundleIdentifier": "org.avatechnologies.whisper",
+			"infoPlist": {
+				"ITSAppUsesNonExemptEncryption": false
+			},
+			"entitlements": {
+				"com.apple.developer.kernel.increased-memory-limit": true,
+				"com.apple.developer.kernel.extended-virtual-addressing": true
+			},
+			"appleTeamId": "6PT3Z9F32F"
+		},
+		"android": {
+			"edgeToEdgeEnabled": true,
+			"predictiveBackGestureEnabled": false,
+			"package": "org.avatechnologies.whisper"
+		},
+		"web": {
+			"output": "static",
+			"favicon": "./assets/images/favicon.png"
+		},
+		"plugins": [
+			"expo-router",
+			[
+				"expo-splash-screen",
+				{
+					"image": "./assets/images/splash-icon.png",
+					"imageWidth": 200,
+					"resizeMode": "contain",
+					"backgroundColor": "#ffffff",
+					"dark": {
+						"image": "./assets/images/splash-icon-dark.png",
+						"backgroundColor": "#000000"
+					}
+				}
+			],
+			"expo-font",
+			[
+				"llama.rn",
+				{
+					"enableEntitlements": true,
+					"entitlementsProfile": "production",
+					"forceCxx20": true,
+					"enableOpenCL": true
+				}
+			],
+			"expo-web-browser"
+		],
+		"experiments": {
+			"typedRoutes": true,
+			"reactCompiler": true
+		},
+		"extra": {
+			"router": {},
+			"eas": {
+				"projectId": "e036d11a-77b7-4130-adeb-9b4886f1d394"
+			}
+		},
+		"owner": "ava-technologies"
+	}
 }
