@@ -8,9 +8,9 @@ import { bytesToGB } from "../utils/bytes";
 import { extractLLMModelNameFromUrl } from "../utils/extract-llm-model-name-from-url";
 
 export const DEFAULT_AI_CHAT_MODEL = {
-	name: "Qwen3 0.6B Q4_0",
+	name: "Llama 3.2 1B Instruct Q4_0",
 	sourceUrl:
-		"https://huggingface.co/unsloth/Qwen3-0.6B-GGUF/resolve/main/Qwen3-0.6B-Q4_0.gguf",
+		"https://huggingface.co/unsloth/Llama-3.2-1B-Instruct-GGUF/resolve/main/Llama-3.2-1B-Instruct-Q4_0.gguf",
 };
 
 // Keep a reference to the active download

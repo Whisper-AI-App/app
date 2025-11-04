@@ -75,7 +75,7 @@ export function AIChatProvider({ children }: { children: ReactNode }) {
 			const result = await context.completion(
 				{
 					messages,
-					n_predict: 100,
+					n_predict: 300,
 					stop: stopWordsRef.current,
 				},
 				(data) => {
