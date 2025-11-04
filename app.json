@@ -13,7 +13,8 @@
       "bundleIdentifier": "org.avatechnologies.whisper",
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false
-      }
+      },
+      "appleTeamId": "6PT3Z9F32F"
     },
     "android": {
       "edgeToEdgeEnabled": true,
@@ -58,9 +59,9 @@
     "extra": {
       "router": {},
       "eas": {
-        "projectId": "926444c0-b71a-4edd-a90f-decda98ca0e8"
+        "projectId": "e036d11a-77b7-4130-adeb-9b4886f1d394"
       }
     },
-    "owner": "avatechnologiesorg"
+    "owner": "ava-technologies"
   }
 }
