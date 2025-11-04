@@ -4,6 +4,8 @@ import {
 	type DownloadResumable,
 } from "expo-file-system/legacy";
 import { store } from "../store";
+import { bytesToGB } from "../utils/bytes";
+import { extractLLMModelNameFromUrl } from "../utils/extract-llm-model-name-from-url";
 
 export const DEFAULT_AI_CHAT_MODEL = {
 	name: "Qwen3 0.6B Q4_0",
@@ -15,28 +17,64 @@ export const DEFAULT_AI_CHAT_MODEL = {
 let activeDownloadResumable: DownloadResumable | null = null;
 
 /**
- * Extracts a safe model name from a URL.
- * Example: "https://huggingface.co/.../Qwen3-4B-Q4_0.gguf" => "Qwen3-4B-Q4_0"
+ * Creates a progress callback for download operations
  */
-function extractModelNameFromUrl(url: string): string {
-	try {
-		const urlParts = url.split("/");
-		const filename = urlParts[urlParts.length - 1];
-		// Remove .gguf extension and sanitize
-		const modelName = filename.replace(/\.gguf$/i, "");
-		// Replace any non-alphanumeric characters (except hyphens and underscores) with underscores
-		return modelName.replace(/[^a-zA-Z0-9_-]/g, "_");
-	} catch (error) {
-		// Fallback to timestamp-based name
-		return `model_${Date.now()}`;
+function createProgressCallback() {
+	return (progressData: {
+		totalBytesWritten: number;
+		totalBytesExpectedToWrite: number;
+	}) => {
+		const totalSizeGB = bytesToGB(progressData.totalBytesExpectedToWrite);
+		const progressSizeGB = bytesToGB(progressData.totalBytesWritten);
+
+		store.setValue("ai_chat_model_totalSizeGB", totalSizeGB);
+		store.setValue("ai_chat_model_progressSizeGB", progressSizeGB);
+	};
+}
+
+/**
+ * Checks if the download was paused by the user
+ */
+function checkIfPaused(): boolean {
+	return store.getValue("ai_chat_model_isPaused") as boolean;
+}
+
+/**
+ * Cleans up download state in the store
+ */
+function cleanupDownloadState(): void {
+	store.delValue("ai_chat_model_downloadError");
+	store.delValue("ai_chat_model_resumableState");
+	store.delValue("ai_chat_model_isPaused");
+}
+
+/**
+ * Handles successful download completion
+ */
+function handleDownloadComplete(result: { status: number } | null): void {
+	if (result?.status === 200 || result?.status === 206) {
+		store.setValue("ai_chat_model_downloadedAt", new Date().toISOString());
+		cleanupDownloadState();
+		activeDownloadResumable = null;
+	} else {
+		throw new Error(`Download failed with status: ${result?.status}`);
 	}
 }
 
 /**
- * Converts bytes to GB
+ * Handles download errors, distinguishing between pauses and real errors
  */
-function bytesToGB(bytes: number): number {
-	return bytes / (1024 * 1024 * 1024);
+function handleDownloadError(error: unknown): void {
+	if (checkIfPaused()) {
+		return; // Exit gracefully, not a real error
+	}
+
+	console.error("[AI Model Download] Error occurred", error);
+	const errorMessage =
+		error instanceof Error ? error.message : "Unknown error occurred";
+	store.setValue("ai_chat_model_downloadError", errorMessage);
+	activeDownloadResumable = null;
+	throw error;
 }
 
 /**
@@ -44,21 +82,15 @@ function bytesToGB(bytes: number): number {
  */
 export async function pauseDownload(): Promise<void> {
 	if (!activeDownloadResumable) {
-		console.warn("[AI Model Download] No active download to pause");
 		return;
 	}
-
-	console.log("[AI Model Download] Pausing download");
 
 	try {
 		await activeDownloadResumable.pauseAsync();
 		const savable = activeDownloadResumable.savable();
 
-		// Save resumable state to store
 		store.setValue("ai_chat_model_resumableState", JSON.stringify(savable));
 		store.setValue("ai_chat_model_isPaused", true);
-
-		console.log("[AI Model Download] Download paused successfully");
 	} catch (error) {
 		console.error("[AI Model Download] Error pausing download", error);
 		throw error;
@@ -72,82 +104,33 @@ export async function resumeDownload(): Promise<void> {
 	const resumableStateStr = store.getValue("ai_chat_model_resumableState");
 
 	if (!resumableStateStr) {
-		console.warn("[AI Model Download] No resumable state found");
 		return;
 	}
-
-	console.log("[AI Model Download] Resuming download from saved state");
 
 	try {
 		const resumableState = JSON.parse(resumableStateStr as string);
 		const fileUri = store.getValue("ai_chat_model_fileUri") as string;
 
-		// Create resumable from saved state
 		const resumable = createDownloadResumable(
 			resumableState.url,
 			fileUri,
 			resumableState.options,
-			(progressData) => {
-				const totalSizeGB = bytesToGB(progressData.totalBytesExpectedToWrite);
-				const progressSizeGB = bytesToGB(progressData.totalBytesWritten);
-
-				console.log("[AI Model Download] Progress update", {
-					totalBytesWritten: progressData.totalBytesWritten,
-					totalBytesExpectedToWrite: progressData.totalBytesExpectedToWrite,
-					totalSizeGB: totalSizeGB.toFixed(2),
-					progressSizeGB: progressSizeGB.toFixed(2),
-					progressPercent: `${((progressSizeGB / totalSizeGB) * 100).toFixed(2)}%`,
-				});
-
-				store.setValue("ai_chat_model_totalSizeGB", totalSizeGB);
-				store.setValue("ai_chat_model_progressSizeGB", progressSizeGB);
-			},
+			createProgressCallback(),
 			resumableState.resumeData,
 		);
 
 		activeDownloadResumable = resumable;
 		store.setValue("ai_chat_model_isPaused", false);
 
-		console.log("[AI Model Download] Starting resumed download...");
 		const result = await resumable.downloadAsync();
 
-		console.log("[AI Model Download] Download completed", {
-			status: result?.status,
-			uri: result?.uri,
-		});
-
-		// Check if download was paused (not an error, just paused by user)
-		const isPausedNow = store.getValue("ai_chat_model_isPaused");
-		if (isPausedNow) {
-			console.log("[AI Model Download] Download was paused by user");
-			return; // Exit gracefully, state already saved by pauseDownload()
+		if (checkIfPaused()) {
+			return;
 		}
 
-		if (result?.status === 200 || result?.status === 206) {
-			console.log("[AI Model Download] Marking as completed in store");
-			store.setValue("ai_chat_model_downloadedAt", new Date().toISOString());
-			store.delValue("ai_chat_model_downloadError");
-			store.delValue("ai_chat_model_resumableState");
-			store.delValue("ai_chat_model_isPaused");
-			activeDownloadResumable = null;
-			console.log("[AI Model Download] Successfully completed download");
-		} else {
-			throw new Error(`Download failed with status: ${result?.status}`);
-		}
+		handleDownloadComplete(result);
 	} catch (error) {
-		// Check if this was a pause (not a real error)
-		const isPausedNow = store.getValue("ai_chat_model_isPaused");
-		if (isPausedNow) {
-			console.log("[AI Model Download] Download was paused, not an error");
-			return; // Exit gracefully
-		}
-
-		console.error("[AI Model Download] Error resuming download", error);
-		const errorMessage =
-			error instanceof Error ? error.message : "Unknown error occurred";
-		store.setValue("ai_chat_model_downloadError", errorMessage);
-		activeDownloadResumable = null;
-		throw error;
+		handleDownloadError(error);
 	}
 }
 
@@ -159,65 +142,35 @@ export async function startOrResumeDownloadOfAIChatModel(
 	modelName?: string,
 	restart: boolean = false,
 ): Promise<void> {
-	console.log("[AI Model Download] Starting download process", {
-		sourceUrl,
-		modelName,
-		restart,
-	});
-
-	// Check if there's a paused download that can be resumed
 	const isPaused = store.getValue("ai_chat_model_isPaused") as
 		| boolean
 		| undefined;
 	const resumableStateStr = store.getValue("ai_chat_model_resumableState");
 
 	if (isPaused && resumableStateStr && !restart) {
-		console.log("[AI Model Download] Found paused download, resuming...");
 		return resumeDownload();
 	}
 
-	// Extract or use provided model name
-	const safeName = modelName || extractModelNameFromUrl(sourceUrl);
+	const safeName = modelName || extractLLMModelNameFromUrl(sourceUrl);
 	const cleanGgufFilename = `${safeName}.gguf`;
 	const fileUri = `${new FileSystem.Directory(FileSystem.Paths.document).uri}/${cleanGgufFilename}`;
 
-	console.log("[AI Model Download] File details", {
-		safeName,
-		cleanGgufFilename,
-		fileUri,
-	});
-
-	// Check if model already exists and is fully downloaded
 	const existingFileUri = store.getValue("ai_chat_model_fileUri");
 	const downloadedAt = store.getValue("ai_chat_model_downloadedAt");
 
-	console.log("[AI Model Download] Existing model check", {
-		existingFileUri,
-		downloadedAt,
-	});
-
 	if (existingFileUri && downloadedAt && existingFileUri === fileUri) {
-		console.log("[AI Model Download] Model already fully downloaded");
 		return;
 	}
 
-	// Handle restart: delete file and reset progress
 	if (restart) {
-		console.log("[AI Model Download] Restarting download, deleting file");
 		const file = new FileSystem.File(fileUri);
 		if (file.exists) {
 			await file.delete();
-			console.log("[AI Model Download] Deleted existing file");
 		}
 		store.setValue("ai_chat_model_progressSizeGB", 0);
-		store.delValue("ai_chat_model_downloadError");
-		store.delValue("ai_chat_model_resumableState");
-		store.delValue("ai_chat_model_isPaused");
-		console.log("[AI Model Download] Reset progress in store");
+		cleanupDownloadState();
 	}
 
-	// Initialize store values
-	console.log("[AI Model Download] Setting initial values in store");
 	store.setValue("ai_chat_model_sourceUrl", sourceUrl);
 	store.setValue("ai_chat_model_fileUri", fileUri);
 	store.delValue("ai_chat_model_downloadedAt");
@@ -229,75 +182,23 @@ export async function startOrResumeDownloadOfAIChatModel(
 	}
 
 	try {
-		console.log("[AI Model Download] Creating download resumable");
-		// Create resumable download
 		const resumable = createDownloadResumable(
 			sourceUrl,
 			fileUri,
 			{},
-			(progressData) => {
-				const totalSizeGB = bytesToGB(progressData.totalBytesExpectedToWrite);
-				const progressSizeGB = bytesToGB(progressData.totalBytesWritten);
-
-				console.log("[AI Model Download] Progress update", {
-					totalBytesWritten: progressData.totalBytesWritten,
-					totalBytesExpectedToWrite: progressData.totalBytesExpectedToWrite,
-					totalSizeGB: totalSizeGB.toFixed(2),
-					progressSizeGB: progressSizeGB.toFixed(2),
-					progressPercent: `${((progressSizeGB / totalSizeGB) * 100).toFixed(2)}%`,
-				});
-
-				store.setValue("ai_chat_model_totalSizeGB", totalSizeGB);
-				store.setValue("ai_chat_model_progressSizeGB", progressSizeGB);
-			},
+			createProgressCallback(),
 		);
 
 		activeDownloadResumable = resumable;
 
-		console.log("[AI Model Download] Starting download async...");
-
-		// Start download
 		const result = await resumable.downloadAsync();
 
-		console.log("[AI Model Download] Download completed", {
-			status: result?.status,
-			uri: result?.uri,
-		});
-
-		// Check if download was paused (not an error, just paused by user)
-		const isPausedNow = store.getValue("ai_chat_model_isPaused");
-		if (isPausedNow) {
-			console.log("[AI Model Download] Download was paused by user");
-			return; // Exit gracefully, state already saved by pauseDownload()
+		if (checkIfPaused()) {
+			return;
 		}
 
-		if (result?.status === 200 || result?.status === 206) {
-			console.log("[AI Model Download] Marking as completed in store");
-			// Mark as completed
-			store.setValue("ai_chat_model_downloadedAt", new Date().toISOString());
-			store.delValue("ai_chat_model_downloadError");
-			store.delValue("ai_chat_model_resumableState");
-			store.delValue("ai_chat_model_isPaused");
-			activeDownloadResumable = null;
-			console.log("[AI Model Download] Successfully completed download");
-		} else {
-			throw new Error(`Download failed with status: ${result?.status}`);
-		}
+		handleDownloadComplete(result);
 	} catch (error) {
-		// Check if this was a pause (not a real error)
-		const isPausedNow = store.getValue("ai_chat_model_isPaused");
-		if (isPausedNow) {
-			console.log("[AI Model Download] Download was paused, not an error");
-			return; // Exit gracefully
-		}
-
-		console.error("[AI Model Download] Error occurred", error);
-		// Save error to store
-		const errorMessage =
-			error instanceof Error ? error.message : "Unknown error occurred";
-		store.setValue("ai_chat_model_downloadError", errorMessage);
-		activeDownloadResumable = null;
-		console.log("[AI Model Download] Error saved to store", errorMessage);
-		throw error;
+		handleDownloadError(error);
 	}
 }
