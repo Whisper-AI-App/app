@@ -36,6 +36,7 @@ export default function Dashboard() {
 		undefined,
 	);
 	const [isChatOpen, setIsChatOpen] = useState(false);
+	const [searchQuery, setSearchQuery] = useState("");
 
 	const aiChat = useAIChat();
 
@@ -53,7 +54,7 @@ export default function Dashboard() {
 
 	// Create a map of chatId -> latest message for preview
 	const chatPreviews = useMemo(() => {
-		return chatIds.map((chatId) => {
+		const allPreviews = chatIds.map((chatId) => {
 			const chat = store.getRow("chats", chatId);
 
 			// Find the latest message for this chat
@@ -75,7 +76,19 @@ export default function Dashboard() {
 				date: new Date(chat?.createdAt || Date.now()),
 			};
 		});
-	}, [chatIds, messageIds]);
+
+		// Filter based on search query
+		const query = searchQuery.trim().toLowerCase();
+		if (!query) {
+			return allPreviews;
+		}
+
+		return allPreviews.filter((preview) => {
+			const nameMatch = preview.name.toLowerCase().includes(query);
+			const textMatch = preview.text.toLowerCase().includes(query);
+			return nameMatch || textMatch;
+		});
+	}, [chatIds, messageIds, searchQuery]);
 
 	// Check for completed model on mount and load it if available
 	useEffect(() => {
@@ -109,7 +122,7 @@ export default function Dashboard() {
 			>
 				<SearchBar
 					placeholder="Search for anything..."
-					onSearch={(query) => console.log("Searching for:", query)}
+					onSearch={setSearchQuery}
 					loading={false}
 					containerStyle={{ flex: 1 }}
 				/>
@@ -176,17 +189,21 @@ export default function Dashboard() {
 					))
 				) : (
 					<View style={{ padding: 32, alignItems: "center", gap: 16 }}>
-						<Text style={{ opacity: 0.5 }}>No chats yet</Text>
-						<Button
-							variant="secondary"
-							size="sm"
-							onPress={() => {
-								setSelectedChatId(undefined);
-								setIsChatOpen(true);
-							}}
-						>
-							Start a conversation
-						</Button>
+						<Text style={{ opacity: 0.5 }}>
+							{searchQuery.trim() ? "No chats found" : "No chats yet"}
+						</Text>
+						{!searchQuery.trim() && (
+							<Button
+								variant="secondary"
+								size="sm"
+								onPress={() => {
+									setSelectedChatId(undefined);
+									setIsChatOpen(true);
+								}}
+							>
+								Start a conversation
+							</Button>
+						)}
 					</View>
 				)}
 			</ScrollView>
