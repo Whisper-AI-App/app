@@ -220,7 +220,7 @@ export default function Download() {
 							variant="title"
 							style={{ textAlign: "center", marginBottom: 16, fontSize: 32 }}
 						>
-							Download AI Model
+							Download AI Chat
 						</Text>
 						<Text
 							variant="body"
@@ -230,26 +230,28 @@ export default function Download() {
 								? isPaused
 									? "Resume or restart your paused download"
 									: "Download in progress"
-								: "Get started by downloading the default AI model. This will enable private, on-device conversations."}
+								: "Get started by downloading the AI chat. This will enable private, on-device conversations."}
 						</Text>
 					</View>
+				</View>
 
+				{/* Action buttons at bottom */}
+				<View
+					style={{
+						width: "100%",
+						paddingHorizontal: 24,
+						paddingBottom: 40,
+						gap: 12,
+						minHeight: 300,
+						display: "flex",
+						justifyContent: "flex-end",
+					}}
+				>
 					{/* Download info */}
-					<View style={{ width: "100%", gap: 16 }}>
-						<View style={{ gap: 8 }}>
-							<Text variant="title" style={{ fontSize: 16 }}>
-								{DEFAULT_AI_CHAT_MODEL.name}
-							</Text>
-							{totalSizeGB && (
-								<Text style={{ fontSize: 14, opacity: 0.6 }}>
-									Size: {totalSizeGB.toFixed(2)} GB
-								</Text>
-							)}
-						</View>
-
+					<View style={{ width: "100%", gap: 16, paddingVertical: 24 }}>
 						{/* Progress indicator */}
 						{hasPartialDownload && (
-							<View style={{ gap: 8 }}>
+							<View style={{ gap: 8, paddingHorizontal: 24 }}>
 								<View
 									style={{
 										flexDirection: "row",
@@ -286,22 +288,20 @@ export default function Download() {
 						)}
 
 						{/* Info text */}
-						<Text style={{ fontSize: 12, opacity: 0.6, textAlign: "center" }}>
-							This download is resumable. You can pause and resume at any time,
-							or navigate away and the download will continue in the background.
+						<Text
+							style={{
+								fontSize: 12,
+
+								textAlign: "center",
+								maxWidth: 200,
+								marginHorizontal: "auto",
+							}}
+						>
+							The download may take a while, you can pause and resume at any
+							time.
 						</Text>
 					</View>
-				</View>
 
-				{/* Action buttons at bottom */}
-				<View
-					style={{
-						width: "100%",
-						paddingHorizontal: 24,
-						paddingBottom: 40,
-						gap: 12,
-					}}
-				>
 					{hasPartialDownload ? (
 						<>
 							{/* Resume/Pause button */}
@@ -319,20 +319,27 @@ export default function Download() {
 									style={{ width: "100%" }}
 								>
 									{`Resume Download (${Number.parseFloat(
-										(((progressSizeGB ?? 1) / (totalSizeGB ?? 1)) * 100).toString(),
+										(
+											((progressSizeGB ?? 1) / (totalSizeGB ?? 1)) *
+											100
+										).toString(),
 									).toFixed(1)}%)`}
 								</Button>
 							)}
 
 							{/* Restart button */}
-							<Button
-								variant="outline"
-								onPress={() => handleStartDownload(true)}
-								disabled={isDownloading}
-								style={{ width: "100%" }}
-							>
-								Restart Download
-							</Button>
+							{!isDownloading && (
+								<Button
+									variant="outline"
+									onPress={() => handleStartDownload(true)}
+									disabled={isDownloading}
+									style={{
+										width: "100%",
+									}}
+								>
+									Restart Download
+								</Button>
+							)}
 						</>
 					) : (
 						<Button

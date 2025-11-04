@@ -1,6 +1,6 @@
 import { useColor } from "@/hooks/useColor";
 import React, { useEffect } from "react";
-import { View, ViewStyle } from "react-native";
+import { View, type ViewStyle } from "react-native";
 import Animated, {
 	useAnimatedStyle,
 	useSharedValue,
@@ -25,7 +25,7 @@ export function Progress({
 	style,
 	animated = true,
 }: ProgressProps) {
-	const defaultBgColor = useColor("border");
+	const defaultBgColor = useColor("background");
 	const defaultProgressColor = useColor("primary");
 
 	const progress = useSharedValue(0);
