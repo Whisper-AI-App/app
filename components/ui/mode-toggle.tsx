@@ -9,7 +9,7 @@ import { View } from "@/components/ui/view";
 import { useColorScheme } from "@/hooks/useColorScheme";
 import { useModeToggle } from "@/hooks/useModeToggle";
 import { Colors } from "@/theme/colors";
-import { Moon, Sun } from "lucide-react-native";
+import { Moon, Sun, SunMoon } from "lucide-react-native";
 import { useEffect, useState } from "react";
 import Animated, {
 	runOnJS,
@@ -32,8 +32,8 @@ export const ModeToggle = ({
 	const { toggleMode, isDark, mode } = useModeToggle();
 	const rotation = useSharedValue(0);
 	const scale = useSharedValue(1);
-	const [showIcon, setShowIcon] = useState<"sun" | "moon">(
-		isDark ? "moon" : "sun",
+	const [showIcon, setShowIcon] = useState<"sun" | "moon" | "sunmoon">(
+		mode === "system" ? "sunmoon" : isDark ? "moon" : "sun",
 	);
 
 	const colorScheme = useColorScheme() ?? "light";
@@ -42,20 +42,27 @@ export const ModeToggle = ({
 	useEffect(() => {
 		// Animate icon change
 		scale.value = withTiming(0, { duration: 150 }, () => {
-			runOnJS(setShowIcon)(isDark ? "moon" : "sun");
+			runOnJS(setShowIcon)(
+				mode === "system" ? "sunmoon" : isDark ? "moon" : "sun",
+			);
 			scale.value = withTiming(1, { duration: 150 });
 		});
 
 		// Only rotate when switching to sun (sun rays spinning effect)
-		if (!isDark) {
+		if (!isDark && mode !== "system") {
 			rotation.value = withTiming(rotation.value + 180, { duration: 300 });
 		}
-	}, [isDark]);
+	}, [isDark, mode]);
 
 	const animatedStyle = useAnimatedStyle(() => {
 		return {
 			transform: [
-				{ rotate: showIcon === "sun" ? `${rotation.value}deg` : "0deg" },
+				{
+					rotate:
+						showIcon === "sun" && mode !== "system"
+							? `${rotation.value}deg`
+							: "0deg",
+				},
 				{ scale: scale.value },
 			],
 		};
@@ -68,9 +75,9 @@ export const ModeToggle = ({
 			case "dark":
 				return "Dark";
 			case "system":
-				return "System";
+				return "Auto";
 			default:
-				return "System";
+				return "Auto";
 		}
 	};
 
@@ -96,9 +103,18 @@ export const ModeToggle = ({
 					}}
 				>
 					<Animated.View style={animatedStyle}>
-						<Icon name={showIcon === "moon" ? Moon : Sun} size={20} />
+						<Icon
+							name={
+								showIcon === "sunmoon"
+									? SunMoon
+									: showIcon === "moon"
+										? Moon
+										: Sun
+							}
+							size={20}
+						/>
 					</Animated.View>
-					<Text style={{ fontSize: 15 }}>Theme</Text>
+					<Text style={{ fontSize: 15, marginLeft: 6 }}>Theme</Text>
 					<Text
 						style={{
 							fontSize: 15,
@@ -117,7 +133,12 @@ export const ModeToggle = ({
 	return (
 		<Button variant={variant} size={size} onPress={toggleMode}>
 			<Animated.View style={animatedStyle}>
-				<Icon name={showIcon === "moon" ? Moon : Sun} size={24} />
+				<Icon
+					name={
+						showIcon === "sunmoon" ? SunMoon : showIcon === "moon" ? Moon : Sun
+					}
+					size={24}
+				/>
 			</Animated.View>
 		</Button>
 	);

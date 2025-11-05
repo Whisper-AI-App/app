@@ -23,13 +23,8 @@ export function useModeToggle(): UseModeToggleReturn {
 				setMode("dark");
 				break;
 			case "dark":
-				setMode("light");
+				setMode("system");
 				break;
-			// FOR A MOMENT, DONT CYCLE BACK TO SYSTEM.
-			// TODO: find and show suitable 'system' icon for `components/mode-toggle.tsx` and then restore below code.
-			// case "dark":
-			// 	setMode("system");
-			// 	break;
 			case "system":
 				setMode("light");
 				break;
