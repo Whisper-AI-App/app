@@ -106,7 +106,7 @@ export function SheetTrigger({ children, asChild }: SheetTriggerProps) {
 
 export function SheetContent({ children, style }: SheetContentProps) {
 	const { open, onOpenChange, side } = useSheet();
-	const sheetWidth = Math.min(SCREEN_WIDTH * 0.8, 400);
+	const sheetWidth = SCREEN_WIDTH - 40;
 	const [isVisible, setIsVisible] = React.useState(open);
 
 	const backgroundColor = useColor("background");
