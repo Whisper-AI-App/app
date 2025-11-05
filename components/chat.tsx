@@ -41,6 +41,7 @@ import { Bubble, GiftedChat, type IMessage } from "react-native-gifted-chat";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useRow, useRowIds } from "tinybase/ui-react";
 import { v4 as uuidv4 } from "uuid";
+import { SuggestionCards } from "./suggestion-cards";
 import { BottomSheet, useBottomSheet } from "./ui/bottom-sheet";
 import { Button } from "./ui/button";
 import { Icon } from "./ui/icon";
@@ -83,6 +84,7 @@ export default function Chat({
 		initialChatId,
 	);
 	const [isMenuOpen, setIsMenuOpen] = useState(false);
+	const [inputText, setInputText] = useState("");
 	const aiChat = useAIChat();
 
 	// Reset currentChatId when initialChatId changes (e.g., when opening different chat)
@@ -97,6 +99,10 @@ export default function Chat({
 		}
 	}, [isOpen, isVisible, open]);
 
+	const handleSuggestionPress = useCallback((text: string) => {
+		setInputText(text);
+	}, []);
+
 	const {
 		defaultContainerStyle,
 		renderBubble,
@@ -107,6 +113,8 @@ export default function Chat({
 		setIsInputFocused,
 		isTyping: isAiTyping,
 		isNewChat: !currentChatId,
+		inputText,
+		setInputText,
 	});
 
 	// Load chat data from TinyBase
@@ -215,6 +223,7 @@ export default function Chat({
 			if (newMessages.length === 0) return;
 
 			const userMessage = newMessages[0];
+			setInputText(""); // Clear input after sending
 			let chatId = currentChatId;
 
 			// Create new chat if this is the first message
@@ -455,6 +464,20 @@ export default function Chat({
 							marginTop: -4,
 						}}
 					>
+						{messages.length === 0 && !currentChatId && (
+							<View
+								style={{
+									position: "absolute",
+									top: 0,
+									left: 0,
+									right: 0,
+									bottom: 60,
+									zIndex: 0,
+								}}
+							>
+								<SuggestionCards onSuggestionPress={handleSuggestionPress} />
+							</View>
+						)}
 						<GiftedChat
 							key={currentChatId || "new-chat"}
 							messages={[
@@ -496,6 +519,8 @@ export default function Chat({
 							messagesContainerStyle={defaultContainerStyle}
 							keyboardShouldPersistTaps="handled"
 							inverted={true}
+							text={inputText}
+							onInputTextChanged={setInputText}
 						/>
 						{Platform.OS === "android" && (
 							<KeyboardAvoidingView behavior="padding" />
@@ -512,6 +537,8 @@ interface ChatUIProps {
 	setIsInputFocused: (focused: boolean) => void;
 	isTyping?: boolean;
 	isNewChat?: boolean;
+	inputText: string;
+	setInputText: (text: string) => void;
 }
 
 export const useCustomChatUI = ({
@@ -519,6 +546,8 @@ export const useCustomChatUI = ({
 	setIsInputFocused,
 	isTyping = false,
 	isNewChat = false,
+	inputText,
+	setInputText,
 }: ChatUIProps) => {
 	const colorScheme = useColorScheme() ?? "light";
 	const theme = Colors[colorScheme];
