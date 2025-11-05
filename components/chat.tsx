@@ -78,6 +78,7 @@ export default function Chat({
 	const muted = useColor("textMuted");
 	const [isInputFocused, setIsInputFocused] = useState(false);
 	const [isAiTyping, setIsAiTyping] = useState(false);
+	const [streamingText, setStreamingText] = useState("");
 	const [currentChatId, setCurrentChatId] = useState<string | undefined>(
 		initialChatId,
 	);
@@ -231,6 +232,7 @@ export default function Chat({
 			// Get AI response
 			if (aiChat.isLoaded) {
 				setIsAiTyping(true);
+				setStreamingText(""); // Clear any previous streaming text
 
 				try {
 					// Prepare conversation history
@@ -255,16 +257,19 @@ export default function Chat({
 						conversationMessages,
 						(token) => {
 							aiResponseText += token;
+							setStreamingText((prev) => prev + token);
 						},
 					);
 
 					// Save AI response
 					if (response) {
 						const aiMessageId = uuidv4();
-						upsertMessage(aiMessageId, chatId, response, "system");
+						upsertMessage(aiMessageId, chatId, aiResponseText, "system");
+						setStreamingText(""); // Clear streaming text after saving
 					}
 				} catch (error) {
 					console.error("[Chat] AI completion error:", error);
+					setStreamingText(""); // Clear on error too
 				} finally {
 					setIsAiTyping(false);
 				}
@@ -452,21 +457,37 @@ export default function Chat({
 					>
 						<GiftedChat
 							key={currentChatId || "new-chat"}
-							messages={messages.map(
-								(message) =>
-									({
-										_id: message._id,
-										text: message.text,
-										user: message.user,
-									}) as IMessage,
-							)}
+							messages={[
+								// Add streaming message at the beginning (it will appear at bottom due to inverted)
+								...(isAiTyping && streamingText
+									? [
+											{
+												_id: "streaming",
+												text: streamingText,
+												user: {
+													_id: 2,
+													name: "AI",
+												},
+											} as IMessage,
+										]
+									: []),
+								// Regular messages
+								...messages.map(
+									(message) =>
+										({
+											_id: message._id,
+											text: message.text,
+											user: message.user,
+										}) as IMessage,
+								),
+							]}
 							onSend={(messages) => onSend(messages)}
 							user={{
 								_id: 1,
 							}}
 							renderAvatar={null}
 							alwaysShowSend
-							isTyping={isAiTyping}
+							isTyping={isAiTyping && !streamingText}
 							bottomOffset={insets.bottom}
 							minInputToolbarHeight={60}
 							renderBubble={renderBubble}
@@ -506,8 +527,6 @@ export const useCustomChatUI = ({
 	const renderBubble = useCallback(
 		(props: any) => {
 			const message = props.currentMessage;
-
-			console.log({ props });
 
 			const marginTop = JSON.stringify(props.previousMessage) === "{}" ? 92 : 4;
 
@@ -732,5 +751,56 @@ export const TypingIndicator: React.FC<TypingIndicatorProps> = ({
 				))}
 			</View>
 		</View>
+	);
+};
+
+export const StreamingIndicator: React.FC = () => {
+	const colorScheme = useColorScheme() ?? "light";
+	const theme = Colors[colorScheme];
+
+	const pulseAnim = useRef(new Animated.Value(1)).current;
+
+	useEffect(() => {
+		const animation = Animated.loop(
+			Animated.sequence([
+				Animated.timing(pulseAnim, {
+					toValue: 0.3,
+					duration: 800,
+					useNativeDriver: true,
+				}),
+				Animated.timing(pulseAnim, {
+					toValue: 1,
+					duration: 800,
+					useNativeDriver: true,
+				}),
+			]),
+		);
+
+		animation.start();
+
+		return () => {
+			animation.stop();
+		};
+	}, []);
+
+	return (
+		<Animated.View
+			style={{
+				marginLeft: 8,
+				marginTop: -8,
+				marginBottom: 8,
+				opacity: pulseAnim,
+			}}
+		>
+			<Text
+				style={{
+					fontSize: 11,
+					color: theme.textMuted,
+					fontStyle: "italic",
+				}}
+			>
+				Generating...
+			</Text>
+		</Animated.View>
 	);
 };
