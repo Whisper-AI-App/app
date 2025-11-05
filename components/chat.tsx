@@ -29,6 +29,7 @@ import { BottomSheet, useBottomSheet } from "./ui/bottom-sheet";
 import { Button } from "./ui/button";
 import { Icon } from "./ui/icon";
 import { Input } from "./ui/input";
+import { Markdown } from "./ui/markdown";
 import { SearchButton } from "./ui/searchbutton";
 import { View } from "./ui/view";
 
@@ -333,6 +334,9 @@ export const useCustomChatUI = ({
 
 			const marginTop = JSON.stringify(props.previousMessage) === "{}" ? 92 : 4;
 
+			// Check if this is a system message (AI response) - user._id === 2
+			const isSystemMessage = message?.user?._id === 2;
+
 			return (
 				<Bubble
 					{...props}
@@ -368,6 +372,15 @@ export const useCustomChatUI = ({
 							marginRight: 8,
 						},
 					}}
+					renderMessageText={
+						isSystemMessage
+							? () => (
+									<View style={{}}>
+										<Markdown>{message.text}</Markdown>
+									</View>
+								)
+							: undefined
+					}
 				/>
 			);
 		},
