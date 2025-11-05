@@ -1,6 +1,7 @@
 import { Card, CardContent } from "./ui/card";
 import { Text } from "./ui/text";
 import { View } from "./ui/view";
+import * as Haptics from "expo-haptics";
 import { Pressable } from "react-native";
 
 export function ChatPreview({
@@ -16,8 +17,15 @@ export function ChatPreview({
 	date: Date;
 	onPress?: () => void;
 }) {
+	const handlePress = () => {
+		if (process.env.EXPO_OS === "ios") {
+			Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+		}
+		onPress?.();
+	};
+
 	return (
-		<Pressable onPress={onPress}>
+		<Pressable onPress={handlePress}>
 			<Card>
 				<CardContent>
 					<View

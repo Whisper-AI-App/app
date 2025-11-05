@@ -2,6 +2,7 @@ import { Icon } from "@/components/ui/icon";
 import { Text } from "@/components/ui/text";
 import { useColor } from "@/hooks/useColor";
 import { CORNERS, FONT_SIZE, HEIGHT } from "@/theme/globals";
+import * as Haptics from "expo-haptics";
 import { LinearGradient } from "expo-linear-gradient";
 import { Search } from "lucide-react-native";
 import type React from "react";
@@ -94,6 +95,15 @@ export function SearchButton({
 		marginHorizontal: 8,
 	};
 
+	const handlePress = (event: GestureResponderEvent) => {
+		if (!disabled && !loading) {
+			if (process.env.EXPO_OS === "ios") {
+				Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+			}
+			onPress?.(event);
+		}
+	};
+
 	return (
 		<View style={containerStyle}>
 			{/* Gradient border background - positioned absolutely to fill parent */}
@@ -141,7 +151,7 @@ export function SearchButton({
 				{/* Button content - creates the "cutout" effect */}
 				<TouchableOpacity
 					style={baseStyle}
-					onPress={onPress}
+					onPress={handlePress}
 					activeOpacity={0.7}
 					disabled={disabled || loading}
 				>

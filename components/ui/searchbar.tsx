@@ -3,6 +3,7 @@ import { Text } from '@/components/ui/text';
 import { View } from '@/components/ui/view';
 import { useColor } from '@/hooks/useColor';
 import { CORNERS, FONT_SIZE, HEIGHT } from '@/theme/globals';
+import * as Haptics from 'expo-haptics';
 import { Search, X } from 'lucide-react-native';
 import React, { useCallback, useRef, useState } from 'react';
 import {
@@ -73,6 +74,9 @@ export function SearchBar({
 
   // Handle clear button press
   const handleClear = useCallback(() => {
+    if (process.env.EXPO_OS === 'ios') {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    }
     setInternalValue('');
     onChangeText?.('');
     onClear?.();
@@ -102,6 +106,14 @@ export function SearchBar({
   const displayValue = value !== undefined ? value : internalValue;
   const showClear = showClearButton && displayValue.length > 0;
 
+  // Handle focus with haptics
+  const handleFocus = useCallback((e: any) => {
+    if (process.env.EXPO_OS === 'ios') {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    }
+    props.onFocus?.(e);
+  }, [props]);
+
   return (
     <View style={[baseStyle, containerStyle]}>
       {/* Left Icon */}
@@ -115,6 +127,7 @@ export function SearchBar({
         placeholderTextColor={muted}
         value={displayValue}
         onChangeText={handleTextChange}
+        onFocus={handleFocus}
         {...props}
       />
 
@@ -184,6 +197,9 @@ export function SearchBarWithSuggestions({
     (searchBarProps.value || '').length > 0;
 
   const handleSuggestionPress = (suggestion: string) => {
+    if (process.env.EXPO_OS === 'ios') {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    }
     onSuggestionPress?.(suggestion);
     setIsExpanded(false);
   };
