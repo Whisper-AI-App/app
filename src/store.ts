@@ -5,6 +5,7 @@ const valuesSchema = {
 	version: { type: "string" as const },
 	name: { type: "string" as const },
 	onboardedAt: { type: "string" as const },
+	theme: { type: "string" as const },
 	ai_chat_model_sourceUrl: { type: "string" as const },
 	ai_chat_model_downloadedAt: { type: "string" as const },
 	ai_chat_model_fileUri: { type: "string" as const },

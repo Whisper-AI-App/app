@@ -1,6 +1,8 @@
 import { useColorScheme } from "@/hooks/useColorScheme";
-import { useState } from "react";
+import { store } from "@/src/store";
+import { useEffect } from "react";
 import { Appearance, type ColorSchemeName } from "react-native";
+import { useValue } from "tinybase/ui-react";
 
 type Mode = "light" | "dark" | "system";
 
@@ -13,9 +15,21 @@ interface UseModeToggleReturn {
 }
 
 export function useModeToggle(): UseModeToggleReturn {
-	const [mode, setModeState] = useState<Mode>("system");
+	const storedTheme = useValue("theme") as Mode | undefined;
+	const mode: Mode = storedTheme || "system";
 	const colorScheme = useColorScheme();
 	const isDark = colorScheme === "dark";
+
+	// Initialize theme from store on mount
+	useEffect(() => {
+		if (storedTheme) {
+			if (storedTheme === "system") {
+				Appearance.setColorScheme(null);
+			} else {
+				Appearance.setColorScheme(storedTheme);
+			}
+		}
+	}, [storedTheme]);
 
 	const toggleMode = () => {
 		switch (mode) {
@@ -32,7 +46,9 @@ export function useModeToggle(): UseModeToggleReturn {
 	};
 
 	const setMode = (newMode: Mode) => {
-		setModeState(newMode);
+		// Persist theme to store
+		store.setValue("theme", newMode);
+
 		if (newMode === "system") {
 			Appearance.setColorScheme(null); // Reset to system default
 		} else {
