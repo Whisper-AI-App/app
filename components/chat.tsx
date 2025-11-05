@@ -1,12 +1,26 @@
 import { useAIChat } from "@/contexts/AIChatContext";
 import { useColor } from "@/hooks/useColor";
 import { useColorScheme } from "@/hooks/useColorScheme";
-import { upsertChat } from "@/src/actions/chat";
+import {
+	deleteChat,
+	renameChat,
+	shareChat,
+	upsertChat,
+} from "@/src/actions/chat";
 import { upsertMessage } from "@/src/actions/message";
 import { store } from "@/src/store";
 import { Colors } from "@/theme/colors";
 import { BlurView } from "expo-blur";
-import { MessageCircle, Plus, SendHorizonal } from "lucide-react-native";
+import {
+	MessageCircle,
+	MoreHorizontal,
+	Pencil,
+	SendHorizonal,
+	Share2,
+	SquarePen,
+	Trash2,
+	X,
+} from "lucide-react-native";
 import {
 	type ReactNode,
 	useCallback,
@@ -16,10 +30,12 @@ import {
 	useState,
 } from "react";
 import {
+	Alert,
 	Animated,
 	Dimensions,
 	KeyboardAvoidingView,
 	Platform,
+	TouchableOpacity,
 } from "react-native";
 import { Bubble, GiftedChat, type IMessage } from "react-native-gifted-chat";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -30,7 +46,10 @@ import { Button } from "./ui/button";
 import { Icon } from "./ui/icon";
 import { Input } from "./ui/input";
 import { Markdown } from "./ui/markdown";
+import { Popover, PopoverContent, PopoverTrigger } from "./ui/popover";
 import { SearchButton } from "./ui/searchbutton";
+import { Separator } from "./ui/separator";
+import { Text } from "./ui/text";
 import { View } from "./ui/view";
 
 const { height: SCREEN_HEIGHT } = Dimensions.get("window");
@@ -62,6 +81,7 @@ export default function Chat({
 	const [currentChatId, setCurrentChatId] = useState<string | undefined>(
 		initialChatId,
 	);
+	const [isMenuOpen, setIsMenuOpen] = useState(false);
 	const aiChat = useAIChat();
 
 	// Reset currentChatId when initialChatId changes (e.g., when opening different chat)
@@ -121,6 +141,73 @@ export default function Chat({
 				new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
 		);
 	}, [currentChatId, allMessageIds]);
+
+	const handleShareChat = useCallback(async () => {
+		if (currentChatId) {
+			setIsMenuOpen(false);
+			try {
+				await shareChat(currentChatId);
+			} catch (error) {
+				console.error("[handleShareChat] Error:", error);
+				Alert.alert(
+					"Share Failed",
+					"Could not share the chat. Please try again.",
+					[{ text: "OK" }],
+				);
+			}
+		}
+	}, [currentChatId]);
+
+	const handleRenameChat = useCallback(() => {
+		if (currentChatId && chatRow) {
+			setIsMenuOpen(false);
+			Alert.prompt(
+				"Rename Chat",
+				"Enter a new name for this chat",
+				[
+					{
+						text: "Cancel",
+						style: "cancel",
+					},
+					{
+						text: "Rename",
+						onPress: (newName) => {
+							if (newName && newName.trim()) {
+								renameChat(currentChatId, newName.trim());
+							}
+						},
+					},
+				],
+				"plain-text",
+				chatRow.name as string,
+			);
+		}
+	}, [currentChatId, chatRow]);
+
+	const handleDeleteChat = useCallback(() => {
+		if (currentChatId) {
+			setIsMenuOpen(false);
+			Alert.alert(
+				"Delete Chat",
+				"Are you sure you want to delete this chat? This action cannot be undone.",
+				[
+					{
+						text: "Cancel",
+						style: "cancel",
+					},
+					{
+						text: "Delete",
+						style: "destructive",
+						onPress: () => {
+							deleteChat(currentChatId);
+							setCurrentChatId(undefined);
+							handleClose(); // Close the chat modal
+						},
+					},
+				],
+			);
+		}
+	}, [currentChatId, handleClose]);
 
 	const onSend = useCallback(
 		async (newMessages: IMessage[] = []) => {
@@ -239,29 +326,119 @@ export default function Chat({
 									display: "flex",
 									flexDirection: "row",
 									justifyContent: "space-between",
+									alignItems: "center",
 									borderRadius: 20,
 								}}
 							>
 								<Button
-									size="sm"
+									size="icon"
 									variant="ghost"
 									onPress={() => {
 										handleClose();
 									}}
 								>
-									Close
+									<X color={theme.text} width={20} />
 								</Button>
-								{messages.length > 0 && (
-									<Button
-										size="icon"
-										variant="ghost"
-										onPress={() => {
-											setCurrentChatId(undefined);
-										}}
-									>
-										<Plus color={theme.text} />
-									</Button>
+								{chatRow.name && (
+									<View>
+										<Text
+											numberOfLines={2}
+											style={{
+												textAlign: "center",
+												maxWidth: 150,
+												fontSize:
+													(chatRow.name as string).length > 30 ? 12 : 16,
+											}}
+										>
+											{chatRow.name}
+										</Text>
+									</View>
 								)}
+								<View style={{ flexDirection: "row", gap: 8 }}>
+									{messages.length > 0 && (
+										<>
+											<Button
+												size="icon"
+												variant="ghost"
+												onPress={() => {
+													setCurrentChatId(undefined);
+												}}
+											>
+												<SquarePen color={theme.text} width={20} />
+											</Button>
+											<Popover open={isMenuOpen} onOpenChange={setIsMenuOpen}>
+												<PopoverTrigger asChild>
+													<Button size="icon" variant="ghost">
+														<MoreHorizontal color={theme.text} width={20} />
+													</Button>
+												</PopoverTrigger>
+												<PopoverContent
+													side="bottom"
+													align="end"
+													style={{ minWidth: 200 }}
+												>
+													<View style={{ paddingVertical: 4 }}>
+														<TouchableOpacity
+															onPress={handleShareChat}
+															style={{
+																flexDirection: "row",
+																alignItems: "center",
+																paddingVertical: 12,
+																paddingHorizontal: 16,
+															}}
+															activeOpacity={0.7}
+														>
+															<Share2
+																size={18}
+																color={theme.text}
+																style={{ marginRight: 12 }}
+															/>
+															<Text>Share</Text>
+														</TouchableOpacity>
+
+														<TouchableOpacity
+															onPress={handleRenameChat}
+															style={{
+																flexDirection: "row",
+																alignItems: "center",
+																paddingVertical: 12,
+																paddingHorizontal: 16,
+															}}
+															activeOpacity={0.7}
+														>
+															<Pencil
+																size={18}
+																color={theme.text}
+																style={{ marginRight: 12 }}
+															/>
+															<Text>Rename</Text>
+														</TouchableOpacity>
+
+														<Separator style={{ marginVertical: 8 }} />
+
+														<TouchableOpacity
+															onPress={handleDeleteChat}
+															style={{
+																flexDirection: "row",
+																alignItems: "center",
+																paddingVertical: 12,
+																paddingHorizontal: 16,
+															}}
+															activeOpacity={0.7}
+														>
+															<Trash2
+																size={18}
+																color="#ef4444"
+																style={{ marginRight: 12 }}
+															/>
+															<Text style={{ color: "#ef4444" }}>Delete</Text>
+														</TouchableOpacity>
+													</View>
+												</PopoverContent>
+											</Popover>
+										</>
+									)}
+								</View>
 							</View>
 						</BlurView>
 					</View>
