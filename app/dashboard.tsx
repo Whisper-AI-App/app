@@ -10,7 +10,6 @@ import { Text } from "@/components/ui/text";
 import { View } from "@/components/ui/view";
 import { useAIChat } from "@/contexts/AIChatContext";
 import { clearConversations, resetEverything } from "@/src/actions/reset";
-import { store } from "@/src/store";
 import { Colors } from "@/theme/colors";
 import { useRouter } from "expo-router";
 import { Settings } from "lucide-react-native";
@@ -18,7 +17,12 @@ import { useEffect, useMemo, useState } from "react";
 import { useColorScheme } from "react-native";
 import { ScrollView } from "react-native-gesture-handler";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { useRowIds, useSortedRowIds, useValue } from "tinybase/ui-react";
+import {
+	useRowIds,
+	useSortedRowIds,
+	useTable,
+	useValue,
+} from "tinybase/ui-react";
 
 export default function Dashboard() {
 	const colorScheme = useColorScheme() ?? "light";
@@ -52,19 +56,23 @@ export default function Dashboard() {
 	// Get all message IDs to find latest message for each chat
 	const messageIds = useRowIds("messages");
 
+	// Subscribe to the entire chats and messages tables to trigger re-render when any data changes
+	const chatsTable = useTable("chats");
+	const messagesTable = useTable("messages");
+
 	// Create a map of chatId -> latest message for preview
 	const chatPreviews = useMemo(() => {
 		const allPreviews = chatIds.map((chatId) => {
-			const chat = store.getRow("chats", chatId);
+			const chat = chatsTable[chatId];
 
 			// Find the latest message for this chat
 			const chatMessages = messageIds
-				.map((id) => store.getRow("messages", id))
+				.map((id) => messagesTable[id])
 				.filter((msg) => msg?.chatId === chatId)
 				.sort(
 					(a, b) =>
-						new Date(b?.createdAt || 0).getTime() -
-						new Date(a?.createdAt || 0).getTime(),
+						new Date(b?.createdAt ? String(b?.createdAt) : 0).getTime() -
+						new Date(a?.createdAt ? String(a?.createdAt) : 0).getTime(),
 				);
 
 			const latestMessage = chatMessages[0];
@@ -73,7 +81,7 @@ export default function Dashboard() {
 				chatId,
 				name: chat?.name || "Untitled Chat",
 				text: latestMessage?.contents || "No messages yet",
-				date: new Date(chat?.createdAt || Date.now()),
+				date: new Date(chat?.createdAt ? String(chat.createdAt) : Date.now()),
 			};
 		});
 
@@ -84,11 +92,11 @@ export default function Dashboard() {
 		}
 
 		return allPreviews.filter((preview) => {
-			const nameMatch = preview.name.toLowerCase().includes(query);
-			const textMatch = preview.text.toLowerCase().includes(query);
+			const nameMatch = String(preview.name).toLowerCase().includes(query);
+			const textMatch = String(preview.text).toLowerCase().includes(query);
 			return nameMatch || textMatch;
 		});
-	}, [chatIds, messageIds, searchQuery]);
+	}, [chatIds, messageIds, searchQuery, chatsTable, messagesTable]);
 
 	// Check for completed model on mount and load it if available
 	useEffect(() => {
