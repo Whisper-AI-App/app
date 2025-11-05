@@ -34,12 +34,14 @@ export function ChatPreview({
 								fontSize: 16,
 								fontWeight: "600",
 								textTransform: "capitalize",
+								flex: 1,
 							}}
 							numberOfLines={1}
+							ellipsizeMode="tail"
 						>
 							{name}
 						</Text>
-						<Text style={{ fontSize: 12, opacity: 0.5 }}>
+						<Text style={{ fontSize: 12, opacity: 0.5, flexShrink: 0 }}>
 							{date.toLocaleString(undefined, {
 								timeStyle: "short",
 							})}
