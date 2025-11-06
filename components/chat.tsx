@@ -354,11 +354,11 @@ export default function Chat({
 									<X color={theme.text} width={20} />
 								</Button>
 								{chatRow.name && (
-									<View>
+									<View style={{ marginRight: "auto" }}>
 										<Text
 											numberOfLines={2}
 											style={{
-												textAlign: "center",
+												textAlign: "left",
 												maxWidth: 150,
 												fontSize:
 													(chatRow.name as string).length > 30 ? 12 : 16,
@@ -368,7 +368,7 @@ export default function Chat({
 										</Text>
 									</View>
 								)}
-								<View style={{ flexDirection: "row", gap: 8 }}>
+								<View style={{ flexDirection: "row", gap: 0 }}>
 									{messages.length > 0 && (
 										<>
 											<Button

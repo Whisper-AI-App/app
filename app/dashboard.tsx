@@ -397,6 +397,7 @@ export default function Dashboard() {
 								date={preview.date}
 								name={preview.name}
 								text={preview.text}
+								peekOnMount={index === 0}
 								onPress={() => {
 									setSelectedChatId(preview.chatId);
 									setIsChatOpen(true);
