@@ -1,5 +1,6 @@
 import Chat from "@/components/chat";
 import { ChatPreview } from "@/components/chat-preview";
+import { ModelLoadError } from "@/components/model-load-error";
 import { Button } from "@/components/ui/button";
 import { SearchBar } from "@/components/ui/searchbar";
 import { Text } from "@/components/ui/text";
@@ -35,6 +36,7 @@ export default function Dashboard() {
 	);
 	const [isChatOpen, setIsChatOpen] = useState(false);
 	const [searchQuery, setSearchQuery] = useState("");
+	const [modelLoadError, setModelLoadError] = useState(false);
 
 	const aiChat = useAIChat();
 
@@ -94,19 +96,26 @@ export default function Dashboard() {
 
 	// Check for completed model on mount and load it if available
 	useEffect(() => {
-		if (downloadedAt && fileUri && !aiChat.isLoaded) {
+		if (downloadedAt && fileUri && !aiChat.isLoaded && !modelLoadError) {
 			// Model is downloaded but not loaded yet, load it
 			console.log("[Dashboard] Loading model from:", fileUri);
 			aiChat
 				.loadModel({ ggufPath: fileUri })
 				.then(() => {
 					console.log("[Dashboard] Model loaded successfully");
+					setModelLoadError(false);
 				})
 				.catch((error) => {
 					console.error("[Dashboard] Failed to load model:", error);
+					setModelLoadError(true);
 				});
 		}
-	}, [downloadedAt, fileUri, aiChat]);
+	}, [downloadedAt, fileUri, aiChat, modelLoadError]);
+
+	// Function to retry loading the model
+	const retryLoadModel = () => {
+		setModelLoadError(false);
+	};
 
 	return (
 		<SafeAreaView style={{ flex: 1 }}>
@@ -203,6 +212,8 @@ export default function Dashboard() {
 					<Settings color={theme.textMuted} strokeWidth={2} size={20} />
 				</Button>
 			</View>
+
+			{modelLoadError && <ModelLoadError onRetry={retryLoadModel} />}
 
 			<ScrollView
 				style={{
