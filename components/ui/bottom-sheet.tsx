@@ -157,8 +157,9 @@ export function BottomSheet({
 		if (isVisible) {
 			setModalVisible(true);
 			translateY.value = withSpring(defaultHeight, {
-				damping: 50,
-				stiffness: 400,
+				damping: 18,
+				stiffness: 140,
+				mass: 1,
 			});
 			opacity.value = withTiming(1, { duration: 300 });
 			currentSnapIndex.value = 0;
