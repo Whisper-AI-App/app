@@ -1,5 +1,6 @@
 import { useColorScheme } from "@/hooks/useColorScheme";
 import { deleteChat, renameChat, shareChat } from "@/src/actions/chat";
+import { formatChatPreviewDate } from "@/src/utils/format-date";
 import { Colors } from "@/theme/colors";
 import * as Haptics from "expo-haptics";
 import { Pencil, Share2, Trash2 } from "lucide-react-native";
@@ -220,9 +221,7 @@ export function ChatPreview({
 						{name}
 					</Text>
 					<Text style={{ fontSize: 12, opacity: 0.5, flexShrink: 0 }}>
-						{date.toLocaleString(undefined, {
-							timeStyle: "short",
-						})}
+						{formatChatPreviewDate(date)}
 					</Text>
 				</View>
 				<Text
