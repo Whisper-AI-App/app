@@ -9,14 +9,17 @@ import { Sheet, SheetContent, SheetHeader } from "@/components/ui/sheet";
 import { Text } from "@/components/ui/text";
 import { View } from "@/components/ui/view";
 import { useAIChat } from "@/contexts/AIChatContext";
+import { useColor } from "@/hooks/useColor";
 import { clearConversations, resetEverything } from "@/src/actions/reset";
 import { Colors } from "@/theme/colors";
+import { ImageBackground } from "expo-image";
 import { useRouter } from "expo-router";
 import { Settings } from "lucide-react-native";
 import { useEffect, useMemo, useState } from "react";
-import { useColorScheme } from "react-native";
+import { Dimensions, useColorScheme } from "react-native";
 import { ScrollView } from "react-native-gesture-handler";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { Defs, RadialGradient, Rect, Stop, Svg } from "react-native-svg";
 import {
 	useRowIds,
 	useSortedRowIds,
@@ -27,6 +30,7 @@ import {
 export default function Dashboard() {
 	const colorScheme = useColorScheme() ?? "light";
 	const theme = Colors[colorScheme];
+	const backgroundColor = useColor("background");
 
 	const router = useRouter();
 	const version = useValue("version");
@@ -116,6 +120,71 @@ export default function Dashboard() {
 
 	return (
 		<SafeAreaView style={{ flex: 1 }}>
+			{/* Background gradient layer */}
+			<View
+				style={{
+					position: "absolute",
+					top: 0,
+					left: 0,
+					width: "100%",
+					height: "100%",
+					flex: 1,
+					display: "flex",
+				}}
+			>
+				<Svg
+					key={colorScheme}
+					style={[
+						{
+							flex: 1,
+							position: "absolute",
+							top: 0,
+							left: 0,
+							width: "100%",
+							height: Dimensions.get("window").height,
+						},
+					]}
+					viewBox={`0 0 1 ${Dimensions.get("window").height / Dimensions.get("window").width}`}
+				>
+					<Defs>
+						<RadialGradient
+							id="radialGradient"
+							gradientUnits="objectBoundingBox"
+							cx={0.5}
+							cy={0.5}
+							r={0.75}
+						>
+							<Stop offset="0" stopColor={"#ff5b91ff"} stopOpacity={0.1} />
+							<Stop offset="0.15" stopColor={"#ff5b91ff"} stopOpacity={0.1} />
+							<Stop offset="0.2" stopColor={"#ff95ffff"} stopOpacity={0.05} />
+							<Stop offset="0.25" stopColor={"#69b7ffff"} stopOpacity={0.025} />
+							<Stop offset="0.4" stopColor={theme.card} stopOpacity={0} />
+							<Stop offset="0.5" stopColor={theme.background} stopOpacity={1} />
+						</RadialGradient>
+					</Defs>
+					<Rect
+						x={-1.5}
+						y={0.125}
+						width="4"
+						height="4"
+						fill="url(#radialGradient)"
+					/>
+				</Svg>
+
+				<ImageBackground
+					source={
+						colorScheme === "dark"
+							? require(`../assets/images/grain-dark.png`)
+							: require(`../assets/images/grain.png`)
+					}
+					style={{
+						flex: 1,
+						opacity: 0.2,
+						backgroundColor: backgroundColor,
+					}}
+				/>
+			</View>
+
 			<View
 				style={{
 					width: "100%",
