@@ -73,6 +73,7 @@ function handleDownloadError(error: unknown): void {
 	const errorMessage =
 		error instanceof Error ? error.message : "Unknown error occurred";
 	store.setValue("ai_chat_model_downloadError", errorMessage);
+	store.setValue("ai_chat_model_isPaused", true); // Mark as paused so user can retry
 	activeDownloadResumable = null;
 	throw error;
 }

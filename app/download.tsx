@@ -84,7 +84,8 @@ export default function Download() {
 			);
 			// Download will continue in background, progress tracked via tinybase
 		} catch (err) {
-			setError(err instanceof Error ? err.message : "Failed to start download");
+			console.error(err);
+			setError("Failed to download, try again");
 			setIsDownloading(false);
 		}
 	};
@@ -94,7 +95,8 @@ export default function Download() {
 			await pauseDownload();
 			setIsDownloading(false);
 		} catch (err) {
-			setError(err instanceof Error ? err.message : "Failed to pause download");
+			console.error(err);
+			setError("Failed to pause download");
 		}
 	};
 
