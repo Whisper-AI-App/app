@@ -43,7 +43,9 @@ export default function Download() {
 		| undefined;
 	const isPaused = useValue("ai_chat_model_isPaused") as boolean | undefined;
 	const onboardedAt = useValue("onboardedAt");
-	const fileRemoved = useValue("ai_chat_model_fileRemoved") as boolean | undefined;
+	const fileRemoved = useValue("ai_chat_model_fileRemoved") as
+		| boolean
+		| undefined;
 
 	// When download completes, mark onboarding as complete and navigate to dashboard
 	useEffect(() => {
@@ -309,7 +311,7 @@ export default function Download() {
 								fontSize: 12,
 
 								textAlign: "center",
-								maxWidth: 200,
+								maxWidth: 220,
 								marginHorizontal: "auto",
 							}}
 						>
