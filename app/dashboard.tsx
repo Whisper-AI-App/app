@@ -1,16 +1,11 @@
 import Chat from "@/components/chat";
 import { ChatPreview } from "@/components/chat-preview";
-import { Logo } from "@/components/logo";
 import { Button } from "@/components/ui/button";
-import { ModeToggle } from "@/components/ui/mode-toggle";
 import { SearchBar } from "@/components/ui/searchbar";
-import { Separator } from "@/components/ui/separator";
-import { Sheet, SheetContent, SheetHeader } from "@/components/ui/sheet";
 import { Text } from "@/components/ui/text";
 import { View } from "@/components/ui/view";
 import { useAIChat } from "@/contexts/AIChatContext";
 import { useColor } from "@/hooks/useColor";
-import { clearConversations, resetEverything } from "@/src/actions/reset";
 import { Colors } from "@/theme/colors";
 import { ImageBackground } from "expo-image";
 import { useRouter } from "expo-router";
@@ -35,16 +30,11 @@ export default function Dashboard() {
 	const router = useRouter();
 	const version = useValue("version");
 
-	const [settingsOpen, setSettingsOpen] = useState(false);
 	const [selectedChatId, setSelectedChatId] = useState<string | undefined>(
 		undefined,
 	);
 	const [isChatOpen, setIsChatOpen] = useState(false);
 	const [searchQuery, setSearchQuery] = useState("");
-	const [showClearConversationsConfirm, setShowClearConversationsConfirm] =
-		useState(false);
-	const [showResetEverythingConfirm, setShowResetEverythingConfirm] =
-		useState(false);
 
 	const aiChat = useAIChat();
 
@@ -158,8 +148,8 @@ export default function Dashboard() {
 							<Stop offset="0.15" stopColor={"#ff5b91ff"} stopOpacity={0.1} />
 							<Stop offset="0.2" stopColor={"#ff95ffff"} stopOpacity={0.05} />
 							<Stop offset="0.25" stopColor={"#69b7ffff"} stopOpacity={0.025} />
-							<Stop offset="0.4" stopColor={theme.card} stopOpacity={0} />
-							<Stop offset="0.5" stopColor={theme.background} stopOpacity={1} />
+							<Stop offset="0.3" stopColor={theme.card} stopOpacity={0} />
+							<Stop offset="0.4" stopColor={theme.background} stopOpacity={1} />
 						</RadialGradient>
 					</Defs>
 					<Rect
@@ -205,7 +195,7 @@ export default function Dashboard() {
 				/>
 
 				<Button
-					onPress={() => setSettingsOpen(true)}
+					onPress={() => router.push("/settings")}
 					variant="ghost"
 					size="icon"
 					style={{ backgroundColor: theme.accent }}
@@ -213,238 +203,6 @@ export default function Dashboard() {
 					<Settings color={theme.textMuted} strokeWidth={2} size={20} />
 				</Button>
 			</View>
-
-			<Sheet open={settingsOpen} onOpenChange={setSettingsOpen}>
-				<SheetContent>
-					<SheetHeader>
-						<View
-							style={{
-								alignItems: "flex-start",
-								width: "100%",
-								height: 96,
-								display: "flex",
-								marginTop: 12,
-							}}
-						>
-							<Logo fontSize={48} />
-						</View>
-					</SheetHeader>
-
-					<ScrollView
-						style={{ flex: 1 }}
-						contentContainerStyle={{ paddingHorizontal: 24, paddingBottom: 32 }}
-					>
-						{/* Appearance Section */}
-						<View style={{ marginBottom: 8 }}>
-							<Text
-								variant="label"
-								style={{
-									fontSize: 13,
-									fontWeight: "600",
-									opacity: 0.7,
-									marginBottom: 12,
-								}}
-							>
-								APPEARANCE
-							</Text>
-							<ModeToggle showLabel={true} />
-						</View>
-
-						<Separator />
-
-						{/* Data Management Section */}
-						<View style={{ marginBottom: 8 }}>
-							<Text
-								variant="label"
-								style={{
-									fontSize: 13,
-									fontWeight: "600",
-									opacity: 0.7,
-									marginBottom: 8,
-								}}
-							>
-								DANGER AREA
-							</Text>
-
-							{/* Clear Conversations */}
-							<View style={{ marginBottom: 24 }}>
-								<Text
-									style={{
-										fontSize: 15,
-										fontWeight: "500",
-										marginBottom: 6,
-									}}
-								>
-									Clear Conversations
-								</Text>
-								<Text
-									style={{
-										fontSize: 13,
-										opacity: 0.6,
-										marginBottom: 12,
-										lineHeight: 18,
-									}}
-								>
-									Delete all chat history while keeping your settings and AI
-									model
-								</Text>
-								{showClearConversationsConfirm ? (
-									<View style={{ gap: 8 }}>
-										<Text
-											style={{
-												fontSize: 13,
-												color: theme.destructive,
-												marginBottom: 4,
-											}}
-										>
-											Are you sure? This cannot be undone.
-										</Text>
-										<View style={{ flexDirection: "row", gap: 8 }}>
-											<Button
-												variant="destructive"
-												size="sm"
-												style={{ flex: 1 }}
-												onPress={() => {
-													clearConversations();
-													setShowClearConversationsConfirm(false);
-													setSettingsOpen(false);
-												}}
-											>
-												Delete All
-											</Button>
-											<Button
-												variant="outline"
-												size="sm"
-												style={{ flex: 1 }}
-												onPress={() => setShowClearConversationsConfirm(false)}
-											>
-												Cancel
-											</Button>
-										</View>
-									</View>
-								) : (
-									<Button
-										variant="secondary"
-										size="sm"
-										onPress={() => setShowClearConversationsConfirm(true)}
-									>
-										Clear Conversations...
-									</Button>
-								)}
-							</View>
-
-							{/* Reset Everything */}
-							<View style={{ marginBottom: 16 }}>
-								<Text
-									style={{
-										fontSize: 15,
-										fontWeight: "500",
-										marginBottom: 6,
-									}}
-								>
-									Reset Everything
-								</Text>
-								<Text
-									style={{
-										fontSize: 13,
-										opacity: 0.6,
-										marginBottom: 12,
-										lineHeight: 18,
-									}}
-								>
-									Purge everything including your AI model, settings, and all
-									conversations
-								</Text>
-								{showResetEverythingConfirm ? (
-									<View style={{ gap: 8 }}>
-										<Text
-											style={{
-												fontSize: 13,
-												color: theme.destructive,
-												fontWeight: "600",
-												marginBottom: 4,
-											}}
-										>
-											This will delete EVERYTHING. This cannot be undone.
-										</Text>
-										<View style={{ flexDirection: "row", gap: 8 }}>
-											<Button
-												variant="destructive"
-												size="sm"
-												style={{ flex: 1 }}
-												onPress={() => {
-													resetEverything();
-													setShowResetEverythingConfirm(false);
-													router.replace("/");
-												}}
-											>
-												Purge
-											</Button>
-											<Button
-												variant="outline"
-												size="sm"
-												style={{ flex: 1 }}
-												onPress={() => setShowResetEverythingConfirm(false)}
-											>
-												Cancel
-											</Button>
-										</View>
-									</View>
-								) : (
-									<Button
-										variant="destructive"
-										size="sm"
-										onPress={() => setShowResetEverythingConfirm(true)}
-									>
-										Purge Everything...
-									</Button>
-								)}
-							</View>
-						</View>
-
-						<Separator />
-
-						{/* Copyright Footer */}
-						<View
-							style={{
-								alignItems: "center",
-								paddingVertical: 16,
-								gap: 4,
-							}}
-						>
-							<Text
-								style={{
-									fontSize: 12,
-									opacity: 0.5,
-									textAlign: "center",
-								}}
-							>
-								Copyright © 2025 Whisper.
-							</Text>
-							<Text
-								style={{
-									fontSize: 10,
-									opacity: 0.4,
-									textAlign: "center",
-								}}
-							>
-								Trading style of Ava Technologies Global LTD.
-							</Text>
-							<Text
-								style={{
-									fontSize: 12,
-									opacity: 0.6,
-									textAlign: "center",
-									marginTop: 12,
-									fontWeight: 600,
-								}}
-							>
-								Talk freely. Think privately.
-							</Text>
-						</View>
-					</ScrollView>
-				</SheetContent>
-			</Sheet>
 
 			<ScrollView
 				style={{
