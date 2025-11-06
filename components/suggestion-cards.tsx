@@ -111,116 +111,141 @@ const suggestions = [
 	},
 ];
 
+// Helper to get random unique indices
+function getRandomIndices(count: number, max: number): number[] {
+	const indices = new Set<number>();
+	while (indices.size < count) {
+		indices.add(Math.floor(Math.random() * max));
+	}
+	return Array.from(indices);
+}
+
 export function SuggestionCards({ onSuggestionPress }: SuggestionCardsProps) {
 	const colorScheme = useColorScheme() ?? "light";
 	const theme = Colors[colorScheme];
-	const [currentSet, setCurrentSet] = useState(0);
-	const fadeAnim = useRef(new Animated.Value(1)).current;
 
-	// Split suggestions into sets of 4
-	const suggestionSets = [];
-	for (let i = 0; i < suggestions.length; i += 4) {
-		suggestionSets.push(suggestions.slice(i, i + 4));
-	}
+	// Track which suggestion indices are currently displayed (4 cards)
+	const [displayedIndices, setDisplayedIndices] = useState<number[]>(() =>
+		getRandomIndices(4, suggestions.length),
+	);
+
+	// Track fade animations for each card position (0-3)
+	const fadeAnims = useRef([
+		new Animated.Value(0.6),
+		new Animated.Value(0.6),
+		new Animated.Value(0.6),
+		new Animated.Value(0.6),
+	]).current;
 
 	useEffect(() => {
 		const interval = setInterval(() => {
-			// Fade out
-			Animated.timing(fadeAnim, {
+			// Pick a random card position to replace (0-3)
+			const cardPosition = Math.floor(Math.random() * 4);
+
+			// Fade out the selected card
+			Animated.timing(fadeAnims[cardPosition], {
 				toValue: 0,
-				duration: 400,
+				duration: 600,
 				useNativeDriver: true,
 			}).start(() => {
-				// Change set
-				setCurrentSet((prev) => (prev + 1) % suggestionSets.length);
+				// Get the current suggestion at this position
+				const currentIndex = displayedIndices[cardPosition];
 
-				// Fade in
-				Animated.timing(fadeAnim, {
-					toValue: 1,
-					duration: 600,
+				// Pick a new random suggestion that's not currently displayed
+				// AND not the same as the one being replaced
+				let newIndex: number;
+				do {
+					newIndex = Math.floor(Math.random() * suggestions.length);
+				} while (
+					displayedIndices.includes(newIndex) ||
+					newIndex === currentIndex
+				);
+
+				// Update the displayed indices
+				setDisplayedIndices((prev) => {
+					const newIndices = [...prev];
+					newIndices[cardPosition] = newIndex;
+					return newIndices;
+				});
+
+				// Fade in the new card
+				Animated.timing(fadeAnims[cardPosition], {
+					toValue: 0.6,
+					duration: 1000,
 					useNativeDriver: true,
 				}).start();
 			});
-		}, 12000); // 12 second pause
+		}, 8000); // Every 8 seconds
 
 		return () => clearInterval(interval);
-	}, [suggestionSets.length]);
+	}, [displayedIndices, fadeAnims]);
 
-	const currentSuggestions = suggestionSets[currentSet] || [];
+	// Get the actual suggestion objects for the current indices
+	const currentSuggestions = displayedIndices.map((idx) => suggestions[idx]);
+
+	// Render a single card with its own fade animation
+	const renderCard = (
+		suggestion: (typeof suggestions)[0],
+		position: number,
+	) => (
+		<Animated.View
+			key={`${position}-${suggestion.id}`}
+			style={{ flex: 1, opacity: fadeAnims[position] }}
+		>
+			<TouchableOpacity
+				onPress={() => onSuggestionPress(suggestion.prompt)}
+				activeOpacity={0.7}
+				style={{ height: "100%" }}
+			>
+				<Card
+					style={{
+						padding: 14,
+						shadowOpacity: 0,
+						height: "100%",
+						justifyContent: "flex-start",
+					}}
+				>
+					<View style={{ marginBottom: 8 }}>
+						<suggestion.icon size={20} color={theme.textMuted} />
+					</View>
+					<Text
+						variant="caption"
+						style={{
+							fontWeight: "600",
+							marginBottom: 4,
+							color: theme.textMuted,
+							fontSize: 14,
+						}}
+					>
+						{suggestion.title}
+					</Text>
+					<Text
+						variant="caption"
+						style={{ fontSize: 11, color: theme.textMuted }}
+					>
+						{suggestion.description}
+					</Text>
+				</Card>
+			</TouchableOpacity>
+		</Animated.View>
+	);
 
 	return (
-		<Animated.View
+		<View
 			style={{
 				paddingHorizontal: 16,
 				paddingTop: 64,
-				gap: 12,
-				opacity: fadeAnim,
+				gap: 0,
 			}}
 		>
-			<View style={{ flexDirection: "row", gap: 12 }}>
-				{currentSuggestions.slice(0, 2).map((suggestion) => (
-					<TouchableOpacity
-						key={suggestion.id}
-						style={{ flex: 1 }}
-						onPress={() => onSuggestionPress(suggestion.prompt)}
-						activeOpacity={0.7}
-					>
-						<Card style={{ padding: 14, shadowOpacity: 0 }}>
-							<View style={{ marginBottom: 8 }}>
-								<suggestion.icon size={20} color={theme.textMuted} />
-							</View>
-							<Text
-								variant="caption"
-								style={{
-									fontWeight: "600",
-									marginBottom: 4,
-									color: theme.textMuted,
-								}}
-							>
-								{suggestion.title}
-							</Text>
-							<Text
-								variant="caption"
-								style={{ fontSize: 11, color: theme.textMuted }}
-							>
-								{suggestion.description}
-							</Text>
-						</Card>
-					</TouchableOpacity>
-				))}
+			<View style={{ flexDirection: "row", gap: 0, height: 100 }}>
+				{renderCard(currentSuggestions[0], 0)}
+				{renderCard(currentSuggestions[1], 1)}
 			</View>
-			<View style={{ flexDirection: "row", gap: 12 }}>
-				{currentSuggestions.slice(2, 4).map((suggestion) => (
-					<TouchableOpacity
-						key={suggestion.id}
-						style={{ flex: 1 }}
-						onPress={() => onSuggestionPress(suggestion.prompt)}
-						activeOpacity={0.7}
-					>
-						<Card style={{ padding: 14, shadowOpacity: 0 }}>
-							<View style={{ marginBottom: 8 }}>
-								<suggestion.icon size={20} color={theme.textMuted} />
-							</View>
-							<Text
-								variant="caption"
-								style={{
-									fontWeight: "600",
-									marginBottom: 4,
-									color: theme.textMuted,
-								}}
-							>
-								{suggestion.title}
-							</Text>
-							<Text
-								variant="caption"
-								style={{ fontSize: 11, color: theme.textMuted }}
-							>
-								{suggestion.description}
-							</Text>
-						</Card>
-					</TouchableOpacity>
-				))}
+			<View style={{ flexDirection: "row", gap: 0, height: 100 }}>
+				{renderCard(currentSuggestions[2], 2)}
+				{renderCard(currentSuggestions[3], 3)}
 			</View>
-		</Animated.View>
+		</View>
 	);
 }
