@@ -126,17 +126,17 @@ export function ChatPreview({
 				<TouchableOpacity
 					onPress={handleShareChat}
 					style={{
-						width: 64,
+						width: 56,
 						justifyContent: "center",
 						alignItems: "center",
 					}}
 					activeOpacity={0.8}
 				>
-					<Share2 size={22} color={theme.tint} strokeWidth={2} />
+					<Share2 size={22} color={theme.textMuted} strokeWidth={2} />
 					<Text
 						style={{
-							color: theme.tint,
-							fontSize: 11,
+							color: theme.textMuted,
+							fontSize: 10,
 							fontWeight: "400",
 							marginTop: 4,
 						}}
@@ -148,17 +148,17 @@ export function ChatPreview({
 				<TouchableOpacity
 					onPress={handleRenameChat}
 					style={{
-						width: 64,
+						width: 56,
 						justifyContent: "center",
 						alignItems: "center",
 					}}
 					activeOpacity={0.8}
 				>
-					<Pencil size={22} color="#f59e0b" strokeWidth={2} />
+					<Pencil size={22} color={theme.blue} strokeWidth={2} />
 					<Text
 						style={{
-							color: "#f59e0b",
-							fontSize: 11,
+							color: theme.blue,
+							fontSize: 10,
 							fontWeight: "400",
 							marginTop: 4,
 						}}
@@ -170,7 +170,7 @@ export function ChatPreview({
 				<TouchableOpacity
 					onPress={handleDeleteChat}
 					style={{
-						width: 64,
+						width: 56,
 						justifyContent: "center",
 						alignItems: "center",
 
@@ -183,7 +183,7 @@ export function ChatPreview({
 					<Text
 						style={{
 							color: "#ef4444",
-							fontSize: 11,
+							fontSize: 10,
 							fontWeight: "400",
 							marginTop: 4,
 						}}
