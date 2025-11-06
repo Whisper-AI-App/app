@@ -95,6 +95,9 @@ importers:
       react-native:
         specifier: 0.81.5
         version: 0.81.5(@babel/core@7.28.4)(@types/react@19.1.16)(react@19.1.0)
+      react-native-autogrow-textinput:
+        specifier: ^5.4.0
+        version: 5.4.0(react-native@0.81.5(@babel/core@7.28.4)(@types/react@19.1.16)(react@19.1.0))(react@19.1.0)
       react-native-gesture-handler:
         specifier: ~2.28.0
         version: 2.28.0(react-native@0.81.5(@babel/core@7.28.4)(@types/react@19.1.16)(react@19.1.0))(react@19.1.0)
@@ -3624,6 +3627,12 @@ packages:
 
   react-is@19.1.1:
     resolution: {integrity: sha512-tr41fA15Vn8p4X9ntI+yCyeGSf1TlYaY5vlTZfQmeLBrFo3psOPX6HhTDnFNL9uj3EhP0KAQ80cugCl4b4BERA==}
+
+  react-native-autogrow-textinput@5.4.0:
+    resolution: {integrity: sha512-JnAPq0Oc+Q4gbMii+60Mk1Zep2ii3+bNHBffTMjH/vPQtpOH4bbgb+GQS9c+0uX51yuSxfbhIdgI7mvpj2f6ZA==}
+    peerDependencies:
+      react: '>=16.0.0'
+      react-native: '>=0.51.0'
 
   react-native-communications@2.2.1:
     resolution: {integrity: sha512-5+C0X9mopI0+qxyQHzOPEi5v5rxNBQjxydPPiKMQSlX1RBIcJ8uTcqUPssQ9Mo8p6c1IKIWJUSqCj4jAmD0qVQ==}
@@ -7160,9 +7169,9 @@ snapshots:
       '@typescript-eslint/eslint-plugin': 8.45.0(@typescript-eslint/parser@8.45.0(eslint@9.36.0)(typescript@5.9.3))(eslint@9.36.0)(typescript@5.9.3)
       '@typescript-eslint/parser': 8.45.0(eslint@9.36.0)(typescript@5.9.3)
       eslint: 9.36.0
-      eslint-import-resolver-typescript: 3.10.1(eslint-plugin-import@2.32.0(@typescript-eslint/parser@8.45.0(eslint@9.36.0)(typescript@5.9.3))(eslint@9.36.0))(eslint@9.36.0)
+      eslint-import-resolver-typescript: 3.10.1(eslint-plugin-import@2.32.0)(eslint@9.36.0)
       eslint-plugin-expo: 1.0.0(eslint@9.36.0)(typescript@5.9.3)
-      eslint-plugin-import: 2.32.0(@typescript-eslint/parser@8.45.0(eslint@9.36.0)(typescript@5.9.3))(eslint-import-resolver-typescript@3.10.1(eslint-plugin-import@2.32.0(@typescript-eslint/parser@8.45.0(eslint@9.36.0)(typescript@5.9.3))(eslint@9.36.0))(eslint@9.36.0))(eslint@9.36.0)
+      eslint-plugin-import: 2.32.0(@typescript-eslint/parser@8.45.0(eslint@9.36.0)(typescript@5.9.3))(eslint-import-resolver-typescript@3.10.1)(eslint@9.36.0)
       eslint-plugin-react: 7.37.5(eslint@9.36.0)
       eslint-plugin-react-hooks: 5.2.0(eslint@9.36.0)
       globals: 16.4.0
@@ -7180,7 +7189,7 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
-  eslint-import-resolver-typescript@3.10.1(eslint-plugin-import@2.32.0(@typescript-eslint/parser@8.45.0(eslint@9.36.0)(typescript@5.9.3))(eslint@9.36.0))(eslint@9.36.0):
+  eslint-import-resolver-typescript@3.10.1(eslint-plugin-import@2.32.0)(eslint@9.36.0):
     dependencies:
       '@nolyfill/is-core-module': 1.0.39
       debug: 4.4.3
@@ -7191,18 +7200,18 @@ snapshots:
       tinyglobby: 0.2.15
       unrs-resolver: 1.11.1
     optionalDependencies:
-      eslint-plugin-import: 2.32.0(@typescript-eslint/parser@8.45.0(eslint@9.36.0)(typescript@5.9.3))(eslint-import-resolver-typescript@3.10.1(eslint-plugin-import@2.32.0(@typescript-eslint/parser@8.45.0(eslint@9.36.0)(typescript@5.9.3))(eslint@9.36.0))(eslint@9.36.0))(eslint@9.36.0)
+      eslint-plugin-import: 2.32.0(@typescript-eslint/parser@8.45.0(eslint@9.36.0)(typescript@5.9.3))(eslint-import-resolver-typescript@3.10.1)(eslint@9.36.0)
     transitivePeerDependencies:
       - supports-color
 
-  eslint-module-utils@2.12.1(@typescript-eslint/parser@8.45.0(eslint@9.36.0)(typescript@5.9.3))(eslint-import-resolver-node@0.3.9)(eslint-import-resolver-typescript@3.10.1(eslint-plugin-import@2.32.0(@typescript-eslint/parser@8.45.0(eslint@9.36.0)(typescript@5.9.3))(eslint@9.36.0))(eslint@9.36.0))(eslint@9.36.0):
+  eslint-module-utils@2.12.1(@typescript-eslint/parser@8.45.0(eslint@9.36.0)(typescript@5.9.3))(eslint-import-resolver-node@0.3.9)(eslint-import-resolver-typescript@3.10.1)(eslint@9.36.0):
     dependencies:
       debug: 3.2.7
     optionalDependencies:
       '@typescript-eslint/parser': 8.45.0(eslint@9.36.0)(typescript@5.9.3)
       eslint: 9.36.0
       eslint-import-resolver-node: 0.3.9
-      eslint-import-resolver-typescript: 3.10.1(eslint-plugin-import@2.32.0(@typescript-eslint/parser@8.45.0(eslint@9.36.0)(typescript@5.9.3))(eslint@9.36.0))(eslint@9.36.0)
+      eslint-import-resolver-typescript: 3.10.1(eslint-plugin-import@2.32.0)(eslint@9.36.0)
     transitivePeerDependencies:
       - supports-color
 
@@ -7215,7 +7224,7 @@ snapshots:
       - supports-color
       - typescript
 
-  eslint-plugin-import@2.32.0(@typescript-eslint/parser@8.45.0(eslint@9.36.0)(typescript@5.9.3))(eslint-import-resolver-typescript@3.10.1(eslint-plugin-import@2.32.0(@typescript-eslint/parser@8.45.0(eslint@9.36.0)(typescript@5.9.3))(eslint@9.36.0))(eslint@9.36.0))(eslint@9.36.0):
+  eslint-plugin-import@2.32.0(@typescript-eslint/parser@8.45.0(eslint@9.36.0)(typescript@5.9.3))(eslint-import-resolver-typescript@3.10.1)(eslint@9.36.0):
     dependencies:
       '@rtsao/scc': 1.1.0
       array-includes: 3.1.9
@@ -7226,7 +7235,7 @@ snapshots:
       doctrine: 2.1.0
       eslint: 9.36.0
       eslint-import-resolver-node: 0.3.9
-      eslint-module-utils: 2.12.1(@typescript-eslint/parser@8.45.0(eslint@9.36.0)(typescript@5.9.3))(eslint-import-resolver-node@0.3.9)(eslint-import-resolver-typescript@3.10.1(eslint-plugin-import@2.32.0(@typescript-eslint/parser@8.45.0(eslint@9.36.0)(typescript@5.9.3))(eslint@9.36.0))(eslint@9.36.0))(eslint@9.36.0)
+      eslint-module-utils: 2.12.1(@typescript-eslint/parser@8.45.0(eslint@9.36.0)(typescript@5.9.3))(eslint-import-resolver-node@0.3.9)(eslint-import-resolver-typescript@3.10.1)(eslint@9.36.0)
       hasown: 2.0.2
       is-core-module: 2.16.1
       is-glob: 4.0.3
@@ -8800,6 +8809,11 @@ snapshots:
   react-is@18.3.1: {}
 
   react-is@19.1.1: {}
+
+  react-native-autogrow-textinput@5.4.0(react-native@0.81.5(@babel/core@7.28.4)(@types/react@19.1.16)(react@19.1.0))(react@19.1.0):
+    dependencies:
+      react: 19.1.0
+      react-native: 0.81.5(@babel/core@7.28.4)(@types/react@19.1.16)(react@19.1.0)
 
   react-native-communications@2.2.1: {}
 

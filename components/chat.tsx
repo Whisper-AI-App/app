@@ -29,14 +29,7 @@ import {
 	useRef,
 	useState,
 } from "react";
-import {
-	Alert,
-	Animated,
-	Dimensions,
-	KeyboardAvoidingView,
-	Platform,
-	TouchableOpacity,
-} from "react-native";
+import { Alert, Animated, Dimensions, TouchableOpacity } from "react-native";
 import { Bubble, GiftedChat, type IMessage } from "react-native-gifted-chat";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useRow, useRowIds } from "tinybase/ui-react";
@@ -462,6 +455,7 @@ export default function Chat({
 							height: SCREEN_HEIGHT * 0.9 - 50,
 							zIndex: 1,
 							marginTop: -4,
+							paddingBottom: 6,
 						}}
 					>
 						{messages.length === 0 && !currentChatId && (
@@ -511,7 +505,7 @@ export default function Chat({
 							renderAvatar={null}
 							alwaysShowSend
 							isTyping={isAiTyping && !streamingText}
-							bottomOffset={insets.bottom}
+							bottomOffset={0}
 							minInputToolbarHeight={60}
 							renderBubble={renderBubble}
 							renderInputToolbar={renderInputToolbar}
@@ -522,9 +516,6 @@ export default function Chat({
 							text={inputText}
 							onInputTextChanged={setInputText}
 						/>
-						{Platform.OS === "android" && (
-							<KeyboardAvoidingView behavior="padding" />
-						)}
 					</View>
 				</View>
 			</BottomSheet>
@@ -618,7 +609,7 @@ export const useCustomChatUI = ({
 				<View
 					style={{
 						paddingTop: 8,
-						paddingBottom: Platform.OS === "ios" ? insets.bottom : 16,
+						paddingBottom: 0,
 						minHeight: 60,
 						flexDirection: "row",
 						alignItems: "flex-end",
@@ -634,7 +625,11 @@ export const useCustomChatUI = ({
 							value={props.text}
 							onChangeText={props.onTextChanged}
 							multiline={true}
-							inputStyle={{ paddingVertical: 12 }}
+							inputStyle={
+								{
+									// paddingVertical: 12,
+								}
+							}
 							autoFocus={isNewChat}
 							onFocus={() => setIsInputFocused(true)}
 							onBlur={() => setIsInputFocused(false)}
