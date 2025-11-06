@@ -1,4 +1,5 @@
-import { initLlama, type LlamaContext } from "llama.rn";
+import * as FileSystem from "expo-file-system";
+import { initLlama, type LlamaContext, releaseAllLlama } from "llama.rn";
 import React, {
 	createContext,
 	type ReactNode,
@@ -40,6 +41,20 @@ export function AIChatProvider({ children }: { children: ReactNode }) {
 			}
 
 			console.log("[AIChatProvider] Loading model", config.ggufPath);
+
+			try {
+				await releaseAllLlama();
+			} catch (error) {
+				console.error(
+					"[AIChatProvider] Trouble releasing any existing context",
+					error,
+				);
+			}
+
+			if (!new FileSystem.File(config.ggufPath).exists) {
+				console.error("[AIChatProvider] gguf path does not exist");
+				throw new Error("[AIChatProvider] gguf path does not exist");
+			}
 
 			try {
 				const llamaContext = await initLlama({
