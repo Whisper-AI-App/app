@@ -1,6 +1,3 @@
-import { Button } from "@/components/ui/button";
-import { Text } from "@/components/ui/text";
-import { useThemeColor } from "@/hooks/useThemeColor";
 import type React from "react";
 import { useRef, useState } from "react";
 import {
@@ -17,6 +14,9 @@ import Animated, {
 	useSharedValue,
 	withSpring,
 } from "react-native-reanimated";
+import { Button } from "@/components/ui/button";
+import { Text } from "@/components/ui/text";
+import { useThemeColor } from "@/hooks/useThemeColor";
 
 const { width: screenWidth } = Dimensions.get("window");
 

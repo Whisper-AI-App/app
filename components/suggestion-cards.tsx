@@ -1,5 +1,3 @@
-import { useColorScheme } from "@/hooks/useColorScheme";
-import { Colors } from "@/theme/colors";
 import {
 	BookOpen,
 	Calculator,
@@ -16,6 +14,8 @@ import {
 } from "lucide-react-native";
 import { useEffect, useRef, useState } from "react";
 import { Animated, TouchableOpacity } from "react-native";
+import { useColorScheme } from "@/hooks/useColorScheme";
+import { Colors } from "@/theme/colors";
 import { Card } from "./ui/card";
 import { Text } from "./ui/text";
 import { View } from "./ui/view";

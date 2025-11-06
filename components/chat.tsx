@@ -1,15 +1,3 @@
-import { useAIChat } from "@/contexts/AIChatContext";
-import { useColor } from "@/hooks/useColor";
-import { useColorScheme } from "@/hooks/useColorScheme";
-import {
-	deleteChat,
-	renameChat,
-	shareChat,
-	upsertChat,
-} from "@/src/actions/chat";
-import { upsertMessage } from "@/src/actions/message";
-import { store } from "@/src/store";
-import { Colors } from "@/theme/colors";
 import { BlurView } from "expo-blur";
 import {
 	MessageCircle,
@@ -34,6 +22,18 @@ import { Bubble, GiftedChat, type IMessage } from "react-native-gifted-chat";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useRow, useRowIds } from "tinybase/ui-react";
 import { v4 as uuidv4 } from "uuid";
+import { useAIChat } from "@/contexts/AIChatContext";
+import { useColor } from "@/hooks/useColor";
+import { useColorScheme } from "@/hooks/useColorScheme";
+import {
+	deleteChat,
+	renameChat,
+	shareChat,
+	upsertChat,
+} from "@/src/actions/chat";
+import { upsertMessage } from "@/src/actions/message";
+import { store } from "@/src/store";
+import { Colors } from "@/theme/colors";
 import { SuggestionCards } from "./suggestion-cards";
 import { BottomSheet, useBottomSheet } from "./ui/bottom-sheet";
 import { Button } from "./ui/button";

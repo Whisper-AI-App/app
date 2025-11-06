@@ -1,7 +1,7 @@
-import { useColorScheme } from "@/hooks/useColorScheme";
-import { Colors } from "@/theme/colors";
 import * as Linking from "expo-linking";
 import RNMarkdown, { type MarkedStyles } from "react-native-marked";
+import { useColorScheme } from "@/hooks/useColorScheme";
+import { Colors } from "@/theme/colors";
 import { View } from "./view";
 
 interface MarkdownProps {

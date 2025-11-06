@@ -8,7 +8,9 @@
 		"android": "expo run:android",
 		"ios": "expo run:ios",
 		"web": "expo start --web",
-		"lint": "expo lint",
+		"lint": "biome lint",
+		"lint:fix": "biome lint --write",
+		"format": "biome check --write",
 		"expo:version": "expo --version",
 		"pnpm:version": "pnpm --version",
 		"node:version": "node --version"
@@ -59,6 +61,7 @@
 		"uuid": "^13.0.0"
 	},
 	"devDependencies": {
+		"@biomejs/biome": "2.3.4",
 		"@types/react": "~19.1.0",
 		"@types/uuid": "^11.0.0",
 		"eslint": "^9.25.0",

@@ -1,3 +1,9 @@
+import { useRouter } from "expo-router";
+import { ChevronLeft } from "lucide-react-native";
+import { useState } from "react";
+import { useColorScheme } from "react-native";
+import { ScrollView } from "react-native-gesture-handler";
+import { SafeAreaView } from "react-native-safe-area-context";
 import { Logo } from "@/components/logo";
 import { Button } from "@/components/ui/button";
 import { ModeToggle } from "@/components/ui/mode-toggle";
@@ -6,12 +12,6 @@ import { Text } from "@/components/ui/text";
 import { View } from "@/components/ui/view";
 import { clearConversations, resetEverything } from "@/src/actions/reset";
 import { Colors } from "@/theme/colors";
-import { useRouter } from "expo-router";
-import { ChevronLeft } from "lucide-react-native";
-import { useState } from "react";
-import { useColorScheme } from "react-native";
-import { ScrollView } from "react-native-gesture-handler";
-import { SafeAreaView } from "react-native-safe-area-context";
 
 export default function Settings() {
 	const colorScheme = useColorScheme() ?? "light";

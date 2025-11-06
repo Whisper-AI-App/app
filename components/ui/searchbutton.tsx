@@ -1,7 +1,3 @@
-import { Icon } from "@/components/ui/icon";
-import { Text } from "@/components/ui/text";
-import { useColor } from "@/hooks/useColor";
-import { CORNERS, FONT_SIZE, HEIGHT } from "@/theme/globals";
 import * as Haptics from "expo-haptics";
 import { LinearGradient } from "expo-linear-gradient";
 import { Search } from "lucide-react-native";
@@ -22,6 +18,10 @@ import Animated, {
 	withRepeat,
 	withTiming,
 } from "react-native-reanimated";
+import { Icon } from "@/components/ui/icon";
+import { Text } from "@/components/ui/text";
+import { useColor } from "@/hooks/useColor";
+import { CORNERS, FONT_SIZE, HEIGHT } from "@/theme/globals";
 
 interface SearchButtonProps {
 	loading?: boolean;

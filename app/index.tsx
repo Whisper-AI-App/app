@@ -1,9 +1,3 @@
-import { onboardingSteps } from "@/components/flows/onboarding-steps";
-import { ModeToggle } from "@/components/ui/mode-toggle";
-import { Onboarding } from "@/components/ui/onboarding";
-import { View } from "@/components/ui/view";
-import { useColor } from "@/hooks/useColor";
-import { useColorScheme } from "@/hooks/useColorScheme";
 import { ImageBackground } from "expo-image";
 import { useRouter } from "expo-router";
 import { useEffect } from "react";
@@ -11,6 +5,12 @@ import { Dimensions } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Defs, RadialGradient, Rect, Stop, Svg } from "react-native-svg";
 import { useValue } from "tinybase/ui-react";
+import { onboardingSteps } from "@/components/flows/onboarding-steps";
+import { ModeToggle } from "@/components/ui/mode-toggle";
+import { Onboarding } from "@/components/ui/onboarding";
+import { View } from "@/components/ui/view";
+import { useColor } from "@/hooks/useColor";
+import { useColorScheme } from "@/hooks/useColorScheme";
 
 export default function Index() {
 	const router = useRouter();

@@ -1,12 +1,12 @@
-import { useColorScheme } from "@/hooks/useColorScheme";
-import { deleteChat, renameChat, shareChat } from "@/src/actions/chat";
-import { formatChatPreviewDate } from "@/src/utils/format-date";
-import { Colors } from "@/theme/colors";
 import * as Haptics from "expo-haptics";
 import { Pencil, Share2, Trash2 } from "lucide-react-native";
 import { useEffect, useRef, useState } from "react";
 import { Alert, Platform, Pressable, TouchableOpacity } from "react-native";
 import Swipeable from "react-native-gesture-handler/Swipeable";
+import { useColorScheme } from "@/hooks/useColorScheme";
+import { deleteChat, renameChat, shareChat } from "@/src/actions/chat";
+import { formatChatPreviewDate } from "@/src/utils/format-date";
+import { Colors } from "@/theme/colors";
 import { Card, CardContent } from "./ui/card";
 import { Text } from "./ui/text";
 import { View } from "./ui/view";

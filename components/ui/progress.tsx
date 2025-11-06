@@ -1,4 +1,3 @@
-import { useColor } from "@/hooks/useColor";
 import React, { useEffect } from "react";
 import { View, type ViewStyle } from "react-native";
 import Animated, {
@@ -7,6 +6,7 @@ import Animated, {
 	withSpring,
 	withTiming,
 } from "react-native-reanimated";
+import { useColor } from "@/hooks/useColor";
 
 interface ProgressProps {
 	value: number; // 0 to 1

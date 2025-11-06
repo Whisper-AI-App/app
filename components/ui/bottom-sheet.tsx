@@ -1,8 +1,3 @@
-import { Text } from "@/components/ui/text";
-import { View } from "@/components/ui/view";
-import { useColor } from "@/hooks/useColor";
-import { useKeyboardHeight } from "@/hooks/useKeyboardHeight"; // Make sure this path is correct
-import { BORDER_RADIUS } from "@/theme/globals";
 import React, { useEffect } from "react";
 import {
 	Dimensions,
@@ -22,6 +17,11 @@ import Animated, {
 	withSpring,
 	withTiming,
 } from "react-native-reanimated";
+import { Text } from "@/components/ui/text";
+import { View } from "@/components/ui/view";
+import { useColor } from "@/hooks/useColor";
+import { useKeyboardHeight } from "@/hooks/useKeyboardHeight"; // Make sure this path is correct
+import { BORDER_RADIUS } from "@/theme/globals";
 
 const { height: SCREEN_HEIGHT } = Dimensions.get("window");
 const MAX_TRANSLATE_Y = -SCREEN_HEIGHT + 50;

@@ -1,13 +1,3 @@
-import Chat from "@/components/chat";
-import { ChatPreview } from "@/components/chat-preview";
-import { ModelLoadError } from "@/components/model-load-error";
-import { Button } from "@/components/ui/button";
-import { SearchBar } from "@/components/ui/searchbar";
-import { Text } from "@/components/ui/text";
-import { View } from "@/components/ui/view";
-import { useAIChat } from "@/contexts/AIChatContext";
-import { useColor } from "@/hooks/useColor";
-import { Colors } from "@/theme/colors";
 import { ImageBackground } from "expo-image";
 import { useRouter } from "expo-router";
 import { Settings } from "lucide-react-native";
@@ -22,6 +12,16 @@ import {
 	useTable,
 	useValue,
 } from "tinybase/ui-react";
+import Chat from "@/components/chat";
+import { ChatPreview } from "@/components/chat-preview";
+import { ModelLoadError } from "@/components/model-load-error";
+import { Button } from "@/components/ui/button";
+import { SearchBar } from "@/components/ui/searchbar";
+import { Text } from "@/components/ui/text";
+import { View } from "@/components/ui/view";
+import { useAIChat } from "@/contexts/AIChatContext";
+import { useColor } from "@/hooks/useColor";
+import { Colors } from "@/theme/colors";
 
 export default function Dashboard() {
 	const colorScheme = useColorScheme() ?? "light";

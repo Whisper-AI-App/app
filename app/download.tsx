@@ -1,3 +1,10 @@
+import { ImageBackground } from "expo-image";
+import { useRouter } from "expo-router";
+import { useEffect, useState } from "react";
+import { ActivityIndicator, Dimensions } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
+import { Defs, RadialGradient, Rect, Stop, Svg } from "react-native-svg";
+import { useValue } from "tinybase/ui-react";
 import { Button } from "@/components/ui/button";
 import { ModeToggle } from "@/components/ui/mode-toggle";
 import { Progress } from "@/components/ui/progress";
@@ -11,13 +18,6 @@ import {
 	startOrResumeDownloadOfAIChatModel,
 } from "@/src/actions/ai-chat-model";
 import { completeOnboarding } from "@/src/actions/settings";
-import { ImageBackground } from "expo-image";
-import { useRouter } from "expo-router";
-import { useEffect, useState } from "react";
-import { ActivityIndicator, Dimensions } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
-import { Defs, RadialGradient, Rect, Stop, Svg } from "react-native-svg";
-import { useValue } from "tinybase/ui-react";
 
 export default function Download() {
 	const router = useRouter();

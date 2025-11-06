@@ -1,8 +1,8 @@
+import { useColorScheme } from "react-native";
 import { Button } from "@/components/ui/button";
 import { Text } from "@/components/ui/text";
 import { View } from "@/components/ui/view";
 import { Colors } from "@/theme/colors";
-import { useColorScheme } from "react-native";
 
 type ModelLoadErrorProps = {
 	onRetry: () => void;

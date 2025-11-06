@@ -1,7 +1,7 @@
+import { Bird, Rocket } from "lucide-react-native";
 import { Icon } from "@/components/ui/icon";
 import type { OnboardingStep } from "@/components/ui/onboarding";
 import { Colors } from "@/theme/colors";
-import { Bird, Rocket } from "lucide-react-native";
 import { Logo } from "../logo";
 
 export const onboardingSteps: OnboardingStep[] = [

@@ -7,11 +7,7 @@
 export function formatChatPreviewDate(date: Date): string {
 	const now = new Date();
 	const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-	const dateDay = new Date(
-		date.getFullYear(),
-		date.getMonth(),
-		date.getDate(),
-	);
+	const dateDay = new Date(date.getFullYear(), date.getMonth(), date.getDate());
 
 	// Check if date is today
 	if (dateDay.getTime() === today.getTime()) {

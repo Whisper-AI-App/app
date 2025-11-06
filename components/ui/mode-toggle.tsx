@@ -1,3 +1,11 @@
+import { Moon, Sun, SunMoon } from "lucide-react-native";
+import { useEffect, useState } from "react";
+import Animated, {
+	runOnJS,
+	useAnimatedStyle,
+	useSharedValue,
+	withTiming,
+} from "react-native-reanimated";
 import {
 	Button,
 	type ButtonSize,
@@ -9,14 +17,6 @@ import { View } from "@/components/ui/view";
 import { useColorScheme } from "@/hooks/useColorScheme";
 import { useModeToggle } from "@/hooks/useModeToggle";
 import { Colors } from "@/theme/colors";
-import { Moon, Sun, SunMoon } from "lucide-react-native";
-import { useEffect, useState } from "react";
-import Animated, {
-	runOnJS,
-	useAnimatedStyle,
-	useSharedValue,
-	withTiming,
-} from "react-native-reanimated";
 
 type Props = {
 	variant?: ButtonVariant;

@@ -1,8 +1,3 @@
-import { Button } from "@/components/ui/button";
-import { Text } from "@/components/ui/text";
-import { View } from "@/components/ui/view";
-import { useColor } from "@/hooks/useColor";
-import { FONT_SIZE } from "@/theme/globals";
 import { X } from "lucide-react-native";
 import React, { useEffect } from "react";
 import {
@@ -22,6 +17,11 @@ import Animated, {
 	useSharedValue,
 	withTiming,
 } from "react-native-reanimated";
+import { Button } from "@/components/ui/button";
+import { Text } from "@/components/ui/text";
+import { View } from "@/components/ui/view";
+import { useColor } from "@/hooks/useColor";
+import { FONT_SIZE } from "@/theme/globals";
 
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
 

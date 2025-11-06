@@ -1,7 +1,3 @@
-import { Icon } from "@/components/ui/icon";
-import { Text } from "@/components/ui/text";
-import { useColor } from "@/hooks/useColor";
-import { BORDER_RADIUS, CORNERS, FONT_SIZE, HEIGHT } from "@/theme/globals";
 import type { LucideProps } from "lucide-react-native";
 import React, { forwardRef, type ReactElement, useState } from "react";
 import {
@@ -13,6 +9,10 @@ import {
 	type ViewStyle,
 } from "react-native";
 import { AutoGrowingTextInput } from "react-native-autogrow-textinput";
+import { Icon } from "@/components/ui/icon";
+import { Text } from "@/components/ui/text";
+import { useColor } from "@/hooks/useColor";
+import { BORDER_RADIUS, CORNERS, FONT_SIZE, HEIGHT } from "@/theme/globals";
 
 export interface InputProps extends Omit<TextInputProps, "style"> {
 	label?: string;

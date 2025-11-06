@@ -1,8 +1,8 @@
-import { useColorScheme } from "@/hooks/useColorScheme";
-import { store } from "@/src/store";
 import { useEffect } from "react";
 import { Appearance, type ColorSchemeName } from "react-native";
 import { useValue } from "tinybase/ui-react";
+import { useColorScheme } from "@/hooks/useColorScheme";
+import { store } from "@/src/store";
 
 type Mode = "light" | "dark" | "system";
 

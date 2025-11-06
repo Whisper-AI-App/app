@@ -1,9 +1,3 @@
-import { Icon } from "@/components/ui/icon";
-import { ButtonSpinner, type SpinnerVariant } from "@/components/ui/spinner";
-import { Text } from "@/components/ui/text";
-import { useColorScheme } from "@/hooks/useColorScheme";
-import { useThemeColor } from "@/hooks/useThemeColor";
-import { CORNERS, FONT_SIZE, HEIGHT } from "@/theme/globals";
 import * as Haptics from "expo-haptics";
 import type { LucideProps } from "lucide-react-native";
 import { forwardRef } from "react";
@@ -20,6 +14,12 @@ import Animated, {
 	useSharedValue,
 	withSpring,
 } from "react-native-reanimated";
+import { Icon } from "@/components/ui/icon";
+import { ButtonSpinner, type SpinnerVariant } from "@/components/ui/spinner";
+import { Text } from "@/components/ui/text";
+import { useColorScheme } from "@/hooks/useColorScheme";
+import { useThemeColor } from "@/hooks/useThemeColor";
+import { CORNERS, FONT_SIZE, HEIGHT } from "@/theme/globals";
 
 export type ButtonVariant =
 	| "default"
