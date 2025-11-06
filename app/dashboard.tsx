@@ -259,7 +259,7 @@ export default function Dashboard() {
 										size="sm"
 										onPress={() => setShowClearConversationsConfirm(true)}
 									>
-										Clear Conversations..
+										Clear Conversations...
 									</Button>
 								)}
 							</View>
@@ -327,7 +327,7 @@ export default function Dashboard() {
 										size="sm"
 										onPress={() => setShowResetEverythingConfirm(true)}
 									>
-										Purge Everything..
+										Purge Everything...
 									</Button>
 								)}
 							</View>
