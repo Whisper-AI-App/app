@@ -16,19 +16,19 @@ export default function Index() {
 	const router = useRouter();
 	const scheme = useColorScheme();
 	const backgroundColor = useColor("background");
-	const onboardedAt = useValue('onboardedAt')
-	const downloadedAt = useValue('ai_chat_model_downloadedAt')
+	const onboardedAt = useValue("onboardedAt");
+	const downloadedAt = useValue("ai_chat_model_downloadedAt");
 
 	useEffect(() => {
 		if (onboardedAt) {
 			// If onboarded but model not downloaded, go to download page
 			if (!downloadedAt) {
-				router.replace('/download')
+				router.replace("/download");
 			} else {
-				router.replace('/dashboard')
+				router.replace("/dashboard");
 			}
 		}
-	}, [onboardedAt, downloadedAt])
+	}, [onboardedAt, downloadedAt]);
 
 	return (
 		<View style={{ flex: 1 }}>
@@ -131,7 +131,7 @@ export default function Index() {
 				<Onboarding
 					steps={onboardingSteps}
 					onComplete={() => {
-						router.push("/download");
+						router.replace("/download");
 					}}
 					showSkip={false}
 				/>
