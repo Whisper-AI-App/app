@@ -264,6 +264,15 @@ export function BottomSheet({
 				return;
 			}
 
+			// Special case: if only 1 snap point and user pans down over 100px, close the sheet
+			if (
+				snapPointsHeights.length === 1 &&
+				Math.abs(event.translationY) > 100
+			) {
+				animateClose();
+				return;
+			}
+
 			// Find the closest original snap point
 			const closestSnapPoint = findClosestSnapPoint(currentY);
 			// Calculate the final destination, accounting for the keyboard height
