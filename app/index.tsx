@@ -17,12 +17,18 @@ export default function Index() {
 	const scheme = useColorScheme();
 	const backgroundColor = useColor("background");
 	const onboardedAt = useValue('onboardedAt')
+	const downloadedAt = useValue('ai_chat_model_downloadedAt')
 
 	useEffect(() => {
 		if (onboardedAt) {
-			router.replace('/dashboard')
+			// If onboarded but model not downloaded, go to download page
+			if (!downloadedAt) {
+				router.replace('/download')
+			} else {
+				router.replace('/dashboard')
+			}
 		}
-	}, [onboardedAt,])
+	}, [onboardedAt, downloadedAt])
 
 	return (
 		<View style={{ flex: 1 }}>

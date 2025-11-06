@@ -5,9 +5,11 @@ import React, {
 	type ReactNode,
 	useCallback,
 	useContext,
+	useEffect,
 	useRef,
 	useState,
 } from "react";
+import { store } from "@/src/store";
 
 export type AIChatConfig = { ggufPath: string; stopWords?: string[] };
 
@@ -31,6 +33,33 @@ export function AIChatProvider({ children }: { children: ReactNode }) {
 	const [context, setContext] = useState<LlamaContext | undefined>();
 	const [isLoaded, setIsLoaded] = useState(false);
 	const stopWordsRef = useRef<string[]>([]);
+
+	// Validate GGUF file existence on mount and when fileUri changes
+	useEffect(() => {
+		const fileUri = store.getValue("ai_chat_model_fileUri") as
+			| string
+			| undefined;
+		const downloadedAt = store.getValue("ai_chat_model_downloadedAt") as
+			| string
+			| undefined;
+
+		// Only check if we think we have a downloaded model
+		if (fileUri && downloadedAt) {
+			const file = new FileSystem.File(fileUri);
+
+			if (!file.exists) {
+				console.warn(
+					"[AIChatProvider] GGUF file missing, clearing store state",
+					fileUri,
+				);
+
+				// Clear the store state since file is gone
+				store.delValue("ai_chat_model_fileUri");
+				store.delValue("ai_chat_model_downloadedAt");
+				store.setValue("ai_chat_model_fileRemoved", true);
+			}
+		}
+	}, []); // Run once on mount
 
 	const loadModel = useCallback(
 		async (config: AIChatConfig) => {

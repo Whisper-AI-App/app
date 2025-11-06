@@ -43,15 +43,27 @@ export default function Download() {
 		| undefined;
 	const isPaused = useValue("ai_chat_model_isPaused") as boolean | undefined;
 	const onboardedAt = useValue("onboardedAt");
+	const fileRemoved = useValue("ai_chat_model_fileRemoved") as boolean | undefined;
 
 	// When download completes, mark onboarding as complete and navigate to dashboard
 	useEffect(() => {
-		if (downloadedAt && !onboardedAt) {
+		if (downloadedAt) {
 			setIsDownloading(false);
-			completeOnboarding();
+
+			// Clear the file removed flag since we have a new download
+			if (fileRemoved) {
+				const { store } = require("@/src/store");
+				store.delValue("ai_chat_model_fileRemoved");
+			}
+
+			// Complete onboarding if first time
+			if (!onboardedAt) {
+				completeOnboarding();
+			}
+
 			router.replace("/dashboard");
 		}
-	}, [downloadedAt, onboardedAt, router]);
+	}, [downloadedAt, onboardedAt, fileRemoved, router]);
 
 	// Update error state
 	useEffect(() => {
@@ -228,11 +240,13 @@ export default function Download() {
 							variant="body"
 							style={{ textAlign: "center", lineHeight: 24, opacity: 0.8 }}
 						>
-							{hasPartialDownload
-								? isPaused
-									? "Resume or restart your paused download"
-									: "Download in progress"
-								: "Get started by downloading the AI chat. This will enable private, on-device conversations."}
+							{fileRemoved && onboardedAt
+								? "AI model needs to be downloaded again, likely removed by your phone."
+								: hasPartialDownload
+									? isPaused
+										? "Resume or restart your paused download"
+										: "Download in progress"
+									: "Get started by downloading the AI chat. This will enable private, on-device conversations."}
 						</Text>
 					</View>
 				</View>
