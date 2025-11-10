@@ -268,8 +268,15 @@ export default function Chat({
 					let aiResponseText = "";
 
 					// Stream AI completion
+
 					const response = await aiChat.completion(
-						conversationMessages,
+						[
+							{
+								role: "system",
+								content: `You are a 100% private AI chat called Whisper. Help the user concisly. Be useful, creative, and accurate. Today's date is ${new Date().toLocaleString()}.`,
+							},
+							...conversationMessages,
+						],
 						(token) => {
 							aiResponseText += token;
 							setStreamingText((prev) => prev + token);
