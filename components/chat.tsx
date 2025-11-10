@@ -11,8 +11,11 @@ import { upsertMessage } from "@/src/actions/message";
 import { store } from "@/src/store";
 import { Colors } from "@/theme/colors";
 import { BlurView } from "expo-blur";
+import * as Clipboard from "expo-clipboard";
 import * as Haptics from "expo-haptics";
 import {
+	Check,
+	Copy,
 	MessageCircle,
 	MoreHorizontal,
 	Pencil,
@@ -560,6 +563,45 @@ interface ChatUIProps {
 	setInputText: (text: string) => void;
 }
 
+// Copy button component with its own state
+const CopyButton: React.FC<{ text: string }> = ({ text }) => {
+	const colorScheme = useColorScheme() ?? "light";
+	const theme = Colors[colorScheme];
+	const [isCopied, setIsCopied] = useState(false);
+
+	const handleCopy = useCallback(async () => {
+		await Clipboard.setStringAsync(text);
+		if (process.env.EXPO_OS === "ios") {
+			Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+		}
+		setIsCopied(true);
+
+		// Reset after 2 seconds
+		setTimeout(() => {
+			setIsCopied(false);
+		}, 2000);
+	}, [text]);
+
+	return (
+		<TouchableOpacity
+			onPress={handleCopy}
+			activeOpacity={0.6}
+			style={{
+				marginLeft: 8,
+				marginTop: 4,
+				marginBottom: 4,
+				padding: 8,
+			}}
+		>
+			{isCopied ? (
+				<Check size={14} color="#22c55e" strokeWidth={2.5} />
+			) : (
+				<Copy size={14} color={theme.textMuted} strokeWidth={2} />
+			)}
+		</TouchableOpacity>
+	);
+};
+
 export const useCustomChatUI = ({
 	isInputFocused,
 	setIsInputFocused,
@@ -580,55 +622,67 @@ export const useCustomChatUI = ({
 
 			// Check if this is a system message (AI response) - user._id === 2
 			const isSystemMessage = message?.user?._id === 2;
+			const isStreaming = message._id === "streaming";
+			const showCopyButton = isSystemMessage && !isStreaming;
 
 			return (
-				<Bubble
-					{...props}
-					wrapperStyle={{
-						left: {
-							backgroundColor: theme.background,
-							borderRadius: 24,
-							marginBottom: 4,
-							marginTop,
-							paddingVertical: 8,
-							paddingRight: 4,
-							paddingLeft: 4,
-						},
-						right: {
-							backgroundColor: theme.tint,
-							borderRadius: 24,
-							marginBottom: 4,
-							marginTop,
-							paddingVertical: 8,
-							paddingRight: 4,
-							paddingLeft: 4,
-						},
-					}}
-					textStyle={{
-						left: {
-							color: theme.text,
-							marginLeft: 8,
-							marginRight: 8,
-						},
-						right: {
-							color: theme.background,
-							marginLeft: 8,
-							marginRight: 8,
-						},
-					}}
-					renderMessageText={
-						isSystemMessage
-							? () => (
-									<View style={{}}>
-										<Markdown>{message.text}</Markdown>
-									</View>
-								)
-							: undefined
-					}
-				/>
+				<View>
+					<Bubble
+						{...props}
+						wrapperStyle={{
+							left: {
+								backgroundColor: theme.background,
+								borderRadius: 24,
+								marginBottom: 4,
+								marginTop,
+								paddingVertical: 8,
+								paddingRight: 4,
+								paddingLeft: 4,
+							},
+							right: {
+								backgroundColor: theme.tint,
+								borderRadius: 24,
+								marginBottom: 4,
+								marginTop,
+								paddingVertical: 8,
+								paddingRight: 4,
+								paddingLeft: 4,
+							},
+						}}
+						textStyle={{
+							left: {
+								color: theme.text,
+								marginLeft: 8,
+								marginRight: 8,
+							},
+							right: {
+								color: theme.background,
+								marginLeft: 8,
+								marginRight: 8,
+							},
+						}}
+						textProps={{
+							selectable: true,
+							selectionColor:
+								colorScheme === "dark"
+									? "rgba(255, 255, 255, 0.3)"
+									: "rgba(0, 0, 0, 0.2)",
+						}}
+						renderMessageText={
+							isSystemMessage
+								? () => (
+										<View style={{}}>
+											<Markdown>{message.text}</Markdown>
+											{showCopyButton && <CopyButton text={message.text} />}
+										</View>
+									)
+								: undefined
+						}
+					/>
+				</View>
 			);
 		},
-		[theme],
+		[theme, colorScheme],
 	);
 
 	const renderInputToolbar = useCallback(
