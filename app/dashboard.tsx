@@ -15,10 +15,17 @@ import {
 import { Colors } from "@/theme/colors";
 import { ImageBackground } from "expo-image";
 import { useRouter } from "expo-router";
-import { Settings } from "lucide-react-native";
+import { Hand, Settings } from "lucide-react-native";
 import { useEffect, useMemo, useState } from "react";
 import { Dimensions, useColorScheme } from "react-native";
-import { ScrollView } from "react-native-gesture-handler";
+import Animated, {
+	Extrapolation,
+	interpolate,
+	useAnimatedScrollHandler,
+	useAnimatedStyle,
+	useSharedValue,
+	withSpring,
+} from "react-native-reanimated";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Defs, RadialGradient, Rect, Stop, Svg } from "react-native-svg";
 import {
@@ -32,6 +39,7 @@ export default function Dashboard() {
 	const colorScheme = useColorScheme() ?? "light";
 	const theme = Colors[colorScheme];
 	const backgroundColor = useColor("background");
+	const scrollY = useSharedValue(0);
 
 	const router = useRouter();
 
@@ -128,6 +136,44 @@ export default function Dashboard() {
 		setModelLoadError(false);
 	};
 
+	// Animated scroll handler
+	const scrollHandler = useAnimatedScrollHandler({
+		onScroll: (event) => {
+			scrollY.value = event.contentOffset.y;
+		},
+	});
+
+	// Greeting animation style
+	const greetingAnimatedStyle = useAnimatedStyle(() => {
+		const opacity = interpolate(
+			scrollY.value,
+			[0, 48],
+			[1, 0],
+			Extrapolation.CLAMP,
+		);
+
+		const targetTranslateY = interpolate(
+			scrollY.value,
+			[0, 48],
+			[0, -32],
+			Extrapolation.CLAMP,
+		);
+
+		return {
+			opacity,
+			transform: [
+				{
+					translateY: withSpring(targetTranslateY, {
+						damping: 18,
+						stiffness: 250,
+						mass: 0.6,
+						overshootClamping: false,
+					}),
+				},
+			],
+		};
+	});
+
 	// Check for model updates after model is loaded
 	useEffect(() => {
 		console.log("[Dashboard] Update check conditions:", {
@@ -167,7 +213,7 @@ export default function Dashboard() {
 	}, [downloadedAt, aiChat.isLoaded, storedConfigVersion]);
 
 	return (
-		<SafeAreaView style={{ flex: 1 }}>
+		<View style={{ flex: 1 }}>
 			{/* Background gradient layer */}
 			<View
 				style={{
@@ -233,173 +279,243 @@ export default function Dashboard() {
 				/>
 			</View>
 
-			<View
-				style={{
-					width: "100%",
-					justifyContent: "space-between",
-					alignItems: "center",
-					flexDirection: "row",
-					padding: 16,
-					gap: 16,
-					borderBottomColor: "rgba(125,125,125,0.15)",
-					borderBottomWidth: 1,
-				}}
-			>
-				<SearchBar
-					placeholder="Search for anything..."
-					onSearch={setSearchQuery}
-					loading={false}
-					containerStyle={{ flex: 1 }}
-				/>
-
-				<Button
-					onPress={() => router.push("/settings")}
-					variant="ghost"
-					size="icon"
-					style={{ backgroundColor: theme.accent }}
-				>
-					<Settings color={theme.textMuted} strokeWidth={2} size={20} />
-				</Button>
-			</View>
-
-			{modelLoadError && <ModelLoadError onRetry={retryLoadModel} />}
-
-			{/* Update Available Banner */}
-			{updateAvailable && !updateNotificationVisible && updateInfo && (
+			<SafeAreaView edges={["right", "top", "left"]} style={{ flex: 1 }}>
 				<View
 					style={{
-						backgroundColor: theme.green,
-						paddingVertical: 8,
-						paddingHorizontal: 16,
-						flexDirection: "row",
-						alignItems: "center",
+						width: "100%",
 						justifyContent: "space-between",
+						alignItems: "center",
+						flexDirection: "row",
+						padding: 16,
+						gap: 16,
+						borderBottomColor: "rgba(125,125,125,0.15)",
+						borderBottomWidth: 1,
 					}}
 				>
-					<View style={{ flex: 1 }}>
-						<Text
-							style={{
-								fontSize: 14,
-								fontWeight: "600",
-								marginBottom: 1,
-								color: theme.secondary,
-							}}
-						>
-							{updateInfo.requiresDownload
-								? "AI Update Available"
-								: "AI Updated!"}
-						</Text>
-						<Text
-							style={{ fontSize: 12, opacity: 0.9, color: theme.secondary }}
-						>
-							{updateInfo.requiresDownload
-								? "New version ready to download"
-								: "Tap to see what's new"}
-						</Text>
-					</View>
-					<View>
-						<Button
-							size="sm"
-							onPress={() => setUpdateNotificationVisible(true)}
-							style={{ paddingHorizontal: 24 }}
-							textStyle={{ fontSize: 14 }}
-							variant="secondary"
-						>
-							View
-						</Button>
-					</View>
-				</View>
-			)}
+					<SearchBar
+						placeholder="Search for anything..."
+						onSearch={setSearchQuery}
+						loading={false}
+						containerStyle={{ flex: 1 }}
+					/>
 
-			<ScrollView
-				style={{
-					flex: 1,
-					paddingHorizontal: 16,
-				}}
-			>
-				{chatPreviews.length > 0 ? (
-					chatPreviews.map((preview, index, array) => (
+					<Button
+						onPress={() => router.push("/settings")}
+						variant="ghost"
+						size="icon"
+						style={{ backgroundColor: theme.accent }}
+					>
+						<Settings color={theme.textMuted} strokeWidth={2} size={20} />
+					</Button>
+				</View>
+
+				{modelLoadError && <ModelLoadError onRetry={retryLoadModel} />}
+
+				{/* Update Available Banner */}
+				{updateAvailable && !updateNotificationVisible && updateInfo && (
+					<View
+						style={{
+							backgroundColor: theme.green,
+							paddingVertical: 8,
+							paddingHorizontal: 16,
+							flexDirection: "row",
+							alignItems: "center",
+							justifyContent: "space-between",
+						}}
+					>
+						<View style={{ flex: 1 }}>
+							<Text
+								style={{
+									fontSize: 14,
+									fontWeight: "600",
+									marginBottom: 1,
+									color: theme.secondary,
+								}}
+							>
+								{updateInfo.requiresDownload
+									? "AI Update Available"
+									: "AI Updated!"}
+							</Text>
+							<Text
+								style={{ fontSize: 12, opacity: 0.9, color: theme.secondary }}
+							>
+								{updateInfo.requiresDownload
+									? "New version ready to download"
+									: "Tap to see what's new"}
+							</Text>
+						</View>
+						<View>
+							<Button
+								size="sm"
+								onPress={() => setUpdateNotificationVisible(true)}
+								style={{ paddingHorizontal: 24 }}
+								textStyle={{ fontSize: 14 }}
+								variant="secondary"
+							>
+								View
+							</Button>
+						</View>
+					</View>
+				)}
+
+				{chatPreviews.length > 0 && (
+					<Animated.View
+						style={[
+							{
+								position: "absolute",
+								top: 128 + 32,
+								left: 0,
+								width: "100%",
+								display: "flex",
+								flexDirection: "column",
+								justifyContent: "center",
+								alignItems: "center",
+
+								gap: 1,
+								paddingHorizontal: 20,
+							},
+							greetingAnimatedStyle,
+						]}
+					>
 						<View
-							key={preview.chatId}
 							style={{
-								paddingBottom: index >= array.length - 1 ? 128 : 12,
-								paddingTop: index === 0 ? 16 : 0,
+								display: "flex",
+								alignItems: "center",
+								flexDirection: "row",
+								gap: 6,
+								opacity: 0.75,
 							}}
 						>
-							<ChatPreview
-								chatId={preview.chatId}
-								date={preview.date}
-								name={preview.name}
-								text={preview.text}
-								onPress={() => {
-									setSelectedChatId(preview.chatId);
-									setIsChatOpen(true);
+							<Text style={{ fontSize: 16, fontWeight: "500" }}>
+								{new Date().getHours() < 5
+									? "Good night"
+									: new Date().getHours() < 12
+										? "Good morning"
+										: new Date().getHours() < 17
+											? "Good afternoon"
+											: new Date().getHours() < 21
+												? "Good evening"
+												: "Good night"}
+							</Text>
+							<Hand
+								color={theme.text}
+								width={16}
+								strokeWidth={2}
+								style={{
+									width: 8,
+									height: 8,
+									transform: [{ rotate: "40deg" }],
 								}}
 							/>
 						</View>
-					))
-				) : (
-					<View style={{ padding: 32, alignItems: "center", gap: 16 }}>
-						<Text style={{ opacity: 0.5 }}>
-							{searchQuery.trim() ? "No chats found" : "No chats yet"}
-						</Text>
-						{!searchQuery.trim() && (
-							<Button
-								variant="secondary"
-								size="sm"
-								onPress={() => {
-									setSelectedChatId(undefined);
-									setIsChatOpen(true);
-								}}
-							>
-								Start a conversation
-							</Button>
+						{chatPreviews.length > 0 && (
+							<Text style={{ fontSize: 12, opacity: 0.5 }}>
+								You have {chatPreviews.length} chat
+								{chatPreviews.length > 1 && "s"}
+							</Text>
 						)}
-					</View>
+					</Animated.View>
 				)}
-			</ScrollView>
 
-			<View
-				style={{
-					position: "absolute",
-					bottom: 0,
-					left: 0,
-					width: "100%",
-					paddingHorizontal: 16,
-					paddingBottom: 56,
-				}}
-			>
-				<View style={{ borderRadius: 24, boxShadow: "0 0 5px pink" }}>
-					<Chat
-						chatId={selectedChatId}
-						isOpen={isChatOpen}
-						onClose={() => {
-							setSelectedChatId(undefined);
-							setIsChatOpen(false);
-						}}
-					/>
-				</View>
-			</View>
-
-			{/* Model Update Notification */}
-			{updateInfo && (
-				<ModelUpdateNotification
-					isVisible={updateNotificationVisible}
-					onClose={() => {
-						setUpdateNotificationVisible(false);
-						// If it's just metadata update, dismiss permanently
-						if (!updateInfo.requiresDownload) {
-							setUpdateAvailable(false);
-						}
-						// If download required, keep banner visible
+				<Animated.ScrollView
+					style={{
+						position: "relative",
+						flex: 1,
+						paddingHorizontal: 16,
 					}}
-					currentCard={updateInfo.currentCard}
-					newCard={updateInfo.newCard}
-					currentVersion={updateInfo.currentVersion}
-					newVersion={updateInfo.newVersion}
-					requiresDownload={updateInfo.requiresDownload}
-				/>
-			)}
-		</SafeAreaView>
+					onScroll={scrollHandler}
+					scrollEventThrottle={16}
+				>
+					{chatPreviews.length > 0 ? (
+						chatPreviews.map((preview, index, array) => {
+							const previewWrapper = (
+								<View
+									key={preview.chatId}
+									style={{
+										paddingBottom: index >= array.length - 1 ? 160 : 0,
+										paddingTop: index === 0 ? 112 : 16,
+									}}
+								>
+									<ChatPreview
+										chatId={preview.chatId}
+										date={preview.date}
+										name={preview.name}
+										text={preview.text}
+										onPress={() => {
+											setSelectedChatId(preview.chatId);
+											setIsChatOpen(true);
+										}}
+									/>
+								</View>
+							);
+
+							return <View key={preview.chatId}>{previewWrapper}</View>;
+						})
+					) : (
+						<View style={{ padding: 32, alignItems: "center", gap: 16 }}>
+							<Text
+								style={{ opacity: 0.5, fontSize: searchQuery.trim() ? 16 : 14 }}
+							>
+								{searchQuery.trim() ? "No chats found" : "No chats yet"}
+							</Text>
+							{!searchQuery.trim() && (
+								<Button
+									variant="secondary"
+									size="sm"
+									onPress={() => {
+										setSelectedChatId(undefined);
+										setIsChatOpen(true);
+									}}
+								>
+									Start a conversation
+								</Button>
+							)}
+						</View>
+					)}
+				</Animated.ScrollView>
+
+				<View
+					style={{
+						position: "absolute",
+						bottom: 0,
+						left: 0,
+						width: "100%",
+						paddingHorizontal: 16,
+						paddingBottom: 56,
+					}}
+				>
+					<View style={{ borderRadius: 24, boxShadow: "0 0 5px pink" }}>
+						<Chat
+							chatId={selectedChatId}
+							isOpen={isChatOpen}
+							onClose={() => {
+								setSelectedChatId(undefined);
+								setIsChatOpen(false);
+							}}
+						/>
+					</View>
+				</View>
+
+				{/* Model Update Notification */}
+				{updateInfo && (
+					<ModelUpdateNotification
+						isVisible={updateNotificationVisible}
+						onClose={() => {
+							setUpdateNotificationVisible(false);
+							// If it's just metadata update, dismiss permanently
+							if (!updateInfo.requiresDownload) {
+								setUpdateAvailable(false);
+							}
+							// If download required, keep banner visible
+						}}
+						currentCard={updateInfo.currentCard}
+						newCard={updateInfo.newCard}
+						currentVersion={updateInfo.currentVersion}
+						newVersion={updateInfo.newVersion}
+						requiresDownload={updateInfo.requiresDownload}
+					/>
+				)}
+			</SafeAreaView>
+		</View>
 	);
 }
