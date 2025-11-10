@@ -1,17 +1,24 @@
+import { Logo } from "@/components/logo";
+import { ModelUpdateNotification } from "@/components/model-update-notification";
+import { Button } from "@/components/ui/button";
+import { ModeToggle } from "@/components/ui/mode-toggle";
+import { Separator } from "@/components/ui/separator";
+import { Text } from "@/components/ui/text";
+import { View } from "@/components/ui/view";
+import {
+	checkForModelUpdates,
+	getStoredModelCard,
+	type ModelUpdateInfo,
+} from "@/src/actions/ai-chat-model";
+import { clearConversations, resetEverything } from "@/src/actions/reset";
+import { Colors } from "@/theme/colors";
 import { useRouter } from "expo-router";
 import { ChevronLeft } from "lucide-react-native";
 import { useState } from "react";
 import { useColorScheme } from "react-native";
 import { ScrollView } from "react-native-gesture-handler";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { Logo } from "@/components/logo";
-import { Button } from "@/components/ui/button";
-import { ModeToggle } from "@/components/ui/mode-toggle";
-import { Separator } from "@/components/ui/separator";
-import { Text } from "@/components/ui/text";
-import { View } from "@/components/ui/view";
-import { clearConversations, resetEverything } from "@/src/actions/reset";
-import { Colors } from "@/theme/colors";
+import { useValue } from "tinybase/ui-react";
 
 export default function Settings() {
 	const colorScheme = useColorScheme() ?? "light";
@@ -22,6 +29,43 @@ export default function Settings() {
 		useState(false);
 	const [showResetEverythingConfirm, setShowResetEverythingConfirm] =
 		useState(false);
+	const [checkingForUpdates, setCheckingForUpdates] = useState(false);
+	const [showUpToDate, setShowUpToDate] = useState(false);
+	const [updateInfo, setUpdateInfo] = useState<ModelUpdateInfo | null>(null);
+	const [showUpdateNotification, setShowUpdateNotification] = useState(false);
+
+	const configVersion = useValue("ai_chat_model_config_version") as
+		| string
+		| undefined;
+	const downloadedAt = useValue("ai_chat_model_downloadedAt") as
+		| string
+		| undefined;
+	const modelCard = getStoredModelCard();
+
+	const handleCheckForUpdates = async () => {
+		if (!downloadedAt || !configVersion) {
+			return;
+		}
+
+		setCheckingForUpdates(true);
+		try {
+			const result = await checkForModelUpdates();
+			if (result.hasUpdate) {
+				setUpdateInfo(result);
+				setShowUpdateNotification(true);
+			} else {
+				// Show "Up to date!" for 2 seconds
+				setShowUpToDate(true);
+				setTimeout(() => {
+					setShowUpToDate(false);
+				}, 2000);
+			}
+		} catch (error) {
+			console.error("[Settings] Failed to check for updates:", error);
+		} finally {
+			setCheckingForUpdates(false);
+		}
+	};
 
 	return (
 		<SafeAreaView
@@ -88,6 +132,64 @@ export default function Settings() {
 							APPEARANCE
 						</Text>
 						<ModeToggle showLabel={true} />
+					</View>
+
+					<Separator />
+
+					{/* Status Section */}
+					<View style={{ marginBottom: 8 }}>
+						<Text
+							variant="label"
+							style={{
+								fontSize: 13,
+								fontWeight: "600",
+								opacity: 0.7,
+								marginBottom: 12,
+							}}
+						>
+							STATUS
+						</Text>
+						<View style={{ marginBottom: 16 }}>
+							<Text
+								style={{
+									fontSize: 15,
+									fontWeight: "500",
+									marginBottom: 6,
+								}}
+							>
+								AI Chat Version
+							</Text>
+							{modelCard && configVersion && (
+								<Text
+									style={{
+										fontSize: 12,
+										opacity: 0.6,
+										marginBottom: 12,
+										lineHeight: 18,
+									}}
+								>
+									{modelCard.name} • v{configVersion} •{" "}
+									{modelCard.sizeGB.toFixed(1)} GB
+								</Text>
+							)}
+							<Button
+								variant="secondary"
+								size="sm"
+								onPress={handleCheckForUpdates}
+								disabled={
+									checkingForUpdates ||
+									showUpToDate ||
+									!downloadedAt ||
+									!configVersion
+								}
+							>
+								{checkingForUpdates
+									? "Checking..."
+									: showUpToDate
+										? "Up to date!"
+										: "Check for Updates"}
+							</Button>
+						</View>
 					</View>
 
 					<Separator />
@@ -283,6 +385,19 @@ export default function Settings() {
 					</View>
 				</View>
 			</ScrollView>
+
+			{/* Model Update Notification */}
+			{updateInfo && (
+				<ModelUpdateNotification
+					isVisible={showUpdateNotification}
+					onClose={() => setShowUpdateNotification(false)}
+					currentCard={updateInfo.currentCard}
+					newCard={updateInfo.newCard}
+					currentVersion={updateInfo.currentVersion || "unknown"}
+					newVersion={updateInfo.newVersion}
+					requiresDownload={updateInfo.requiresDownload}
+				/>
+			)}
 		</SafeAreaView>
 	);
 }

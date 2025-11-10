@@ -6,14 +6,18 @@ const valuesSchema = {
 	name: { type: "string" as const },
 	onboardedAt: { type: "string" as const },
 	theme: { type: "string" as const },
-	ai_chat_model_sourceUrl: { type: "string" as const },
+	// Model card data - stores complete WhisperLLMCard as JSON
+	ai_chat_model_card: { type: "string" as const },
+	ai_chat_model_cardId: { type: "string" as const },
+	ai_chat_model_config_version: { type: "string" as const },
+	// Download state
 	ai_chat_model_downloadedAt: { type: "string" as const },
 	ai_chat_model_fileUri: { type: "string" as const },
-	ai_chat_model_totalSizeGB: { type: "number" as const },
 	ai_chat_model_progressSizeGB: { type: "number" as const },
 	ai_chat_model_downloadError: { type: "string" as const },
 	ai_chat_model_resumableState: { type: "string" as const },
 	ai_chat_model_isPaused: { type: "boolean" as const },
+	ai_chat_model_fileRemoved: { type: "boolean" as const },
 };
 
 const tablesSchema = {

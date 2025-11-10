@@ -1,10 +1,3 @@
-import { ImageBackground } from "expo-image";
-import { useRouter } from "expo-router";
-import { useEffect, useState } from "react";
-import { ActivityIndicator, Dimensions } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
-import { Defs, RadialGradient, Rect, Stop, Svg } from "react-native-svg";
-import { useValue } from "tinybase/ui-react";
 import { Button } from "@/components/ui/button";
 import { ModeToggle } from "@/components/ui/mode-toggle";
 import { Progress } from "@/components/ui/progress";
@@ -14,18 +7,36 @@ import { useColor } from "@/hooks/useColor";
 import { useColorScheme } from "@/hooks/useColorScheme";
 import {
 	DEFAULT_AI_CHAT_MODEL,
+	fetchLatestRecommendedModel,
 	pauseDownload,
 	startOrResumeDownloadOfAIChatModel,
 } from "@/src/actions/ai-chat-model";
 import { completeOnboarding } from "@/src/actions/settings";
+import { ImageBackground } from "expo-image";
+import { useRouter } from "expo-router";
+import { useEffect, useState } from "react";
+import { ActivityIndicator, Dimensions } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
+import { Defs, RadialGradient, Rect, Stop, Svg } from "react-native-svg";
+import { useValue } from "tinybase/ui-react";
+import type { WhisperLLMCard } from "whisper-llm-cards";
 
 export default function Download() {
 	const router = useRouter();
 	const scheme = useColorScheme();
 	const backgroundColor = useColor("background");
+	const primaryForegroundColor = useColor("primaryForeground");
 
 	const [isDownloading, setIsDownloading] = useState(false);
 	const [error, setError] = useState<string | undefined>();
+	const [isFetchingModel, setIsFetchingModel] = useState(true);
+	const [modelCard, setModelCard] = useState<WhisperLLMCard>(
+		DEFAULT_AI_CHAT_MODEL,
+	);
+	const [modelCardId, setModelCardId] = useState<string>(
+		"llama-3.2-1b-instruct-q4_0",
+	);
+	const [configVersion, setConfigVersion] = useState<string>("1.0.0");
 
 	// Subscribe to download state from tinybase
 	const fileUri = useValue("ai_chat_model_fileUri") as string | undefined;
@@ -35,9 +46,6 @@ export default function Download() {
 	const downloadError = useValue("ai_chat_model_downloadError") as
 		| string
 		| undefined;
-	const totalSizeGB = useValue("ai_chat_model_totalSizeGB") as
-		| number
-		| undefined;
 	const progressSizeGB = useValue("ai_chat_model_progressSizeGB") as
 		| number
 		| undefined;
@@ -46,6 +54,29 @@ export default function Download() {
 	const fileRemoved = useValue("ai_chat_model_fileRemoved") as
 		| boolean
 		| undefined;
+
+	// Fetch latest recommended model on mount
+	useEffect(() => {
+		const fetchModel = async () => {
+			try {
+				// Race between actual fetch and minimum 400ms delay
+				const [result] = await Promise.all([
+					fetchLatestRecommendedModel(),
+					new Promise((resolve) => setTimeout(resolve, 2000)),
+				]);
+				setModelCard(result.recommendedCard);
+				setModelCardId(result.cardId);
+				setConfigVersion(result.config.version);
+			} catch (err) {
+				console.error("[Download] Failed to fetch latest model:", err);
+				// Already using DEFAULT_AI_CHAT_MODEL as fallback
+			} finally {
+				setIsFetchingModel(false);
+			}
+		};
+
+		fetchModel();
+	}, []);
 
 	// When download completes, mark onboarding as complete and navigate to dashboard
 	useEffect(() => {
@@ -62,8 +93,6 @@ export default function Download() {
 			if (!onboardedAt) {
 				completeOnboarding();
 			}
-
-			router.replace("/dashboard");
 		}
 	}, [downloadedAt, onboardedAt, fileRemoved, router]);
 
@@ -92,11 +121,14 @@ export default function Download() {
 
 		try {
 			await startOrResumeDownloadOfAIChatModel(
-				DEFAULT_AI_CHAT_MODEL.sourceUrl,
-				DEFAULT_AI_CHAT_MODEL.name,
+				modelCard,
+				modelCardId,
+				configVersion,
 				restart,
 			);
 			// Download will continue in background, progress tracked via tinybase
+
+			router.replace("/dashboard");
 		} catch (err) {
 			console.error(err);
 			setError("Failed to download, try again");
@@ -115,6 +147,7 @@ export default function Download() {
 	};
 
 	const hasPartialDownload = fileUri && !downloadedAt;
+	const totalSizeGB = modelCard.sizeGB;
 	const progressValue =
 		totalSizeGB && progressSizeGB ? progressSizeGB / totalSizeGB : 0;
 
@@ -250,6 +283,19 @@ export default function Download() {
 										: "Download in progress"
 									: "Get started by downloading the AI chat. This will enable private, on-device conversations."}
 						</Text>
+						{!isFetchingModel && !hasPartialDownload && (
+							<Text
+								variant="body"
+								style={{
+									textAlign: "center",
+									marginTop: 16,
+									fontSize: 14,
+									opacity: 0.6,
+								}}
+							>
+								{modelCard.name} ({modelCard.sizeGB.toFixed(1)} GB)
+							</Text>
+						)}
 					</View>
 				</View>
 
@@ -362,10 +408,19 @@ export default function Download() {
 					) : (
 						<Button
 							onPress={() => handleStartDownload(false)}
-							disabled={isDownloading}
+							disabled={isDownloading || isFetchingModel}
 							style={{ width: "100%" }}
 						>
-							{isDownloading ? (
+							{isFetchingModel ? (
+								<View
+									style={{ flexDirection: "row", gap: 8, alignItems: "center" }}
+								>
+									<ActivityIndicator color={primaryForegroundColor} />
+									<Text style={{ color: primaryForegroundColor }}>
+										Checking for updates...
+									</Text>
+								</View>
+							) : isDownloading ? (
 								<ActivityIndicator color="white" />
 							) : (
 								"Download Model"

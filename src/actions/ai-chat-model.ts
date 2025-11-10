@@ -3,18 +3,238 @@ import {
 	createDownloadResumable,
 	type DownloadResumable,
 } from "expo-file-system/legacy";
+import {
+	type WhisperLLMCard,
+	type WhisperLLMCardsJSON,
+	getLatestConfig,
+	whisperLLMCardsJson,
+} from "whisper-llm-cards";
 import { store } from "../store";
 import { bytesToGB } from "../utils/bytes";
-import { extractLLMModelNameFromUrl } from "../utils/extract-llm-model-name-from-url";
+import {
+	generateModelFileName,
+	validateModelFileName,
+} from "../utils/generate-model-filename";
 
-export const DEFAULT_AI_CHAT_MODEL = {
-	name: "Llama 3.2 1B Instruct Q4_0",
-	sourceUrl:
-		"https://huggingface.co/unsloth/Llama-3.2-1B-Instruct-GGUF/resolve/main/Llama-3.2-1B-Instruct-Q4_0.gguf",
-};
+// Default fallback model from bundled config
+export const DEFAULT_AI_CHAT_MODEL: WhisperLLMCard =
+	whisperLLMCardsJson.cards[whisperLLMCardsJson.recommendedCard];
 
 // Keep a reference to the active download
 let activeDownloadResumable: DownloadResumable | null = null;
+
+/**
+ * Fetches the latest recommended model configuration
+ * @returns Promise with config and recommended card
+ */
+export async function fetchLatestRecommendedModel(): Promise<{
+	config: WhisperLLMCardsJSON;
+	recommendedCard: WhisperLLMCard;
+	cardId: string;
+}> {
+	try {
+		const config = await getLatestConfig();
+		const cardId = config.recommendedCard;
+		const recommendedCard = config.cards[cardId];
+
+		if (!recommendedCard) {
+			throw new Error(
+				`Recommended card "${cardId}" not found in configuration`,
+			);
+		}
+
+		return { config, recommendedCard, cardId };
+	} catch (error) {
+		console.error("[AI Model] Failed to fetch latest config:", error);
+		// Fallback to bundled config
+		return {
+			config: whisperLLMCardsJson,
+			recommendedCard: DEFAULT_AI_CHAT_MODEL,
+			cardId: whisperLLMCardsJson.recommendedCard,
+		};
+	}
+}
+
+/**
+ * Updates the stored model card metadata without downloading
+ * Use this when only metadata has changed (same sourceUrl)
+ */
+export function updateModelCard(
+	card: WhisperLLMCard,
+	cardId: string,
+	configVersion: string,
+): void {
+	store.setValue("ai_chat_model_card", JSON.stringify(card));
+	store.setValue("ai_chat_model_cardId", cardId);
+	store.setValue("ai_chat_model_config_version", configVersion);
+}
+
+/**
+ * Gets the currently stored model card
+ * @returns The stored card or null if not found
+ */
+export function getStoredModelCard(): WhisperLLMCard | null {
+	const cardJson = store.getValue("ai_chat_model_card") as string | undefined;
+	if (!cardJson) return null;
+
+	try {
+		return JSON.parse(cardJson) as WhisperLLMCard;
+	} catch (error) {
+		console.error("[AI Model] Failed to parse stored card:", error);
+		return null;
+	}
+}
+
+/**
+ * Compares two model cards for equality
+ * Performs a deep comparison of all fields
+ */
+export function areCardsEqual(
+	card1: WhisperLLMCard | null,
+	card2: WhisperLLMCard,
+): boolean {
+	if (!card1) return false;
+
+	// Deep equality check using JSON comparison
+	// This automatically handles all fields, including any newly added ones
+	return JSON.stringify(card1) === JSON.stringify(card2);
+}
+
+export interface ModelUpdateInfo {
+	hasUpdate: boolean;
+	currentCard: WhisperLLMCard | null;
+	newCard: WhisperLLMCard;
+	currentVersion: string | null;
+	newVersion: string;
+	requiresDownload: boolean;
+	reason?: "version_mismatch" | "metadata_changed" | "filename_invalid";
+}
+
+/**
+ * Checks if a model update is available
+ * @returns Update information including whether download is required
+ */
+export async function checkForModelUpdates(): Promise<ModelUpdateInfo> {
+	const storedConfigVersion = store.getValue("ai_chat_model_config_version") as
+		| string
+		| undefined;
+	const fileUri = store.getValue("ai_chat_model_fileUri") as
+		| string
+		| undefined;
+
+	// Fetch latest recommended model
+	const { config, recommendedCard, cardId } =
+		await fetchLatestRecommendedModel();
+
+	const currentCard = getStoredModelCard();
+	const currentVersion = storedConfigVersion || null;
+	const newVersion = config.version;
+
+	// Check if filename matches expected version/hash
+	let filenameValid = false;
+	if (fileUri && currentCard && storedConfigVersion) {
+		const filename = fileUri.split("/").pop() || "";
+		filenameValid = validateModelFileName(
+			filename,
+			currentCard,
+			storedConfigVersion,
+		);
+		console.log("[checkForModelUpdates] Filename validation:", {
+			filename,
+			isValid: filenameValid,
+		});
+	}
+
+	// If filename doesn't match, treat as version mismatch (force update)
+	if (fileUri && !filenameValid && currentCard) {
+		console.log(
+			"[checkForModelUpdates] Filename mismatch detected - treating as outdated",
+		);
+		return {
+			hasUpdate: true,
+			currentCard,
+			newCard: recommendedCard,
+			currentVersion,
+			newVersion,
+			requiresDownload: true,
+			reason: "filename_invalid",
+		};
+	}
+
+	// Check version mismatch
+	const versionsMatch = currentVersion === newVersion;
+
+	if (!versionsMatch) {
+		console.log("[checkForModelUpdates] Version mismatch:", {
+			currentVersion,
+			newVersion,
+		});
+	}
+
+	// Check if cards are identical (using deep comparison)
+	const cardsMatch = areCardsEqual(currentCard, recommendedCard);
+
+	if (!cardsMatch) {
+		console.log("[checkForModelUpdates] Card metadata differs:", {
+			currentCard,
+			recommendedCard,
+		});
+	}
+
+	// No update needed if versions match AND cards match AND filename is valid (or no file yet)
+	if (versionsMatch && cardsMatch && (filenameValid || !fileUri)) {
+		console.log(
+			"[checkForModelUpdates] No update available, versions and metadata match",
+		);
+		return {
+			hasUpdate: false,
+			currentCard,
+			newCard: recommendedCard,
+			currentVersion,
+			newVersion,
+			requiresDownload: false,
+		};
+	}
+
+	// Determine if download is required
+	// Download needed if:
+	// 1. sourceUrl changed (different model file)
+	// 2. Filename is invalid (file is outdated/corrupted)
+	const requiresDownload =
+		currentCard?.sourceUrl !== recommendedCard.sourceUrl || !filenameValid;
+
+	console.log("[checkForModelUpdates] Update needed:", {
+		requiresDownload,
+		reason: !versionsMatch
+			? "version_mismatch"
+			: !cardsMatch
+				? "metadata_changed"
+				: "filename_invalid",
+	});
+
+	// If metadata-only update (no download required), update card immediately
+	if (!requiresDownload) {
+		updateModelCard(recommendedCard, cardId, newVersion);
+		console.log(
+			"[checkForModelUpdates] Metadata-only update - card updated to version",
+			newVersion,
+		);
+	}
+
+	return {
+		hasUpdate: true,
+		currentCard,
+		newCard: recommendedCard,
+		currentVersion,
+		newVersion,
+		requiresDownload,
+		reason: !versionsMatch
+			? "version_mismatch"
+			: !cardsMatch
+				? "metadata_changed"
+				: "filename_invalid",
+	};
+}
 
 /**
  * Creates a progress callback for download operations
@@ -24,10 +244,7 @@ function createProgressCallback() {
 		totalBytesWritten: number;
 		totalBytesExpectedToWrite: number;
 	}) => {
-		const totalSizeGB = bytesToGB(progressData.totalBytesExpectedToWrite);
 		const progressSizeGB = bytesToGB(progressData.totalBytesWritten);
-
-		store.setValue("ai_chat_model_totalSizeGB", totalSizeGB);
 		store.setValue("ai_chat_model_progressSizeGB", progressSizeGB);
 	};
 }
@@ -139,10 +356,12 @@ export async function resumeDownload(): Promise<void> {
  * Starts or resumes downloading an AI chat model.
  */
 export async function startOrResumeDownloadOfAIChatModel(
-	sourceUrl: string,
-	modelName?: string,
+	card: WhisperLLMCard,
+	cardId: string,
+	configVersion: string,
 	restart: boolean = false,
 ): Promise<void> {
+	const sourceUrl = card.sourceUrl;
 	const isPaused = store.getValue("ai_chat_model_isPaused") as
 		| boolean
 		| undefined;
@@ -152,9 +371,9 @@ export async function startOrResumeDownloadOfAIChatModel(
 		return resumeDownload();
 	}
 
-	const safeName = modelName || extractLLMModelNameFromUrl(sourceUrl);
-	const cleanGgufFilename = `${safeName}.gguf`;
-	const fileUri = `${new FileSystem.Directory(FileSystem.Paths.document).uri}/${cleanGgufFilename}`;
+	// Generate versioned filename with hash
+	const versionedFilename = generateModelFileName(card, configVersion);
+	const fileUri = `${new FileSystem.Directory(FileSystem.Paths.document).uri}/${versionedFilename}`;
 
 	const existingFileUri = store.getValue("ai_chat_model_fileUri");
 	const downloadedAt = store.getValue("ai_chat_model_downloadedAt");
@@ -172,7 +391,10 @@ export async function startOrResumeDownloadOfAIChatModel(
 		cleanupDownloadState();
 	}
 
-	store.setValue("ai_chat_model_sourceUrl", sourceUrl);
+	// Save card metadata
+	store.setValue("ai_chat_model_card", JSON.stringify(card));
+	store.setValue("ai_chat_model_cardId", cardId);
+	store.setValue("ai_chat_model_config_version", configVersion);
 	store.setValue("ai_chat_model_fileUri", fileUri);
 	store.delValue("ai_chat_model_downloadedAt");
 	store.delValue("ai_chat_model_downloadError");

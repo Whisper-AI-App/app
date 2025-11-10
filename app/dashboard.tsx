@@ -1,3 +1,18 @@
+import Chat from "@/components/chat";
+import { ChatPreview } from "@/components/chat-preview";
+import { ModelLoadError } from "@/components/model-load-error";
+import { ModelUpdateNotification } from "@/components/model-update-notification";
+import { Button } from "@/components/ui/button";
+import { SearchBar } from "@/components/ui/searchbar";
+import { Text } from "@/components/ui/text";
+import { View } from "@/components/ui/view";
+import { useAIChat } from "@/contexts/AIChatContext";
+import { useColor } from "@/hooks/useColor";
+import {
+	checkForModelUpdates,
+	type ModelUpdateInfo,
+} from "@/src/actions/ai-chat-model";
+import { Colors } from "@/theme/colors";
 import { ImageBackground } from "expo-image";
 import { useRouter } from "expo-router";
 import { Settings } from "lucide-react-native";
@@ -12,16 +27,6 @@ import {
 	useTable,
 	useValue,
 } from "tinybase/ui-react";
-import Chat from "@/components/chat";
-import { ChatPreview } from "@/components/chat-preview";
-import { ModelLoadError } from "@/components/model-load-error";
-import { Button } from "@/components/ui/button";
-import { SearchBar } from "@/components/ui/searchbar";
-import { Text } from "@/components/ui/text";
-import { View } from "@/components/ui/view";
-import { useAIChat } from "@/contexts/AIChatContext";
-import { useColor } from "@/hooks/useColor";
-import { Colors } from "@/theme/colors";
 
 export default function Dashboard() {
 	const colorScheme = useColorScheme() ?? "light";
@@ -29,7 +34,6 @@ export default function Dashboard() {
 	const backgroundColor = useColor("background");
 
 	const router = useRouter();
-	const version = useValue("version");
 
 	const [selectedChatId, setSelectedChatId] = useState<string | undefined>(
 		undefined,
@@ -37,6 +41,10 @@ export default function Dashboard() {
 	const [isChatOpen, setIsChatOpen] = useState(false);
 	const [searchQuery, setSearchQuery] = useState("");
 	const [modelLoadError, setModelLoadError] = useState(false);
+	const [updateNotificationVisible, setUpdateNotificationVisible] =
+		useState(false);
+	const [updateAvailable, setUpdateAvailable] = useState(false);
+	const [updateInfo, setUpdateInfo] = useState<ModelUpdateInfo | null>(null);
 
 	const aiChat = useAIChat();
 
@@ -45,6 +53,9 @@ export default function Dashboard() {
 		| string
 		| undefined;
 	const fileUri = useValue("ai_chat_model_fileUri") as string | undefined;
+	const storedConfigVersion = useValue("ai_chat_model_config_version") as
+		| string
+		| undefined;
 
 	// Get all chat IDs sorted by creation date (newest first)
 	const chatIds = useSortedRowIds("chats", "createdAt", true);
@@ -116,6 +127,44 @@ export default function Dashboard() {
 	const retryLoadModel = () => {
 		setModelLoadError(false);
 	};
+
+	// Check for model updates after model is loaded
+	useEffect(() => {
+		console.log("[Dashboard] Update check conditions:", {
+			downloadedAt: !!downloadedAt,
+			isLoaded: aiChat.isLoaded,
+			storedConfigVersion,
+		});
+
+		if (!downloadedAt || !aiChat.isLoaded || !storedConfigVersion) {
+			return;
+		}
+
+		const checkForUpdates = async () => {
+			try {
+				const updateInfo = await checkForModelUpdates();
+
+				if (updateInfo.hasUpdate) {
+					console.log(
+						"[Dashboard] Update available:",
+						updateInfo.requiresDownload ? "download required" : "metadata only",
+						`(${updateInfo.reason})`,
+					);
+					setUpdateInfo(updateInfo);
+					setUpdateAvailable(true);
+					setUpdateNotificationVisible(true);
+				} else {
+					console.log("[Dashboard] No update available");
+				}
+			} catch (error) {
+				console.error("[Dashboard] Failed to check for updates:", error);
+			}
+		};
+
+		// Check for updates with a small delay to not interfere with model loading
+		const timeout = setTimeout(checkForUpdates, 2000);
+		return () => clearTimeout(timeout);
+	}, [downloadedAt, aiChat.isLoaded, storedConfigVersion]);
 
 	return (
 		<SafeAreaView style={{ flex: 1 }}>
@@ -215,6 +264,53 @@ export default function Dashboard() {
 
 			{modelLoadError && <ModelLoadError onRetry={retryLoadModel} />}
 
+			{/* Update Available Banner */}
+			{updateAvailable && !updateNotificationVisible && updateInfo && (
+				<View
+					style={{
+						backgroundColor: theme.green,
+						paddingVertical: 8,
+						paddingHorizontal: 16,
+						flexDirection: "row",
+						alignItems: "center",
+						justifyContent: "space-between",
+					}}
+				>
+					<View style={{ flex: 1 }}>
+						<Text
+							style={{
+								fontSize: 14,
+								fontWeight: "600",
+								marginBottom: 1,
+								color: theme.secondary,
+							}}
+						>
+							{updateInfo.requiresDownload
+								? "AI Update Available"
+								: "AI Updated!"}
+						</Text>
+						<Text
+							style={{ fontSize: 12, opacity: 0.9, color: theme.secondary }}
+						>
+							{updateInfo.requiresDownload
+								? "New version ready to download"
+								: "Tap to see what's new"}
+						</Text>
+					</View>
+					<View>
+						<Button
+							size="sm"
+							onPress={() => setUpdateNotificationVisible(true)}
+							style={{ paddingHorizontal: 24 }}
+							textStyle={{ fontSize: 14 }}
+							variant="secondary"
+						>
+							View
+						</Button>
+					</View>
+				</View>
+			)}
+
 			<ScrollView
 				style={{
 					flex: 1,
@@ -284,6 +380,26 @@ export default function Dashboard() {
 					/>
 				</View>
 			</View>
+
+			{/* Model Update Notification */}
+			{updateInfo && (
+				<ModelUpdateNotification
+					isVisible={updateNotificationVisible}
+					onClose={() => {
+						setUpdateNotificationVisible(false);
+						// If it's just metadata update, dismiss permanently
+						if (!updateInfo.requiresDownload) {
+							setUpdateAvailable(false);
+						}
+						// If download required, keep banner visible
+					}}
+					currentCard={updateInfo.currentCard}
+					newCard={updateInfo.newCard}
+					currentVersion={updateInfo.currentVersion}
+					newVersion={updateInfo.newVersion}
+					requiresDownload={updateInfo.requiresDownload}
+				/>
+			)}
 		</SafeAreaView>
 	);
 }
