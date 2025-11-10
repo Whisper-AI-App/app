@@ -32,6 +32,7 @@ export function ChatPreview({
 	const theme = Colors[colorScheme];
 	const swipeableRef = useRef<Swipeable>(null);
 	const [hasTriggeredHaptic, setHasTriggeredHaptic] = useState(false);
+	const pressStartPosition = useRef<{ x: number; y: number } | null>(null);
 
 	useEffect(() => {
 		if (peekOnMount && swipeableRef.current && Platform.OS === "ios") {
@@ -49,11 +50,35 @@ export function ChatPreview({
 		}
 	}, [peekOnMount]);
 
-	const handlePress = () => {
+	const handlePressIn = (event: any) => {
+		pressStartPosition.current = {
+			x: event.nativeEvent.pageX,
+			y: event.nativeEvent.pageY,
+		};
+	};
+
+	const handlePress = (event: any) => {
+		// Check if this was a tap or a swipe
+		if (pressStartPosition.current) {
+			const deltaX = Math.abs(
+				event.nativeEvent.pageX - pressStartPosition.current.x,
+			);
+			const deltaY = Math.abs(
+				event.nativeEvent.pageY - pressStartPosition.current.y,
+			);
+
+			// If moved more than 10px horizontally, consider it a swipe, not a tap
+			if (deltaX > 10 || deltaY > 10) {
+				pressStartPosition.current = null;
+				return;
+			}
+		}
+
 		if (process.env.EXPO_OS === "ios") {
 			Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
 		}
 		onPress?.();
+		pressStartPosition.current = null;
 	};
 
 	const handleShareChat = async () => {
@@ -264,11 +289,17 @@ export function ChatPreview({
 				onSwipeableWillOpen={handleSwipeableOpen}
 				onSwipeableClose={handleSwipeableClose}
 			>
-				<Pressable onPress={handlePress}>{cardContent}</Pressable>
+				<Pressable onPressIn={handlePressIn} onPress={handlePress}>
+					{cardContent}
+				</Pressable>
 			</Swipeable>
 		);
 	}
 
 	// For non-iOS platforms, just render the pressable card
-	return <Pressable onPress={handlePress}>{cardContent}</Pressable>;
+	return (
+		<Pressable onPressIn={handlePressIn} onPress={handlePress}>
+			{cardContent}
+		</Pressable>
+	);
 }
