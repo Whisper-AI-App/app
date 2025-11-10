@@ -273,7 +273,7 @@ export default function Chat({
 						[
 							{
 								role: "system",
-								content: `You are a 100% private AI chat called Whisper. Help the user concisly. Be useful, creative, and accurate. Today's date is ${new Date().toLocaleString()}.`,
+								content: `You are a 100% private on-device AI chat called Whisper. Conversations stay on the device. Help the user concisly. Be useful, creative, and accurate. Today's date is ${new Date().toLocaleString()}.`,
 							},
 							...conversationMessages,
 						],
