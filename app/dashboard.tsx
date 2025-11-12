@@ -396,7 +396,7 @@ export default function Dashboard() {
 											? "Good afternoon"
 											: new Date().getHours() < 21
 												? "Good evening"
-												: "Good night"}
+												: "Good evening"}
 							</Text>
 							<Hand
 								color={theme.text}
@@ -433,7 +433,7 @@ export default function Dashboard() {
 										color: theme.textMuted,
 									}}
 								>
-									Latest news
+									Latest updates
 								</Text>
 							</Pressable>
 							<Pressable
@@ -453,7 +453,7 @@ export default function Dashboard() {
 										color: theme.textMuted,
 									}}
 								>
-									Chat with us
+									Request feature
 								</Text>
 							</Pressable>
 						</View>
