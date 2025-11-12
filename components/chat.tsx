@@ -38,10 +38,7 @@ import { Bubble, GiftedChat, type IMessage } from "react-native-gifted-chat";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useRow, useRowIds, useValue } from "tinybase/ui-react";
 import { v4 as uuidv4 } from "uuid";
-import {
-	processSystemMessage,
-	type WhisperLLMCard,
-} from "whisper-llm-cards";
+import { processSystemMessage, type WhisperLLMCard } from "whisper-llm-cards";
 import { SuggestionCards } from "./suggestion-cards";
 import { BottomSheet, useBottomSheet } from "./ui/bottom-sheet";
 import { Button } from "./ui/button";
@@ -288,7 +285,7 @@ export default function Chat({
 					// Stream AI completion
 					// Get system message from the current model card in store
 					const systemMessage = aiChatModelCard
-						? processSystemMessage(aiChatModelCard)
+						? processSystemMessage(aiChatModelCard, conversationMessages)
 						: `You are a 100% private on-device AI chat called Whisper. Conversations stay on the device. Help the user concisly. Be useful, creative, and accurate. Today's date is ${new Date().toLocaleString()}.`;
 
 					const response = await aiChat.completion(
