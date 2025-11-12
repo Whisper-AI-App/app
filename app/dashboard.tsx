@@ -17,7 +17,7 @@ import { ImageBackground } from "expo-image";
 import { useRouter } from "expo-router";
 import { Hand, Settings } from "lucide-react-native";
 import { useEffect, useMemo, useState } from "react";
-import { Dimensions, useColorScheme } from "react-native";
+import { Dimensions, Linking, Pressable, useColorScheme } from "react-native";
 import Animated, {
 	Extrapolation,
 	interpolate,
@@ -386,7 +386,7 @@ export default function Dashboard() {
 								opacity: 0.75,
 							}}
 						>
-							<Text style={{ fontSize: 16, fontWeight: "500" }}>
+							<Text style={{ fontSize: 18, fontWeight: "500" }}>
 								{new Date().getHours() < 5
 									? "Good night"
 									: new Date().getHours() < 12
@@ -408,6 +408,55 @@ export default function Dashboard() {
 								}}
 							/>
 						</View>
+
+						<View
+							style={{
+								display: "flex",
+								flexDirection: "row",
+								gap: 12,
+								paddingVertical: 6,
+							}}
+						>
+							<Pressable
+								onPress={() => Linking.openURL("https://usewhisper.org/news")}
+							>
+								<Text
+									style={{
+										display: "flex",
+										flexDirection: "row",
+										alignItems: "center",
+										paddingBottom: 0.05,
+										borderBottomColor: "rgba(150,150,150,0.25)",
+										borderBottomWidth: 2,
+										fontSize: 12,
+										color: theme.textMuted,
+									}}
+								>
+									Latest news
+								</Text>
+							</Pressable>
+							<Pressable
+								onPress={() =>
+									Linking.openURL("https://usewhisper.org/chat-with-us")
+								}
+							>
+								<Text
+									style={{
+										display: "flex",
+										flexDirection: "row",
+										alignItems: "center",
+										paddingBottom: 0.05,
+										borderBottomColor: "rgba(150,150,150,0.25)",
+										borderBottomWidth: 2,
+										fontSize: 12,
+										color: theme.textMuted,
+									}}
+								>
+									Chat with us
+								</Text>
+							</Pressable>
+						</View>
+
 						{chatPreviews.length > 0 && (
 							<Text style={{ fontSize: 12, opacity: 0.5 }}>
 								You have {chatPreviews.length} chat
@@ -433,7 +482,7 @@ export default function Dashboard() {
 									key={preview.chatId}
 									style={{
 										paddingBottom: index >= array.length - 1 ? 160 : 0,
-										paddingTop: index === 0 ? 96 : 16,
+										paddingTop: index === 0 ? 128 : 16,
 									}}
 								>
 									<ChatPreview
@@ -454,14 +503,17 @@ export default function Dashboard() {
 					) : (
 						<View style={{ padding: 32, alignItems: "center", gap: 16 }}>
 							<Text
-								style={{ opacity: 0.5, fontSize: searchQuery.trim() ? 16 : 14 }}
+								style={{
+									opacity: 0.75,
+									fontSize: searchQuery.trim() ? 16 : 14,
+								}}
 							>
 								{searchQuery.trim() ? "No chats found" : "No chats yet"}
 							</Text>
 							{!searchQuery.trim() && (
 								<Button
 									variant="secondary"
-									size="sm"
+									size="lg"
 									onPress={() => {
 										setSelectedChatId(undefined);
 										setIsChatOpen(true);
@@ -470,6 +522,55 @@ export default function Dashboard() {
 									Start a conversation
 								</Button>
 							)}
+
+							<View
+								style={{
+									display: "flex",
+									flexDirection: "row",
+									gap: 12,
+									paddingVertical: 6,
+									opacity: 0.5,
+								}}
+							>
+								<Pressable
+									onPress={() => Linking.openURL("https://usewhisper.org/news")}
+								>
+									<Text
+										style={{
+											display: "flex",
+											flexDirection: "row",
+											alignItems: "center",
+											paddingBottom: 0.05,
+											borderBottomColor: "rgba(150,150,150,0.25)",
+											borderBottomWidth: 2,
+											fontSize: 12,
+											color: theme.textMuted,
+										}}
+									>
+										Latest news
+									</Text>
+								</Pressable>
+								<Pressable
+									onPress={() =>
+										Linking.openURL("https://usewhisper.org/chat-with-us")
+									}
+								>
+									<Text
+										style={{
+											display: "flex",
+											flexDirection: "row",
+											alignItems: "center",
+											paddingBottom: 0.05,
+											borderBottomColor: "rgba(150,150,150,0.25)",
+											borderBottomWidth: 2,
+											fontSize: 12,
+											color: theme.textMuted,
+										}}
+									>
+										Report problem
+									</Text>
+								</Pressable>
+							</View>
 						</View>
 					)}
 				</Animated.ScrollView>
