@@ -36,8 +36,12 @@ import {
 import { Alert, Animated, Dimensions, TouchableOpacity } from "react-native";
 import { Bubble, GiftedChat, type IMessage } from "react-native-gifted-chat";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { useRow, useRowIds } from "tinybase/ui-react";
+import { useRow, useRowIds, useValue } from "tinybase/ui-react";
 import { v4 as uuidv4 } from "uuid";
+import {
+	processSystemMessage,
+	type WhisperLLMCard,
+} from "whisper-llm-cards";
 import { SuggestionCards } from "./suggestion-cards";
 import { BottomSheet, useBottomSheet } from "./ui/bottom-sheet";
 import { Button } from "./ui/button";
@@ -83,6 +87,17 @@ export default function Chat({
 	const [isMenuOpen, setIsMenuOpen] = useState(false);
 	const [inputText, setInputText] = useState("");
 	const aiChat = useAIChat();
+
+	// Get the current AI model card from store
+	const aiChatModelCardJson = useValue("ai_chat_model_card");
+	const aiChatModelCard: WhisperLLMCard | null = useMemo(() => {
+		if (!aiChatModelCardJson) return null;
+		try {
+			return JSON.parse(aiChatModelCardJson as string);
+		} catch {
+			return null;
+		}
+	}, [aiChatModelCardJson]);
 
 	// Reset currentChatId when initialChatId changes (e.g., when opening different chat)
 	useEffect(() => {
@@ -271,12 +286,17 @@ export default function Chat({
 					let aiResponseText = "";
 
 					// Stream AI completion
+					// Get system message from the current model card in store
+					const systemMessage = aiChatModelCard
+						? processSystemMessage(aiChatModelCard)
+						: `You are a 100% private on-device AI chat called Whisper. Conversations stay on the device. Help the user concisly. Be useful, creative, and accurate. Today's date is ${new Date().toLocaleString()}.`;
 
 					const response = await aiChat.completion(
 						[
+							// System Message from card
 							{
 								role: "system",
-								content: `You are a 100% private on-device AI chat called Whisper. Conversations stay on the device. Help the user concisly. Be useful, creative, and accurate. Today's date is ${new Date().toLocaleString()}.`,
+								content: systemMessage,
 							},
 							...conversationMessages,
 						],

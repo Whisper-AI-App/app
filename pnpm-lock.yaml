@@ -141,8 +141,8 @@ importers:
         specifier: ^13.0.0
         version: 13.0.0
       whisper-llm-cards:
-        specifier: github:Ava-Technologies-Org/whisper-llm-cards#semver:^1.5.0
-        version: https://codeload.github.com/Ava-Technologies-Org/whisper-llm-cards/tar.gz/a92f5882c8b84d358ff50f052f2d4f7171b7d213
+        specifier: github:Ava-Technologies-Org/whisper-llm-cards#semver:^2.0.1
+        version: https://codeload.github.com/Ava-Technologies-Org/whisper-llm-cards/tar.gz/6551eccd3de3e1b2f041096f8cbf9a7b67fd5c95
     devDependencies:
       '@biomejs/biome':
         specifier: 2.3.4
@@ -4713,9 +4713,9 @@ packages:
     engines: {node: '>= 8'}
     hasBin: true
 
-  whisper-llm-cards@https://codeload.github.com/Ava-Technologies-Org/whisper-llm-cards/tar.gz/a92f5882c8b84d358ff50f052f2d4f7171b7d213:
-    resolution: {tarball: https://codeload.github.com/Ava-Technologies-Org/whisper-llm-cards/tar.gz/a92f5882c8b84d358ff50f052f2d4f7171b7d213}
-    version: 1.5.0
+  whisper-llm-cards@https://codeload.github.com/Ava-Technologies-Org/whisper-llm-cards/tar.gz/6551eccd3de3e1b2f041096f8cbf9a7b67fd5c95:
+    resolution: {tarball: https://codeload.github.com/Ava-Technologies-Org/whisper-llm-cards/tar.gz/6551eccd3de3e1b2f041096f8cbf9a7b67fd5c95}
+    version: 2.0.1
 
   wonka@6.3.5:
     resolution: {integrity: sha512-SSil+ecw6B4/Dm7Pf2sAshKQ5hWFvfyGlfPbEd6A14dOH6VDjrmbY86u6nZvy9omGwwIPFR8V41+of1EezgoUw==}
@@ -10141,7 +10141,7 @@ snapshots:
     dependencies:
       isexe: 2.0.0
 
-  whisper-llm-cards@https://codeload.github.com/Ava-Technologies-Org/whisper-llm-cards/tar.gz/a92f5882c8b84d358ff50f052f2d4f7171b7d213:
+  whisper-llm-cards@https://codeload.github.com/Ava-Technologies-Org/whisper-llm-cards/tar.gz/6551eccd3de3e1b2f041096f8cbf9a7b67fd5c95:
     dependencies:
       tsx: 4.20.6
       typescript: 5.9.3
