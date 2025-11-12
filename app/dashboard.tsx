@@ -373,6 +373,7 @@ export default function Dashboard() {
 
 								gap: 1,
 								paddingHorizontal: 20,
+								zIndex: 10,
 							},
 							greetingAnimatedStyle,
 						]}
