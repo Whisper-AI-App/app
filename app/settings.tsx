@@ -95,6 +95,7 @@ export default function Settings() {
 						right: 0,
 						textAlign: "center",
 					}}
+					pointerEvents="none"
 				>
 					Settings
 				</Text>
