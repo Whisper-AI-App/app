@@ -164,9 +164,9 @@ export default function Dashboard() {
 			transform: [
 				{
 					translateY: withSpring(targetTranslateY, {
-						damping: 18,
+						damping: 30,
 						stiffness: 250,
-						mass: 0.6,
+						mass: 0.3,
 						overshootClamping: false,
 					}),
 				},
@@ -363,7 +363,7 @@ export default function Dashboard() {
 						style={[
 							{
 								position: "absolute",
-								top: 128 + 32,
+								top: 128 + 40,
 								left: 0,
 								width: "100%",
 								display: "flex",
@@ -433,7 +433,7 @@ export default function Dashboard() {
 									key={preview.chatId}
 									style={{
 										paddingBottom: index >= array.length - 1 ? 160 : 0,
-										paddingTop: index === 0 ? 112 : 16,
+										paddingTop: index === 0 ? 96 : 16,
 									}}
 								>
 									<ChatPreview
