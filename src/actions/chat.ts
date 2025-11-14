@@ -69,7 +69,7 @@ export async function shareChat(chatId: string) {
 		}
 	});
 
-	chatText += `Conversation with Whisper, 100% private AI (https://avatechnologies.org/?ref=whisper-ai)`;
+	chatText += `Conversation with Whisper, 100% private AI (https://usewhisper.org)`;
 
 	console.log(
 		"[shareChat] Attempting to share:",
