@@ -162,7 +162,6 @@ export default function Chat({
 
 	const handleShareChat = useCallback(async () => {
 		if (currentChatId) {
-			setIsMenuOpen(false);
 			try {
 				await shareChat(currentChatId);
 			} catch (error) {
@@ -173,6 +172,8 @@ export default function Chat({
 					[{ text: "OK" }],
 				);
 			}
+
+			setIsMenuOpen(false);
 		}
 	}, [currentChatId]);
 
