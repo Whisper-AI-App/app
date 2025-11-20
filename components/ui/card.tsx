@@ -1,8 +1,8 @@
-import type { TextStyle, ViewStyle } from "react-native";
 import { Text } from "@/components/ui/text";
 import { View } from "@/components/ui/view";
 import { useColor } from "@/hooks/useColor";
 import { BORDER_RADIUS } from "@/theme/globals";
+import type { TextStyle, ViewStyle } from "react-native";
 
 interface CardProps {
 	children: React.ReactNode;

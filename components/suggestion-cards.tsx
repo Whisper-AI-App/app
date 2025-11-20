@@ -1,3 +1,5 @@
+import { useColorScheme } from "@/hooks/useColorScheme";
+import { Colors } from "@/theme/colors";
 import {
 	BookOpen,
 	Calculator,
@@ -14,9 +16,6 @@ import {
 } from "lucide-react-native";
 import { useEffect, useRef, useState } from "react";
 import { Animated, TouchableOpacity } from "react-native";
-import { useColorScheme } from "@/hooks/useColorScheme";
-import { Colors } from "@/theme/colors";
-import { Card } from "./ui/card";
 import { Text } from "./ui/text";
 import { View } from "./ui/view";
 
@@ -195,37 +194,28 @@ export function SuggestionCards({ onSuggestionPress }: SuggestionCardsProps) {
 			<TouchableOpacity
 				onPress={() => onSuggestionPress(suggestion.prompt)}
 				activeOpacity={0.7}
-				style={{ height: "100%" }}
+				style={{ height: "100%", padding: 16 }}
 			>
-				<Card
+				<View style={{ marginBottom: 8 }}>
+					<suggestion.icon size={20} color={theme.textMuted} />
+				</View>
+				<Text
+					variant="caption"
 					style={{
-						padding: 14,
-						shadowOpacity: 0,
-						height: "100%",
-						justifyContent: "flex-start",
+						fontWeight: "600",
+						marginBottom: 4,
+						color: theme.textMuted,
+						fontSize: 14,
 					}}
 				>
-					<View style={{ marginBottom: 8 }}>
-						<suggestion.icon size={20} color={theme.textMuted} />
-					</View>
-					<Text
-						variant="caption"
-						style={{
-							fontWeight: "600",
-							marginBottom: 4,
-							color: theme.textMuted,
-							fontSize: 14,
-						}}
-					>
-						{suggestion.title}
-					</Text>
-					<Text
-						variant="caption"
-						style={{ fontSize: 11, color: theme.textMuted }}
-					>
-						{suggestion.description}
-					</Text>
-				</Card>
+					{suggestion.title}
+				</Text>
+				<Text
+					variant="caption"
+					style={{ fontSize: 11, color: theme.textMuted }}
+				>
+					{suggestion.description}
+				</Text>
 			</TouchableOpacity>
 		</Animated.View>
 	);
