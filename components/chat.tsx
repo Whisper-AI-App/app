@@ -689,7 +689,7 @@ export const useCustomChatUI = ({
 						renderMessageText={
 							isSystemMessage
 								? () => (
-										<View style={{}}>
+										<View style={{ flexShrink: 1, maxWidth: "100%" }}>
 											<Markdown>{message.text}</Markdown>
 											{showCopyButton && <CopyButton text={message.text} />}
 										</View>

@@ -30,8 +30,7 @@ export function Markdown({ children }: MarkdownProps) {
 			text: theme.text,
 			link: theme.blue,
 			border: theme.border,
-			code: theme.text,
-			codeBackground: theme.card,
+			code: theme.card,
 			blockquoteText: theme.mutedForeground,
 			blockquoteBorder: theme.border,
 		},
@@ -71,15 +70,21 @@ export function Markdown({ children }: MarkdownProps) {
 			marginHorizontal: 8,
 		},
 		codespan: {
-			marginVertical: 8,
-			marginHorizontal: 8,
-			padding: 12,
-			borderRadius: 8,
-		},
-		code: {
-			paddingHorizontal: 4,
+			paddingHorizontal: 6,
 			paddingVertical: 2,
 			borderRadius: 4,
+			minWidth: 0,
+			flexShrink: 1,
+			overflow: "hidden",
+		},
+		code: {
+			marginVertical: 6,
+			marginHorizontal: 6,
+			padding: 16,
+			borderRadius: 12,
+			minWidth: 0,
+			flexShrink: 1,
+			overflow: "hidden",
 		},
 		blockquote: {
 			marginVertical: 8,
@@ -98,7 +103,7 @@ export function Markdown({ children }: MarkdownProps) {
 	};
 
 	return (
-		<View style={{ paddingHorizontal: 2 }}>
+		<View style={{ paddingHorizontal: 2, overflow: "hidden", flexShrink: 1 }}>
 			<RNMarkdown
 				value={children}
 				theme={markedTheme}
@@ -106,6 +111,8 @@ export function Markdown({ children }: MarkdownProps) {
 				flatListProps={{
 					scrollEnabled: false,
 					onLinkPress: handleLinkPress,
+					style: { flexShrink: 1 },
+					contentContainerStyle: { flexShrink: 1 },
 				}}
 			/>
 		</View>
