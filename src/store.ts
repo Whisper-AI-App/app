@@ -19,6 +19,10 @@ const valuesSchema = {
 	ai_chat_model_resumableState: { type: "string" as const },
 	ai_chat_model_isPaused: { type: "boolean" as const },
 	ai_chat_model_fileRemoved: { type: "boolean" as const },
+	// Chat background settings
+	chat_background_type: { type: "string" as const }, // "default" | "preset" | "custom"
+	chat_background_uri: { type: "string" as const }, // URI to background image
+	chat_background_preset_id: { type: "string" as const }, // ID of preset if using preset
 };
 
 const tablesSchema = {
