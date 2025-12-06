@@ -1,4 +1,4 @@
-import Chat from "@/components/chat";
+import Chat from "@/components/chat/chat";
 import { ChatPreview } from "@/components/chat-preview";
 import { ModelLoadError } from "@/components/model-load-error";
 import { ModelUpdateNotification } from "@/components/model-update-notification";
