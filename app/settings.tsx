@@ -11,11 +11,16 @@ import {
 	type ModelUpdateInfo,
 } from "@/src/actions/ai-chat-model";
 import { clearConversations, resetEverything } from "@/src/actions/reset";
+import {
+	authenticate,
+	checkLocalAuthAvailable,
+	setLocalAuth,
+} from "@/src/actions/settings";
 import { Colors } from "@/theme/colors";
 import { useRouter } from "expo-router";
 import { ChevronLeft } from "lucide-react-native";
-import { useState } from "react";
-import { useColorScheme } from "react-native";
+import { useEffect, useState } from "react";
+import { Switch, useColorScheme } from "react-native";
 import { ScrollView } from "react-native-gesture-handler";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useValue } from "tinybase/ui-react";
@@ -34,6 +39,19 @@ export default function Settings() {
 	const [updateInfo, setUpdateInfo] = useState<ModelUpdateInfo | null>(null);
 	const [showUpdateNotification, setShowUpdateNotification] = useState(false);
 
+	// Local auth state
+	const localAuthEnabled = useValue("localAuthEnabled") as boolean | undefined;
+	const [localAuthToggle, setLocalAuthToggle] = useState(
+		localAuthEnabled === true,
+	);
+	const [isAuthenticating, setIsAuthenticating] = useState(false);
+	const [authStatusMessage, setAuthStatusMessage] = useState<string | null>(
+		null,
+	);
+	const [isLocalAuthAvailable, setIsLocalAuthAvailable] = useState<
+		boolean | null
+	>(null);
+
 	const configVersion = useValue("ai_chat_model_config_version") as
 		| string
 		| undefined;
@@ -41,6 +59,54 @@ export default function Settings() {
 		| string
 		| undefined;
 	const modelCard = getStoredModelCard();
+
+	useEffect(() => {
+		setLocalAuthToggle(localAuthEnabled === true);
+	}, [localAuthEnabled]);
+
+	useEffect(() => {
+		checkLocalAuthAvailable().then((result) => {
+			setIsLocalAuthAvailable(result.available);
+			if (!result.available) {
+				if (!result.hasHardware) {
+					setAuthStatusMessage(
+						"Biometric authentication not available on this device",
+					);
+				} else if (!result.isEnrolled) {
+					setAuthStatusMessage(
+						"No biometric data enrolled. Set up in device settings.",
+					);
+				}
+			}
+		});
+	}, []);
+
+	const handleLocalAuthToggle = async (value: boolean) => {
+		if (value) {
+			// Enabling - verify auth works first
+			setIsAuthenticating(true);
+			setAuthStatusMessage(null);
+
+			const result = await authenticate();
+
+			setIsAuthenticating(false);
+
+			if (result.success) {
+				setLocalAuthToggle(true);
+				setLocalAuth(true);
+				setAuthStatusMessage("Lock screen enabled");
+				setTimeout(() => setAuthStatusMessage(null), 2000);
+			} else {
+				setLocalAuthToggle(false);
+				setAuthStatusMessage(result.error || "Authentication failed");
+			}
+		} else {
+			// Disabling - no auth check needed
+			setLocalAuthToggle(false);
+			setLocalAuth(false);
+			setAuthStatusMessage(null);
+		}
+	};
 
 	const handleCheckForUpdates = async () => {
 		if (!downloadedAt || !configVersion) {
@@ -191,6 +257,81 @@ export default function Settings() {
 										: "Check for Updates"}
 							</Button>
 						</View>
+					</View>
+
+					<Separator />
+
+					{/* Security Section */}
+					<View style={{ marginBottom: 8 }}>
+						<Text
+							variant="label"
+							style={{
+								fontSize: 13,
+								fontWeight: "600",
+								opacity: 0.7,
+								marginBottom: 12,
+							}}
+						>
+							SECURITY
+						</Text>
+						<View
+							style={{
+								flexDirection: "row",
+								alignItems: "center",
+								justifyContent: "space-between",
+								gap: 12,
+								paddingVertical: 14,
+								borderRadius: 12,
+							}}
+						>
+							<View style={{ flex: 1, marginRight: 12 }}>
+								<Text style={{ fontSize: 15, fontWeight: "500" }}>
+									Lock Screen
+								</Text>
+								<Text
+									style={{
+										fontSize: 12,
+										opacity: 0.6,
+										marginTop: 4,
+									}}
+								>
+									Require Face ID, Touch ID, or passcode to open Whisper
+								</Text>
+							</View>
+							<Switch
+								value={isAuthenticating || localAuthToggle}
+								onValueChange={handleLocalAuthToggle}
+								disabled={isAuthenticating || isLocalAuthAvailable === false}
+								trackColor={{ false: theme.muted, true: theme.green }}
+								thumbColor={theme.background}
+								ios_backgroundColor={theme.muted}
+							/>
+						</View>
+						{authStatusMessage && (
+							<Text
+								style={{
+									fontSize: 12,
+									color:
+										localAuthToggle || authStatusMessage.includes("enabled")
+											? theme.green
+											: theme.textMuted,
+									marginTop: 8,
+								}}
+							>
+								{authStatusMessage}
+							</Text>
+						)}
+						{isAuthenticating && (
+							<Text
+								style={{
+									fontSize: 12,
+									color: theme.textMuted,
+									marginTop: 8,
+								}}
+							>
+								Verifying...
+							</Text>
+						)}
 					</View>
 
 					<Separator />

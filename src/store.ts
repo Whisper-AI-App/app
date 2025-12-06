@@ -6,6 +6,7 @@ const valuesSchema = {
 	name: { type: "string" as const },
 	onboardedAt: { type: "string" as const },
 	theme: { type: "string" as const },
+	localAuthEnabled: { type: "boolean" as const },
 	// Model card data - stores complete WhisperLLMCard as JSON
 	ai_chat_model_card: { type: "string" as const },
 	ai_chat_model_cardId: { type: "string" as const },

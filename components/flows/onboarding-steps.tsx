@@ -1,8 +1,9 @@
-import { Bird, Rocket } from "lucide-react-native";
 import { Icon } from "@/components/ui/icon";
 import type { OnboardingStep } from "@/components/ui/onboarding";
 import { Colors } from "@/theme/colors";
+import { Bird, Rocket, ShieldCheck } from "lucide-react-native";
 import { Logo } from "../logo";
+import { LocalAuthStepContent } from "./local-auth-step";
 
 export const onboardingSteps: OnboardingStep[] = [
 	{
@@ -30,6 +31,22 @@ export const onboardingSteps: OnboardingStep[] = [
 	},
 	{
 		id: "3",
+		title: "Secure Your Chats",
+		description:
+			"Add Face ID, Touch ID, or passcode protection. Your conversations stay private even if someone picks up your device.",
+		icon: (
+			<Icon
+				name={ShieldCheck}
+				size={128}
+				lightColor={Colors.light.secondaryForeground}
+				darkColor={Colors.dark.secondaryForeground}
+				strokeWidth={1.35}
+			/>
+		),
+		customContent: <LocalAuthStepContent />,
+	},
+	{
+		id: "4",
 		title: "Get Started",
 		description:
 			"We'll prepare your private AI by downloading the model locally. Once ready, you can start chatting — privately, instantly.",

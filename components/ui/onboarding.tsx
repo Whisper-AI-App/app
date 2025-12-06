@@ -27,6 +27,7 @@ export interface OnboardingStep {
 	image?: React.ReactNode;
 	icon?: React.ReactNode;
 	backgroundColor?: string;
+	customContent?: React.ReactNode;
 }
 
 export interface OnboardingProps {
@@ -188,6 +189,9 @@ export function Onboarding({
 						</Text>
 					</View>
 
+					{step.customContent && (
+						<View style={styles.customContent}>{step.customContent}</View>
+					)}
 					{children && <View style={styles.customContent}>{children}</View>}
 				</View>
 			</Animated.View>

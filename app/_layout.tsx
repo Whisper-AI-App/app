@@ -10,6 +10,7 @@ import { Stack } from "expo-router";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import type { Store } from "tinybase";
 import { Provider, useCreatePersister } from "tinybase/ui-react";
+import { AuthGate } from "@/components/auth-gate";
 import { StatusBar } from "@/components/status-bar";
 import { AIChatProvider } from "@/contexts/AIChatContext";
 import { initStore, store, storeFilePath } from "@/src/store";
@@ -50,12 +51,14 @@ export default function RootLayout() {
 	return (
 		<GestureHandlerRootView>
 			<Provider store={store as unknown as Store}>
-				<AIChatProvider>
-					<ThemeProvider>
-						<StatusBar />
-						<Stack screenOptions={{ headerShown: false }} />
-					</ThemeProvider>
-				</AIChatProvider>
+				<AuthGate>
+					<AIChatProvider>
+						<ThemeProvider>
+							<StatusBar />
+							<Stack screenOptions={{ headerShown: false }} />
+						</ThemeProvider>
+					</AIChatProvider>
+				</AuthGate>
 			</Provider>
 		</GestureHandlerRootView>
 	);
