@@ -12,8 +12,10 @@ import {
 } from "@/src/actions/ai-chat-model";
 import { clearConversations, resetEverything } from "@/src/actions/reset";
 import { Colors } from "@/theme/colors";
+import { BORDER_RADIUS } from "@/theme/globals";
 import { useRouter } from "expo-router";
-import { ChevronLeft } from "lucide-react-native";
+import { ChevronLeft, ChevronRight } from "lucide-react-native";
+import { TouchableOpacity } from "react-native";
 import { useState } from "react";
 import { useColorScheme } from "react-native";
 import { ScrollView } from "react-native-gesture-handler";
@@ -133,6 +135,26 @@ export default function Settings() {
 							APPEARANCE
 						</Text>
 						<ModeToggle showLabel={true} />
+
+						{/* Chat Background */}
+						<TouchableOpacity
+							style={{
+								marginTop: 16,
+								backgroundColor: theme.card,
+								borderRadius: BORDER_RADIUS / 2,
+								padding: 14,
+								flexDirection: "row",
+								alignItems: "center",
+								justifyContent: "space-between",
+							}}
+							onPress={() => router.push("/settings/background")}
+							activeOpacity={0.7}
+						>
+							<Text style={{ fontSize: 16, fontWeight: "500" }}>
+								Chat Background
+							</Text>
+							<ChevronRight color={theme.textMuted} strokeWidth={2} size={20} />
+						</TouchableOpacity>
 					</View>
 
 					<Separator />

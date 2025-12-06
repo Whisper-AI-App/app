@@ -12,7 +12,8 @@
 			"supportsTablet": true,
 			"bundleIdentifier": "org.avatechnologies.whisper",
 			"infoPlist": {
-				"ITSAppUsesNonExemptEncryption": false
+				"ITSAppUsesNonExemptEncryption": false,
+				"NSPhotoLibraryUsageDescription": "Whisper needs access to your photos to set a custom chat background."
 			},
 			"entitlements": {
 				"com.apple.developer.kernel.increased-memory-limit": true,
@@ -23,7 +24,10 @@
 		"android": {
 			"edgeToEdgeEnabled": true,
 			"predictiveBackGestureEnabled": false,
-			"package": "org.avatechnologies.whisper"
+			"package": "org.avatechnologies.whisper",
+			"permissions": [
+				"android.permission.READ_MEDIA_IMAGES"
+			]
 		},
 		"web": {
 			"output": "static",
@@ -31,6 +35,12 @@
 		},
 		"plugins": [
 			"expo-router",
+			[
+				"expo-image-picker",
+				{
+					"photosPermission": "Whisper needs access to your photos to set a custom chat background."
+				}
+			],
 			[
 				"expo-splash-screen",
 				{

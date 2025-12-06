@@ -1,3 +1,4 @@
+import { ChatBackground } from "@/components/chat-background";
 import { useAIChat } from "@/contexts/AIChatContext";
 import { useColor } from "@/hooks/useColor";
 import { useColorScheme } from "@/hooks/useColorScheme";
@@ -353,6 +354,7 @@ export default function Chat({
 				disableKeyboardHandling
 				style={{ flex: 1 }}
 			>
+				<ChatBackground>
 				<View style={{ flex: 1, position: "relative" }}>
 					<View
 						style={{
@@ -567,6 +569,7 @@ export default function Chat({
 						/>
 					</View>
 				</View>
+				</ChatBackground>
 			</BottomSheet>
 		</>
 	);
