@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Alert, StyleSheet, TouchableOpacity } from "react-native";
 import { ScrollView } from "react-native-gesture-handler";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -39,9 +39,19 @@ export default function BackgroundSettings() {
   const backgroundType = (useValue("chat_background_type") as BackgroundType) ?? "default";
   const backgroundUri = useValue("chat_background_uri") as string | undefined;
   const presetId = useValue("chat_background_preset_id") as string | undefined;
-  const blur = (useValue("chat_background_blur") as number) ?? 0;
-  const grain = (useValue("chat_background_grain") as number) ?? 0;
-  const opacity = (useValue("chat_background_opacity") as number) ?? 70;
+  const storedBlur = (useValue("chat_background_blur") as number) ?? 0;
+  const storedGrain = (useValue("chat_background_grain") as number) ?? 0;
+  const storedOpacity = (useValue("chat_background_opacity") as number) ?? 70;
+
+  // Local state for smooth slider interaction (avoids store writes on every tick)
+  const [localBlur, setLocalBlur] = useState(storedBlur);
+  const [localGrain, setLocalGrain] = useState(storedGrain);
+  const [localOpacity, setLocalOpacity] = useState(storedOpacity);
+
+  // Sync local state when store values change externally (e.g., reset)
+  useEffect(() => { setLocalBlur(storedBlur); }, [storedBlur]);
+  useEffect(() => { setLocalGrain(storedGrain); }, [storedGrain]);
+  useEffect(() => { setLocalOpacity(storedOpacity); }, [storedOpacity]);
 
   // Check if customization controls should be shown (only for custom or preset backgrounds)
   const showCustomizationControls = backgroundType === "custom" || (backgroundType === "preset" && presetId !== "none");
@@ -116,16 +126,16 @@ export default function BackgroundSettings() {
             {backgroundType === "custom" && backgroundUri ? (
               <Image
                 source={{ uri: backgroundUri }}
-                style={[styles.previewImage, { opacity: opacity / 100 }]}
+                style={[styles.previewImage, { opacity: localOpacity / 100 }]}
                 contentFit="cover"
-                blurRadius={blur}
+                blurRadius={localBlur}
               />
             ) : backgroundType === "preset" && presetId && presetId !== "none" ? (
               <Image
                 source={getPresetById(presetId)?.image}
-                style={[styles.previewImage, { opacity: opacity / 100 }]}
+                style={[styles.previewImage, { opacity: localOpacity / 100 }]}
                 contentFit="cover"
-                blurRadius={blur}
+                blurRadius={localBlur}
               />
             ) : (
               <View
@@ -142,14 +152,14 @@ export default function BackgroundSettings() {
               </View>
             )}
             {/* Grain overlay - only when there's a background image */}
-            {showCustomizationControls && grain > 0 && (
+            {showCustomizationControls && localGrain > 0 && (
               <Image
                 source={
                   colorScheme === "dark"
                     ? require("@/assets/images/grain-dark.png")
                     : require("@/assets/images/grain.png")
                 }
-                style={[StyleSheet.absoluteFillObject, { opacity: grain / 100 }]}
+                style={[StyleSheet.absoluteFillObject, { opacity: localGrain / 100 }]}
                 contentFit="cover"
               />
             )}
@@ -177,12 +187,13 @@ export default function BackgroundSettings() {
                   Opacity
                 </Text>
                 <Text style={[styles.sliderValue, { color: theme.textMuted }]}>
-                  {Math.round(opacity)}%
+                  {Math.round(localOpacity)}%
                 </Text>
               </View>
               <Slider
-                value={opacity}
-                onValueChange={setBackgroundOpacity}
+                value={localOpacity}
+                onValueChange={setLocalOpacity}
+                onSlidingComplete={setBackgroundOpacity}
                 minimumValue={10}
                 maximumValue={100}
                 step={1}
@@ -196,12 +207,13 @@ export default function BackgroundSettings() {
                   Blur
                 </Text>
                 <Text style={[styles.sliderValue, { color: theme.textMuted }]}>
-                  {Math.round(blur)}
+                  {Math.round(localBlur)}
                 </Text>
               </View>
               <Slider
-                value={blur}
-                onValueChange={setBackgroundBlur}
+                value={localBlur}
+                onValueChange={setLocalBlur}
+                onSlidingComplete={setBackgroundBlur}
                 minimumValue={0}
                 maximumValue={20}
                 step={1}
@@ -215,12 +227,13 @@ export default function BackgroundSettings() {
                   Grain
                 </Text>
                 <Text style={[styles.sliderValue, { color: theme.textMuted }]}>
-                  {Math.round(grain)}%
+                  {Math.round(localGrain)}%
                 </Text>
               </View>
               <Slider
-                value={grain}
-                onValueChange={setBackgroundGrain}
+                value={localGrain}
+                onValueChange={setLocalGrain}
+                onSlidingComplete={setBackgroundGrain}
                 minimumValue={0}
                 maximumValue={100}
                 step={1}

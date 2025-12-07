@@ -12,6 +12,8 @@ import { useColor } from "@/hooks/useColor";
 interface SliderProps {
   value: number;
   onValueChange: (value: number) => void;
+  /** Called when the user finishes dragging the slider */
+  onSlidingComplete?: (value: number) => void;
   minimumValue?: number;
   maximumValue?: number;
   step?: number;
@@ -27,6 +29,7 @@ interface SliderProps {
 export function Slider({
   value,
   onValueChange,
+  onSlidingComplete,
   minimumValue = 0,
   maximumValue = 100,
   step = 1,
@@ -45,12 +48,19 @@ export function Slider({
   const trackWidth = useSharedValue(0);
   const translateX = useSharedValue(0);
   const lastSteppedValue = useRef(value);
+  const currentDragValue = useRef(value);
+  const lastHapticTime = useRef(0);
 
   const range = maximumValue - minimumValue;
   const normalizedValue = (value - minimumValue) / range;
 
+  // Throttle haptics to max ~30 per second for performance
   const triggerHaptic = useCallback(() => {
-    Haptics.selectionAsync();
+    const now = Date.now();
+    if (now - lastHapticTime.current > 33) {
+      lastHapticTime.current = now;
+      Haptics.selectionAsync();
+    }
   }, []);
 
   const updateValue = useCallback(
@@ -69,6 +79,9 @@ export function Slider({
       // Clamp to range
       newValue = Math.max(minimumValue, Math.min(maximumValue, newValue));
 
+      // Track current drag value for onSlidingComplete
+      currentDragValue.current = newValue;
+
       // Trigger haptic feedback when stepping to a new value
       if (newValue !== lastSteppedValue.current) {
         lastSteppedValue.current = newValue;
@@ -80,19 +93,29 @@ export function Slider({
     [disabled, minimumValue, maximumValue, range, step, onValueChange, triggerHaptic]
   );
 
+  const handleSlidingComplete = useCallback(() => {
+    if (onSlidingComplete) {
+      onSlidingComplete(currentDragValue.current);
+    }
+  }, [onSlidingComplete]);
+
   const panGesture = Gesture.Pan()
+    .onStart(() => {
+      translateX.value = normalizedValue * trackWidth.value;
+    })
     .onUpdate((event) => {
       const x = translateX.value + event.translationX;
       runOnJS(updateValue)(x, trackWidth.value);
     })
-    .onStart(() => {
-      translateX.value = normalizedValue * trackWidth.value;
+    .onEnd(() => {
+      runOnJS(handleSlidingComplete)();
     })
     .enabled(!disabled);
 
   const tapGesture = Gesture.Tap()
     .onEnd((event) => {
       runOnJS(updateValue)(event.x, trackWidth.value);
+      runOnJS(handleSlidingComplete)();
     })
     .enabled(!disabled);
 

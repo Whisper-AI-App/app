@@ -14,6 +14,7 @@ import { clearConversations, resetEverything } from "@/src/actions/reset";
 import { Colors } from "@/theme/colors";
 import { BORDER_RADIUS } from "@/theme/globals";
 import { useRouter } from "expo-router";
+import * as Haptics from "expo-haptics";
 import { ChevronLeft, ChevronRight } from "lucide-react-native";
 import { TouchableOpacity } from "react-native";
 import { useState } from "react";
@@ -147,7 +148,10 @@ export default function Settings() {
 								alignItems: "center",
 								justifyContent: "space-between",
 							}}
-							onPress={() => router.push("/settings/background")}
+							onPress={() => {
+								Haptics.selectionAsync();
+								router.push("/settings/background");
+							}}
 							activeOpacity={0.7}
 						>
 							<Text style={{ fontSize: 16, fontWeight: "500" }}>
