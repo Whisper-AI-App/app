@@ -1,9 +1,10 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Alert, StyleSheet, TouchableOpacity } from "react-native";
 import { ScrollView } from "react-native-gesture-handler";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import { Image } from "expo-image";
+import * as Haptics from "expo-haptics";
 import { useValue } from "tinybase/ui-react";
 import { ChevronLeft } from "lucide-react-native";
 import Ionicons from "@expo/vector-icons/Ionicons";
@@ -12,6 +13,7 @@ import { Button } from "@/components/ui/button";
 import { Text } from "@/components/ui/text";
 import { View } from "@/components/ui/view";
 import { Separator } from "@/components/ui/separator";
+import { Dial } from "@/components/ui/dial";
 import { BackgroundPresetGrid } from "@/components/background-preset-grid";
 import { Colors } from "@/theme/colors";
 import { BORDER_RADIUS } from "@/theme/globals";
@@ -20,6 +22,10 @@ import {
   pickBackgroundFromLibrary,
   setPresetBackground,
   resetToDefaultBackground,
+  setBackgroundBlur,
+  setBackgroundGrain,
+  setBackgroundOpacity,
+  resetBackgroundAdjustments,
   type BackgroundType,
 } from "@/src/actions/chat-background";
 import { getPresetById, type BackgroundPreset } from "@/src/data/background-presets";
@@ -34,6 +40,22 @@ export default function BackgroundSettings() {
   const backgroundType = (useValue("chat_background_type") as BackgroundType) ?? "default";
   const backgroundUri = useValue("chat_background_uri") as string | undefined;
   const presetId = useValue("chat_background_preset_id") as string | undefined;
+  const storedBlur = (useValue("chat_background_blur") as number) ?? 0;
+  const storedGrain = (useValue("chat_background_grain") as number) ?? 0;
+  const storedOpacity = (useValue("chat_background_opacity") as number) ?? 70;
+
+  // Local state for smooth slider interaction (avoids store writes on every tick)
+  const [localBlur, setLocalBlur] = useState(storedBlur);
+  const [localGrain, setLocalGrain] = useState(storedGrain);
+  const [localOpacity, setLocalOpacity] = useState(storedOpacity);
+
+  // Sync local state when store values change externally (e.g., reset)
+  useEffect(() => { setLocalBlur(storedBlur); }, [storedBlur]);
+  useEffect(() => { setLocalGrain(storedGrain); }, [storedGrain]);
+  useEffect(() => { setLocalOpacity(storedOpacity); }, [storedOpacity]);
+
+  // Check if customization controls should be shown (only for custom or preset backgrounds)
+  const showCustomizationControls = backgroundType === "custom" || (backgroundType === "preset" && presetId !== "none");
 
   const handlePickFromLibrary = () => {
     setIsPickingImage(true);
@@ -68,7 +90,7 @@ export default function BackgroundSettings() {
     if (backgroundType === "preset" && presetId) {
       return presetId === "none" ? "None" : presetId.replace("-", " ");
     }
-    return "Default";
+    return "None";
   };
 
   return (
@@ -93,25 +115,28 @@ export default function BackgroundSettings() {
         {/* Current Background Preview */}
         <View style={styles.section}>
           <Text style={[styles.sectionLabel, { opacity: 0.7 }]}>
-            CURRENT BACKGROUND
+            PREVIEW
           </Text>
           <View
             style={[
               styles.previewContainer,
-              { backgroundColor: theme.card, borderColor: theme.border },
+              { backgroundColor: theme.background, borderColor: theme.border },
             ]}
           >
+            {/* Background image */}
             {backgroundType === "custom" && backgroundUri ? (
               <Image
                 source={{ uri: backgroundUri }}
-                style={styles.previewImage}
+                style={[styles.previewImage, { opacity: localOpacity / 100 }]}
                 contentFit="cover"
+                blurRadius={localBlur}
               />
             ) : backgroundType === "preset" && presetId && presetId !== "none" ? (
               <Image
                 source={getPresetById(presetId)?.image}
-                style={styles.previewImage}
+                style={[styles.previewImage, { opacity: localOpacity / 100 }]}
                 contentFit="cover"
+                blurRadius={localBlur}
               />
             ) : (
               <View
@@ -127,8 +152,82 @@ export default function BackgroundSettings() {
                 </Text>
               </View>
             )}
+            {/* Grain overlay - only when there's a background image */}
+            {showCustomizationControls && localGrain > 0 && (
+              <Image
+                source={
+                  colorScheme === "dark"
+                    ? require("@/assets/images/grain-dark.png")
+                    : require("@/assets/images/grain.png")
+                }
+                style={[StyleSheet.absoluteFillObject, { opacity: localGrain / 100 }]}
+                contentFit="cover"
+              />
+            )}
+            {/* Theme overlay for text readability - always rendered like ChatBackground */}
+            <View
+              style={[
+                StyleSheet.absoluteFillObject,
+                { backgroundColor: theme.background, opacity: 0.3 },
+              ]}
+            />
           </View>
         </View>
+
+        {/* Customization Controls - only show when a background is selected */}
+        {showCustomizationControls && (
+          <View style={styles.section}>
+            {/* Dials Row */}
+            <View style={styles.dialsContainer}>
+              <Dial
+                value={localOpacity}
+                onValueChange={setLocalOpacity}
+                onDialComplete={setBackgroundOpacity}
+                minimumValue={10}
+                maximumValue={100}
+                step={1}
+                size={110}
+                label="Opacity"
+                unit="%"
+              />
+              <Dial
+                value={localBlur}
+                onValueChange={setLocalBlur}
+                onDialComplete={setBackgroundBlur}
+                minimumValue={0}
+                maximumValue={20}
+                step={1}
+                size={110}
+                label="Blur"
+              />
+              <Dial
+                value={localGrain}
+                onValueChange={setLocalGrain}
+                onDialComplete={setBackgroundGrain}
+                minimumValue={0}
+                maximumValue={100}
+                step={1}
+                size={110}
+                label="Grain"
+                unit="%"
+              />
+            </View>
+
+            {/* Reset Adjustments Button */}
+            <TouchableOpacity
+              style={styles.resetAdjustmentsButton}
+              onPress={() => {
+                Haptics.selectionAsync();
+                resetBackgroundAdjustments();
+              }}
+              activeOpacity={0.7}
+            >
+              <Text style={[styles.resetAdjustmentsText, { color: theme.blue }]}>
+                Reset Adjustments
+              </Text>
+            </TouchableOpacity>
+          </View>
+        )}
 
         <Separator style={styles.separator} />
 
@@ -177,7 +276,7 @@ export default function BackgroundSettings() {
             PRESETS
           </Text>
           <BackgroundPresetGrid
-            selectedPresetId={backgroundType === "preset" ? presetId : undefined}
+            selectedPresetId={backgroundType === "preset" ? presetId : (backgroundType === "default" || !backgroundType ? "none" : undefined)}
             onSelectPreset={handleSelectPreset}
           />
         </View>
@@ -274,5 +373,21 @@ const styles = StyleSheet.create({
     fontSize: 13,
     marginTop: 8,
     paddingHorizontal: 24,
+  },
+  dialsContainer: {
+    flexDirection: "row",
+    justifyContent: "space-around",
+    alignItems: "flex-start",
+    paddingHorizontal: 16,
+    marginBottom: 16,
+  },
+  resetAdjustmentsButton: {
+    alignItems: "center",
+    paddingVertical: 8,
+    marginTop: 4,
+  },
+  resetAdjustmentsText: {
+    fontSize: 15,
+    fontWeight: "500",
   },
 });

@@ -23,6 +23,9 @@ const valuesSchema = {
 	chat_background_type: { type: "string" as const }, // "default" | "preset" | "custom"
 	chat_background_uri: { type: "string" as const }, // URI to background image
 	chat_background_preset_id: { type: "string" as const }, // ID of preset if using preset
+	chat_background_blur: { type: "number" as const }, // Blur amount (0-20)
+	chat_background_grain: { type: "number" as const }, // Grain/noise amount (0-100)
+	chat_background_opacity: { type: "number" as const }, // Background opacity (0-100)
 };
 
 const tablesSchema = {
