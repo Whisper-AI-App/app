@@ -50,8 +50,10 @@ export const ChatPageHeader: React.FC<ChatHeaderProps> = ({
 						left: 56,
 						right: 100,
 						textAlign: "center",
+						paddingLeft: 16,
+						paddingRight: 24,
 					}}
-					numberOfLines={1}
+					numberOfLines={2}
 				>
 					{chatName}
 				</Text>
