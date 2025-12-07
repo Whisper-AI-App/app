@@ -1,5 +1,5 @@
 import { StyleSheet, View } from "react-native";
-import { ImageBackground } from "expo-image";
+import { ImageBackground, Image } from "expo-image";
 import { useValue } from "tinybase/ui-react";
 import { useColorScheme } from "@/hooks/useColorScheme";
 import { Colors } from "@/theme/colors";
@@ -12,11 +12,14 @@ interface ChatBackgroundProps {
   asBackgroundLayer?: boolean;
 }
 
+// Default values for customization settings
+const DEFAULT_BLUR = 0;
+const DEFAULT_GRAIN = 0;
+const DEFAULT_OPACITY = 70; // 70% opacity by default
+
 /**
  * A component that renders a customizable background for the chat interface.
- * Uses a two-layer approach for readability:
- * 1. Background image at low opacity
- * 2. Theme background overlay at high opacity
+ * Supports blur, grain/noise, and opacity customization.
  *
  * Can be used as a wrapper (default) or as an absolute positioned background layer.
  */
@@ -24,6 +27,9 @@ export function ChatBackground({ children, asBackgroundLayer = false }: ChatBack
   const backgroundType = (useValue("chat_background_type") as BackgroundType) ?? "default";
   const backgroundUri = useValue("chat_background_uri") as string | undefined;
   const presetId = useValue("chat_background_preset_id") as string | undefined;
+  const blur = (useValue("chat_background_blur") as number) ?? DEFAULT_BLUR;
+  const grain = (useValue("chat_background_grain") as number) ?? DEFAULT_GRAIN;
+  const opacity = (useValue("chat_background_opacity") as number) ?? DEFAULT_OPACITY;
   const colorScheme = useColorScheme() ?? "light";
   const theme = Colors[colorScheme];
 
@@ -43,13 +49,15 @@ export function ChatBackground({ children, asBackgroundLayer = false }: ChatBack
       return null; // "none" preset means no background image
     }
 
-    // Default: use the grain texture based on color scheme
-    return colorScheme === "dark"
-      ? require("@/assets/images/grain-dark.png")
-      : require("@/assets/images/grain.png");
+    // Default: no background image (same as "none" preset)
+    return null;
   };
 
   const source = getBackgroundSource();
+  const hasBackgroundImage = source !== null;
+  const imageOpacity = hasBackgroundImage ? opacity / 100 : 0.7;
+  const shouldApplyBlur = hasBackgroundImage && blur > 0;
+  const shouldApplyGrain = hasBackgroundImage && grain > 0;
 
   const containerStyle = asBackgroundLayer
     ? [styles.backgroundLayer, { backgroundColor: theme.background }]
@@ -60,11 +68,24 @@ export function ChatBackground({ children, asBackgroundLayer = false }: ChatBack
       {source && (
         <ImageBackground
           source={source}
-          style={[StyleSheet.absoluteFillObject, styles.backgroundImage]}
+          style={[StyleSheet.absoluteFillObject, { opacity: imageOpacity }]}
+          contentFit="cover"
+          blurRadius={shouldApplyBlur ? blur : 0}
+        />
+      )}
+      {/* Grain/noise overlay */}
+      {shouldApplyGrain && (
+        <Image
+          source={
+            colorScheme === "dark"
+              ? require("@/assets/images/grain-dark.png")
+              : require("@/assets/images/grain.png")
+          }
+          style={[StyleSheet.absoluteFillObject, { opacity: grain / 100 }]}
           contentFit="cover"
         />
       )}
-      {/* Overlay for readability - blends background with theme color */}
+      {/* Theme overlay for text readability */}
       <View
         style={[
           StyleSheet.absoluteFillObject,

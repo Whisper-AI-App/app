@@ -90,14 +90,14 @@ export function setPresetBackground(presetId: string): void {
 }
 
 /**
- * Reset to default background (no custom image)
+ * Reset to default background (none preset)
  */
 export function resetToDefaultBackground(): void {
   cleanupOldCustomBackground();
 
-  store.setValue("chat_background_type", "default");
+  store.setValue("chat_background_type", "preset");
   store.setValue("chat_background_uri", "");
-  store.setValue("chat_background_preset_id", "");
+  store.setValue("chat_background_preset_id", "none");
 }
 
 /**
@@ -143,4 +143,37 @@ export async function validateCustomBackground(): Promise<boolean> {
     resetToDefaultBackground();
     return false;
   }
+}
+
+/**
+ * Set the background blur amount (0-20)
+ */
+export function setBackgroundBlur(blur: number): void {
+  const clampedBlur = Math.max(0, Math.min(20, blur));
+  store.setValue("chat_background_blur", clampedBlur);
+}
+
+/**
+ * Set the background grain/noise amount (0-100)
+ */
+export function setBackgroundGrain(grain: number): void {
+  const clampedGrain = Math.max(0, Math.min(100, grain));
+  store.setValue("chat_background_grain", clampedGrain);
+}
+
+/**
+ * Set the background opacity (0-100)
+ */
+export function setBackgroundOpacity(opacity: number): void {
+  const clampedOpacity = Math.max(10, Math.min(100, opacity));
+  store.setValue("chat_background_opacity", clampedOpacity);
+}
+
+/**
+ * Reset adjustments to default values (blur: 0, grain: 0, opacity: 70)
+ */
+export function resetBackgroundAdjustments(): void {
+  store.setValue("chat_background_blur", 0);
+  store.setValue("chat_background_grain", 0);
+  store.setValue("chat_background_opacity", 70);
 }

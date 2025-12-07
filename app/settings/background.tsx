@@ -12,6 +12,7 @@ import { Button } from "@/components/ui/button";
 import { Text } from "@/components/ui/text";
 import { View } from "@/components/ui/view";
 import { Separator } from "@/components/ui/separator";
+import { Slider } from "@/components/ui/slider";
 import { BackgroundPresetGrid } from "@/components/background-preset-grid";
 import { Colors } from "@/theme/colors";
 import { BORDER_RADIUS } from "@/theme/globals";
@@ -20,6 +21,10 @@ import {
   pickBackgroundFromLibrary,
   setPresetBackground,
   resetToDefaultBackground,
+  setBackgroundBlur,
+  setBackgroundGrain,
+  setBackgroundOpacity,
+  resetBackgroundAdjustments,
   type BackgroundType,
 } from "@/src/actions/chat-background";
 import { getPresetById, type BackgroundPreset } from "@/src/data/background-presets";
@@ -34,6 +39,12 @@ export default function BackgroundSettings() {
   const backgroundType = (useValue("chat_background_type") as BackgroundType) ?? "default";
   const backgroundUri = useValue("chat_background_uri") as string | undefined;
   const presetId = useValue("chat_background_preset_id") as string | undefined;
+  const blur = (useValue("chat_background_blur") as number) ?? 0;
+  const grain = (useValue("chat_background_grain") as number) ?? 0;
+  const opacity = (useValue("chat_background_opacity") as number) ?? 70;
+
+  // Check if customization controls should be shown (only for custom or preset backgrounds)
+  const showCustomizationControls = backgroundType === "custom" || (backgroundType === "preset" && presetId !== "none");
 
   const handlePickFromLibrary = () => {
     setIsPickingImage(true);
@@ -68,7 +79,7 @@ export default function BackgroundSettings() {
     if (backgroundType === "preset" && presetId) {
       return presetId === "none" ? "None" : presetId.replace("-", " ");
     }
-    return "Default";
+    return "None";
   };
 
   return (
@@ -93,25 +104,28 @@ export default function BackgroundSettings() {
         {/* Current Background Preview */}
         <View style={styles.section}>
           <Text style={[styles.sectionLabel, { opacity: 0.7 }]}>
-            CURRENT BACKGROUND
+            PREVIEW
           </Text>
           <View
             style={[
               styles.previewContainer,
-              { backgroundColor: theme.card, borderColor: theme.border },
+              { backgroundColor: theme.background, borderColor: theme.border },
             ]}
           >
+            {/* Background image */}
             {backgroundType === "custom" && backgroundUri ? (
               <Image
                 source={{ uri: backgroundUri }}
-                style={styles.previewImage}
+                style={[styles.previewImage, { opacity: opacity / 100 }]}
                 contentFit="cover"
+                blurRadius={blur}
               />
             ) : backgroundType === "preset" && presetId && presetId !== "none" ? (
               <Image
                 source={getPresetById(presetId)?.image}
-                style={styles.previewImage}
+                style={[styles.previewImage, { opacity: opacity / 100 }]}
                 contentFit="cover"
+                blurRadius={blur}
               />
             ) : (
               <View
@@ -127,8 +141,104 @@ export default function BackgroundSettings() {
                 </Text>
               </View>
             )}
+            {/* Grain overlay - only when there's a background image */}
+            {showCustomizationControls && grain > 0 && (
+              <Image
+                source={
+                  colorScheme === "dark"
+                    ? require("@/assets/images/grain-dark.png")
+                    : require("@/assets/images/grain.png")
+                }
+                style={[StyleSheet.absoluteFillObject, { opacity: grain / 100 }]}
+                contentFit="cover"
+              />
+            )}
+            {/* Theme overlay for text readability - always rendered like ChatBackground */}
+            <View
+              style={[
+                StyleSheet.absoluteFillObject,
+                { backgroundColor: theme.background, opacity: 0.3 },
+              ]}
+            />
           </View>
         </View>
+
+        {/* Customization Controls - only show when a background is selected */}
+        {showCustomizationControls && (
+          <View style={styles.section}>
+            <Text style={[styles.sectionLabel, { opacity: 0.7 }]}>
+              ADJUSTMENTS
+            </Text>
+
+            {/* Opacity Slider */}
+            <View style={styles.sliderContainer}>
+              <View style={styles.sliderHeader}>
+                <Text style={[styles.sliderLabel, { color: theme.text }]}>
+                  Opacity
+                </Text>
+                <Text style={[styles.sliderValue, { color: theme.textMuted }]}>
+                  {Math.round(opacity)}%
+                </Text>
+              </View>
+              <Slider
+                value={opacity}
+                onValueChange={setBackgroundOpacity}
+                minimumValue={10}
+                maximumValue={100}
+                step={1}
+              />
+            </View>
+
+            {/* Blur Slider */}
+            <View style={styles.sliderContainer}>
+              <View style={styles.sliderHeader}>
+                <Text style={[styles.sliderLabel, { color: theme.text }]}>
+                  Blur
+                </Text>
+                <Text style={[styles.sliderValue, { color: theme.textMuted }]}>
+                  {Math.round(blur)}
+                </Text>
+              </View>
+              <Slider
+                value={blur}
+                onValueChange={setBackgroundBlur}
+                minimumValue={0}
+                maximumValue={20}
+                step={1}
+              />
+            </View>
+
+            {/* Grain Slider */}
+            <View style={styles.sliderContainer}>
+              <View style={styles.sliderHeader}>
+                <Text style={[styles.sliderLabel, { color: theme.text }]}>
+                  Grain
+                </Text>
+                <Text style={[styles.sliderValue, { color: theme.textMuted }]}>
+                  {Math.round(grain)}%
+                </Text>
+              </View>
+              <Slider
+                value={grain}
+                onValueChange={setBackgroundGrain}
+                minimumValue={0}
+                maximumValue={100}
+                step={1}
+              />
+            </View>
+
+            {/* Reset Adjustments Button */}
+            <TouchableOpacity
+              style={styles.resetAdjustmentsButton}
+              onPress={resetBackgroundAdjustments}
+              activeOpacity={0.7}
+            >
+              <Text style={[styles.resetAdjustmentsText, { color: theme.blue }]}>
+                Reset Adjustments
+              </Text>
+            </TouchableOpacity>
+          </View>
+        )}
 
         <Separator style={styles.separator} />
 
@@ -177,7 +287,7 @@ export default function BackgroundSettings() {
             PRESETS
           </Text>
           <BackgroundPresetGrid
-            selectedPresetId={backgroundType === "preset" ? presetId : undefined}
+            selectedPresetId={backgroundType === "preset" ? presetId : (backgroundType === "default" || !backgroundType ? "none" : undefined)}
             onSelectPreset={handleSelectPreset}
           />
         </View>
@@ -274,5 +384,32 @@ const styles = StyleSheet.create({
     fontSize: 13,
     marginTop: 8,
     paddingHorizontal: 24,
+  },
+  sliderContainer: {
+    paddingHorizontal: 24,
+    marginBottom: 24,
+  },
+  sliderHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 12,
+  },
+  sliderLabel: {
+    fontSize: 16,
+    fontWeight: "500",
+  },
+  sliderValue: {
+    fontSize: 14,
+    fontWeight: "400",
+  },
+  resetAdjustmentsButton: {
+    alignItems: "center",
+    paddingVertical: 8,
+    marginTop: 4,
+  },
+  resetAdjustmentsText: {
+    fontSize: 15,
+    fontWeight: "500",
   },
 });
