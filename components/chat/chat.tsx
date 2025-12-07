@@ -4,11 +4,11 @@ import { BottomSheet, useBottomSheet } from "@/components/ui/bottom-sheet";
 import { Icon } from "@/components/ui/icon";
 import { SearchButton } from "@/components/ui/searchbutton";
 import { View } from "@/components/ui/view";
-import { useColor } from "@/hooks/useColor";
 import { useChatCompletion } from "@/hooks/useChatCompletion";
 import { useChatMessages } from "@/hooks/useChatMessages";
 import { useChatRenderers } from "@/hooks/useChatRenderers";
 import { useChatState } from "@/hooks/useChatState";
+import { useColor } from "@/hooks/useColor";
 import { MessageCircle } from "lucide-react-native";
 import { type ReactNode, useCallback, useEffect, useState } from "react";
 import { Dimensions } from "react-native";
@@ -71,8 +71,8 @@ export default function Chat({
 	const {
 		defaultContainerStyle,
 		renderBubble,
-		renderFooter,
 		renderInputToolbar,
+		InputToolbar,
 	} = useChatRenderers({
 		setIsInputFocused,
 		isTyping: isAiTyping,
@@ -125,7 +125,7 @@ export default function Chat({
 				style={{ flex: 1 }}
 			>
 				<ChatBackground>
-					<View style={{ flex: 1, position: "relative" }}>
+					<View style={{ flex: 1 }}>
 						<ChatHeader
 							chatName={chatRow.name as string | undefined}
 							hasMessages={messages.length > 0}
@@ -140,10 +140,8 @@ export default function Chat({
 
 						<View
 							style={{
-								height: SCREEN_HEIGHT * 0.9 - 50,
-								zIndex: 1,
+								flex: 1,
 								marginTop: -4,
-								paddingBottom: 6,
 							}}
 						>
 							{messages.length === 0 && !currentChatId && (
@@ -163,7 +161,20 @@ export default function Chat({
 							<GiftedChat
 								key={currentChatId || "new-chat"}
 								messages={[
-									// Add streaming message at the beginning (it will appear at bottom due to inverted)
+									// Typing indicator as a message (when AI typing but no text yet)
+									...(isAiTyping && !streamingText
+										? [
+												{
+													_id: "typing-indicator",
+													text: "",
+													user: {
+														_id: 2,
+														name: "AI",
+													},
+												} as IMessage,
+											]
+										: []),
+									// Streaming message (when AI has started responding)
 									...(isAiTyping && streamingText
 										? [
 												{
@@ -186,27 +197,33 @@ export default function Chat({
 											}) as IMessage,
 									),
 								]}
-								onSend={(messages) => onSend(messages)}
+								onSend={(msgs) => onSend(msgs)}
 								user={{
 									_id: 1,
 								}}
 								renderAvatar={null}
 								alwaysShowSend
-								isTyping={isAiTyping && !streamingText}
+								isTyping={false}
 								bottomOffset={0}
-								minInputToolbarHeight={60}
+								minInputToolbarHeight={0}
 								renderBubble={renderBubble}
 								renderInputToolbar={renderInputToolbar}
-								renderFooter={renderFooter}
 								messagesContainerStyle={defaultContainerStyle}
 								keyboardShouldPersistTaps="handled"
 								inverted={true}
-								text={inputText}
-								onInputTextChanged={setInputText}
 							/>
 						</View>
 					</View>
 				</ChatBackground>
+				<InputToolbar
+					text={inputText}
+					onChangeText={setInputText}
+					onSend={() => {
+						if (inputText.trim()) {
+							onSend([{ text: inputText.trim() } as IMessage]);
+						}
+					}}
+				/>
 			</BottomSheet>
 		</>
 	);

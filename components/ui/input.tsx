@@ -1,3 +1,9 @@
+import { Icon } from "@/components/ui/icon";
+import { Text } from "@/components/ui/text";
+import { useColor } from "@/hooks/useColor";
+import { useColorScheme } from "@/hooks/useColorScheme";
+import { BORDER_RADIUS, CORNERS, FONT_SIZE, HEIGHT } from "@/theme/globals";
+import { GlassView, isLiquidGlassAvailable } from "expo-glass-effect";
 import type { LucideProps } from "lucide-react-native";
 import React, { forwardRef, type ReactElement, useState } from "react";
 import {
@@ -9,10 +15,6 @@ import {
 	type ViewStyle,
 } from "react-native";
 import { AutoGrowingTextInput } from "react-native-autogrow-textinput";
-import { Icon } from "@/components/ui/icon";
-import { Text } from "@/components/ui/text";
-import { useColor } from "@/hooks/useColor";
-import { BORDER_RADIUS, CORNERS, FONT_SIZE, HEIGHT } from "@/theme/globals";
 
 export interface InputProps extends Omit<TextInputProps, "style"> {
 	label?: string;
@@ -23,7 +25,7 @@ export interface InputProps extends Omit<TextInputProps, "style"> {
 	inputStyle?: TextStyle;
 	labelStyle?: TextStyle;
 	errorStyle?: TextStyle;
-	variant?: "filled" | "outline";
+	variant?: "filled" | "outline" | "chat";
 	disabled?: boolean;
 	type?: "input" | "textarea";
 	placeholder?: string;
@@ -55,6 +57,7 @@ export const Input = forwardRef<TextInput, InputProps>(
 		const [isFocused, setIsFocused] = useState(false);
 
 		// Theme colors
+		const theme = useColorScheme() ?? "light";
 		const cardColor = useColor("card");
 		const textColor = useColor("text");
 		const muted = useColor("textMuted");
@@ -77,6 +80,17 @@ export const Input = forwardRef<TextInput, InputProps>(
 			};
 
 			switch (variant) {
+				case "chat":
+					return {
+						...baseStyle,
+						borderWidth: 1,
+						borderColor: "rgba(100,100,100,0.2)",
+						backgroundColor: isLiquidGlassAvailable()
+							? "transparent"
+							: theme === "light"
+								? "rgba(245,245,245,0.95)"
+								: "rgba(20,20,20,0.95)",
+					};
 				case "outline":
 					return {
 						...baseStyle,
@@ -125,7 +139,14 @@ export const Input = forwardRef<TextInput, InputProps>(
 		};
 
 		const renderInputContent = () => (
-			<View style={containerStyle}>
+			<GlassView
+				style={[
+					containerStyle,
+					{
+						borderRadius: isTextarea ? BORDER_RADIUS : CORNERS,
+					},
+				]}
+			>
 				{/* Input Container */}
 				<Pressable
 					style={[getVariantStyle(), disabled && { opacity: 0.6 }]}
@@ -190,9 +211,16 @@ export const Input = forwardRef<TextInput, InputProps>(
 							)}
 
 							{/* TextInput section */}
+
 							<AutoGrowingTextInput
 								ref={ref as any}
-								style={[getInputStyle(), inputStyle]}
+								style={[
+									getInputStyle(),
+									inputStyle,
+									{
+										backgroundColor: "transparent",
+									},
+								]}
 								placeholderTextColor={error ? danger + "99" : muted}
 								placeholder={placeholder || "Type your message..."}
 								onFocus={handleFocus}
@@ -280,7 +308,7 @@ export const Input = forwardRef<TextInput, InputProps>(
 						{error}
 					</Text>
 				)}
-			</View>
+			</GlassView>
 		);
 
 		return renderInputContent();

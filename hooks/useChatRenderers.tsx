@@ -5,12 +5,21 @@ import { Markdown } from "@/components/ui/markdown";
 import { TypingIndicator } from "@/components/ui/typing-indicator";
 import { View } from "@/components/ui/view";
 import { useColorScheme } from "@/hooks/useColorScheme";
+import { useKeyboardHeight } from "@/hooks/useKeyboardHeight";
 import type { ChatRenderersProps } from "@/src/types/chat";
 import { Colors } from "@/theme/colors";
 import { SendHorizonal } from "lucide-react-native";
-import { useCallback } from "react";
-import type { IMessage } from "react-native-gifted-chat";
+import { useCallback, useEffect } from "react";
+import { Dimensions } from "react-native";
 import { Bubble } from "react-native-gifted-chat";
+import Animated, {
+	useAnimatedStyle,
+	useSharedValue,
+	withTiming,
+} from "react-native-reanimated";
+
+const { height: SCREEN_HEIGHT } = Dimensions.get("window");
+const BASE_BOTTOM = 32 + SCREEN_HEIGHT * 0.1;
 
 /**
  * Hook that returns render functions for GiftedChat.
@@ -23,12 +32,41 @@ export function useChatRenderers({
 }: ChatRenderersProps) {
 	const colorScheme = useColorScheme() ?? "light";
 	const theme = Colors[colorScheme];
+	const { keyboardHeight, keyboardAnimationDuration } = useKeyboardHeight();
+
+	// Animated keyboard offset for smooth toolbar movement
+	const keyboardOffset = useSharedValue(0);
+
+	useEffect(() => {
+		keyboardOffset.value = withTiming(keyboardHeight, {
+			duration: keyboardAnimationDuration || 200,
+		});
+	}, [keyboardHeight, keyboardAnimationDuration]);
+
+	const animatedToolbarStyle = useAnimatedStyle(() => ({
+		bottom:
+			BASE_BOTTOM +
+			keyboardOffset.value +
+			(keyboardOffset.value > BASE_BOTTOM ? -28 : 0),
+	}));
 
 	const renderBubble = useCallback(
 		(props: any) => {
 			const message = props.currentMessage;
 
+			// Render typing indicator for special message
+			if (message._id === "typing-indicator") {
+				const isLastMessage = JSON.stringify(props.nextMessage) === "{}";
+				return (
+					<View style={{ marginBottom: isLastMessage ? 300 : 4 }}>
+						<TypingIndicator isTyping={true} />
+					</View>
+				);
+			}
+
 			const marginTop = JSON.stringify(props.previousMessage) === "{}" ? 92 : 4;
+			const isLastMessage = JSON.stringify(props.nextMessage) === "{}";
+			const marginBottom = isLastMessage ? 300 : 4;
 
 			// Check if this is a system message (AI response) - user._id === 2
 			const isSystemMessage = message?.user?._id === 2;
@@ -43,7 +81,7 @@ export function useChatRenderers({
 							left: {
 								backgroundColor: theme.background,
 								borderRadius: 24,
-								marginBottom: 4,
+								marginBottom,
 								marginTop,
 								paddingVertical: 8,
 								paddingRight: 4,
@@ -52,7 +90,7 @@ export function useChatRenderers({
 							right: {
 								backgroundColor: theme.tint,
 								borderRadius: 24,
-								marginBottom: 4,
+								marginBottom,
 								marginTop,
 								paddingVertical: 8,
 								paddingRight: 4,
@@ -83,7 +121,9 @@ export function useChatRenderers({
 								? () => (
 										<View style={{ flexShrink: 1, maxWidth: "100%" }}>
 											<Markdown>{message.text}</Markdown>
-											{showCopyButton && <CopyMessageButton text={message.text} />}
+											{showCopyButton && (
+												<CopyMessageButton text={message.text} />
+											)}
 										</View>
 									)
 								: undefined
@@ -95,33 +135,50 @@ export function useChatRenderers({
 		[theme, colorScheme],
 	);
 
-	const renderInputToolbar = useCallback(
-		(props: any) => {
+	// Return null for GiftedChat's input toolbar - we render our own externally
+	const renderInputToolbar = useCallback(() => null, []);
+
+	// Return null - typing indicator is now rendered as a message in renderBubble
+	const renderFooter = useCallback(() => null, []);
+
+	// Standalone input toolbar component to be rendered outside GiftedChat
+	const InputToolbar = useCallback(
+		({
+			text,
+			onChangeText,
+			onSend,
+		}: {
+			text: string;
+			onChangeText: (text: string) => void;
+			onSend: () => void;
+		}) => {
 			return (
-				<View
-					style={{
-						paddingTop: 8,
-						paddingBottom: 0,
-						minHeight: 60,
-						flexDirection: "row",
-						alignItems: "flex-end",
-						paddingHorizontal: 8,
-						opacity: isTyping ? 0.6 : 1,
-						gap: 8,
-					}}
+				<Animated.View
+					style={[
+						{
+							position: "absolute",
+							left: 0,
+							right: 0,
+							zIndex: 100,
+							paddingTop: 8,
+							paddingBottom: 8,
+							paddingHorizontal: 8,
+							flexDirection: "row",
+							alignItems: "flex-end",
+							opacity: isTyping ? 0.6 : 1,
+							gap: 8,
+						},
+						animatedToolbarStyle,
+					]}
 				>
 					<View style={{ flex: 1 }}>
 						<Input
-							variant="outline"
+							variant="chat"
 							accessible
-							value={props.text}
-							onChangeText={props.onTextChanged}
+							value={text}
+							onChangeText={onChangeText}
 							multiline={true}
-							inputStyle={
-								{
-									// paddingVertical: 12,
-								}
-							}
+							inputStyle={{}}
 							autoFocus={isNewChat}
 							onFocus={() => setIsInputFocused(true)}
 							onBlur={() => setIsInputFocused(false)}
@@ -136,29 +193,19 @@ export function useChatRenderers({
 						<Button
 							variant="default"
 							icon={SendHorizonal}
-							disabled={!props.text || isTyping}
-							onPress={() => {
-								props.onSend(
-									{ text: props.text.trim() } as Partial<IMessage>,
-									true,
-								);
-							}}
+							disabled={!text || isTyping}
+							onPress={onSend}
 							size="icon"
-						></Button>
+						/>
 					</View>
-				</View>
+				</Animated.View>
 			);
 		},
-		[isTyping, setIsInputFocused, isNewChat],
+		[isTyping, setIsInputFocused, isNewChat, animatedToolbarStyle],
 	);
-
-	const renderFooter = useCallback(() => {
-		return <TypingIndicator isTyping={isTyping} />;
-	}, [isTyping]);
 
 	const defaultContainerStyle = {
 		paddingHorizontal: 8,
-		paddingBottom: 16,
 	};
 
 	return {
@@ -166,5 +213,6 @@ export function useChatRenderers({
 		renderInputToolbar,
 		renderFooter,
 		defaultContainerStyle,
+		InputToolbar,
 	};
 }

@@ -41,7 +41,7 @@ export const useKeyboardHeight = (): UseKeyboardHeightReturn => {
 			if (height && height > 0) {
 				setKeyboardHeight(height);
 				setIsKeyboardVisible(true);
-				setKeyboardAnimationDuration(duration || 250); // Default duration if not provided
+				setKeyboardAnimationDuration(duration || 200); // Default duration if not provided
 				previousHeightRef.current = height;
 			}
 		};
