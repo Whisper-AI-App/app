@@ -7,6 +7,7 @@ import Animated, {
   withSpring,
   runOnJS,
 } from "react-native-reanimated";
+import Svg, { Path } from "react-native-svg";
 import * as Haptics from "expo-haptics";
 import { useColor } from "@/hooks/useColor";
 import { Text } from "@/components/ui/text";
@@ -29,6 +30,25 @@ interface DialProps {
 
 const START_ANGLE_DEG = 135;
 const SWEEP_ANGLE_DEG = 270;
+
+// Convert polar to cartesian coordinates
+function polarToCartesian(cx: number, cy: number, radius: number, angleDeg: number) {
+  const angleRad = (angleDeg * Math.PI) / 180;
+  return {
+    x: cx + radius * Math.cos(angleRad),
+    y: cy + radius * Math.sin(angleRad),
+  };
+}
+
+// Create SVG arc path
+function createArcPath(cx: number, cy: number, radius: number, startAngle: number, endAngle: number) {
+  const start = polarToCartesian(cx, cy, radius, startAngle);
+  const end = polarToCartesian(cx, cy, radius, endAngle);
+  const sweep = endAngle - startAngle;
+  const largeArc = sweep > 180 ? 1 : 0;
+
+  return `M ${start.x} ${start.y} A ${radius} ${radius} 0 ${largeArc} 1 ${end.x} ${end.y}`;
+}
 
 export function Dial({
   value,
@@ -176,6 +196,18 @@ export function Dial({
   const resolvedTrackColor = trackColor || defaultTrackColor;
   const resolvedActiveColor = activeColor || defaultActiveColor;
 
+  // Calculate the arc paths
+  const normalizedValue = (value - minimumValue) / (maximumValue - minimumValue);
+  const activeEndAngle = START_ANGLE_DEG + normalizedValue * SWEEP_ANGLE_DEG;
+
+  // Full track path
+  const trackPath = createArcPath(center, center, radius, START_ANGLE_DEG, START_ANGLE_DEG + SWEEP_ANGLE_DEG);
+
+  // Active arc path (only if there's some value)
+  const activePath = normalizedValue > 0.01
+    ? createArcPath(center, center, radius, START_ANGLE_DEG, activeEndAngle)
+    : "";
+
   return (
     <View style={[styles.container, style]}>
       {label && (
@@ -183,20 +215,30 @@ export function Dial({
       )}
       <GestureDetector gesture={gesture}>
         <View style={[styles.dialContainer, { width: size, height: size }]}>
-          <View
-            style={[
-              styles.track,
-              {
-                width: size - strokeWidth,
-                height: size - strokeWidth,
-                borderRadius: (size - strokeWidth) / 2,
-                borderWidth: strokeWidth,
-                borderColor: resolvedTrackColor,
-                opacity: 0.3,
-              },
-            ]}
-          />
+          {/* SVG Arcs */}
+          <Svg width={size} height={size} style={StyleSheet.absoluteFill}>
+            {/* Background track */}
+            <Path
+              d={trackPath}
+              stroke={resolvedTrackColor}
+              strokeWidth={strokeWidth}
+              fill="none"
+              opacity={0.3}
+              strokeLinecap="round"
+            />
+            {/* Active arc */}
+            {activePath && (
+              <Path
+                d={activePath}
+                stroke={resolvedActiveColor}
+                strokeWidth={strokeWidth}
+                fill="none"
+                strokeLinecap="round"
+              />
+            )}
+          </Svg>
 
+          {/* Thumb/indicator */}
           <Animated.View
             style={[
               styles.thumb,
@@ -211,6 +253,7 @@ export function Dial({
             ]}
           />
 
+          {/* Center value display */}
           <View style={styles.centerContent}>
             <Text style={[styles.value, { color: textColor, fontSize: size * 0.22 }]}>
               {Math.round(value)}{unit}
@@ -234,9 +277,6 @@ const styles = StyleSheet.create({
   dialContainer: {
     justifyContent: "center",
     alignItems: "center",
-  },
-  track: {
-    position: "absolute",
   },
   thumb: {
     position: "absolute",
