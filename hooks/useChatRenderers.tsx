@@ -19,7 +19,8 @@ import Animated, {
 } from "react-native-reanimated";
 
 const { height: SCREEN_HEIGHT } = Dimensions.get("window");
-const BASE_BOTTOM = 32 + SCREEN_HEIGHT * 0.1;
+const SHEET_BASE_BOTTOM = 32 + SCREEN_HEIGHT * 0.1;
+const PAGE_BASE_BOTTOM = 32;
 
 /**
  * Hook that returns render functions for GiftedChat.
@@ -29,10 +30,13 @@ export function useChatRenderers({
 	setIsInputFocused,
 	isTyping = false,
 	isNewChat = false,
-}: ChatRenderersProps) {
+	isFullPage = false,
+}: ChatRenderersProps & { isFullPage?: boolean }) {
 	const colorScheme = useColorScheme() ?? "light";
 	const theme = Colors[colorScheme];
 	const { keyboardHeight, keyboardAnimationDuration } = useKeyboardHeight();
+
+	const BASE_BOTTOM = isFullPage ? PAGE_BASE_BOTTOM : SHEET_BASE_BOTTOM;
 
 	// Animated keyboard offset for smooth toolbar movement
 	const keyboardOffset = useSharedValue(0);
@@ -54,19 +58,30 @@ export function useChatRenderers({
 		(props: any) => {
 			const message = props.currentMessage;
 
+			// Margins adjusted for full page vs bottom sheet context
+			const firstMessageMarginTop = isFullPage ? 16 : 92;
+			const lastMessageMarginBottom = isFullPage ? 100 : 300;
+
 			// Render typing indicator for special message
 			if (message._id === "typing-indicator") {
 				const isLastMessage = JSON.stringify(props.nextMessage) === "{}";
 				return (
-					<View style={{ marginBottom: isLastMessage ? 300 : 4 }}>
+					<View
+						style={{
+							marginBottom: isLastMessage ? lastMessageMarginBottom : 4,
+						}}
+					>
 						<TypingIndicator isTyping={true} />
 					</View>
 				);
 			}
 
-			const marginTop = JSON.stringify(props.previousMessage) === "{}" ? 92 : 4;
+			const marginTop =
+				JSON.stringify(props.previousMessage) === "{}"
+					? firstMessageMarginTop
+					: 4;
 			const isLastMessage = JSON.stringify(props.nextMessage) === "{}";
-			const marginBottom = isLastMessage ? 300 : 4;
+			const marginBottom = isLastMessage ? lastMessageMarginBottom : 4;
 
 			// Check if this is a system message (AI response) - user._id === 2
 			const isSystemMessage = message?.user?._id === 2;
@@ -132,7 +147,7 @@ export function useChatRenderers({
 				</View>
 			);
 		},
-		[theme, colorScheme],
+		[theme, colorScheme, isFullPage],
 	);
 
 	// Return null for GiftedChat's input toolbar - we render our own externally

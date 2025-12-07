@@ -1,4 +1,8 @@
-import "react-native-get-random-values";
+import { AuthGate } from "@/components/auth-gate";
+import { StatusBar } from "@/components/status-bar";
+import { AIChatProvider } from "@/contexts/AIChatContext";
+import { initStore, store, storeFilePath } from "@/src/store";
+import { ThemeProvider } from "@/theme/theme-provider";
 import {
 	Inter_400Regular,
 	Inter_500Medium,
@@ -8,13 +12,9 @@ import {
 import { createExpoFileSystemPersister } from "@mote-software/tinybase-persister-expo-file-system";
 import { Stack } from "expo-router";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
+import "react-native-get-random-values";
 import type { Store } from "tinybase";
 import { Provider, useCreatePersister } from "tinybase/ui-react";
-import { AuthGate } from "@/components/auth-gate";
-import { StatusBar } from "@/components/status-bar";
-import { AIChatProvider } from "@/contexts/AIChatContext";
-import { initStore, store, storeFilePath } from "@/src/store";
-import { ThemeProvider } from "@/theme/theme-provider";
 
 export default function RootLayout() {
 	const [fontsLoaded] = useFonts({
@@ -55,7 +55,13 @@ export default function RootLayout() {
 					<AIChatProvider>
 						<ThemeProvider>
 							<StatusBar />
-							<Stack screenOptions={{ headerShown: false }} />
+							<Stack screenOptions={{ headerShown: false }}>
+								<Stack.Screen name="index" />
+								<Stack.Screen name="download" />
+								<Stack.Screen name="dashboard" />
+								<Stack.Screen name="settings" />
+								<Stack.Screen name="chat" />
+							</Stack>
 						</ThemeProvider>
 					</AIChatProvider>
 				</AuthGate>

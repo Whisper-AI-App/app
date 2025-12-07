@@ -2,7 +2,7 @@
 	"expo": {
 		"name": "Whisper",
 		"slug": "whisper",
-		"version": "1.1.0",
+		"version": "1.2.0",
 		"orientation": "portrait",
 		"icon": "./assets/images/icon.png",
 		"scheme": "whisper",
@@ -25,9 +25,7 @@
 			"edgeToEdgeEnabled": true,
 			"predictiveBackGestureEnabled": false,
 			"package": "org.avatechnologies.whisper",
-			"permissions": [
-				"android.permission.READ_MEDIA_IMAGES"
-			]
+			"permissions": ["android.permission.READ_MEDIA_IMAGES"]
 		},
 		"web": {
 			"output": "static",

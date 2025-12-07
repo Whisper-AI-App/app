@@ -1,5 +1,6 @@
-import Chat from "@/components/chat/chat";
 import { ChatPreview } from "@/components/chat-preview";
+import { Icon } from "@/components/ui/icon";
+import { SearchButton } from "@/components/ui/searchbutton";
 import { ModelLoadError } from "@/components/model-load-error";
 import { ModelUpdateNotification } from "@/components/model-update-notification";
 import { Button } from "@/components/ui/button";
@@ -15,7 +16,7 @@ import {
 import { Colors } from "@/theme/colors";
 import { ImageBackground } from "expo-image";
 import { useRouter } from "expo-router";
-import { Hand, Settings } from "lucide-react-native";
+import { Hand, MessageCircle, Settings } from "lucide-react-native";
 import { useEffect, useMemo, useState } from "react";
 import { Dimensions, Linking, Pressable, useColorScheme } from "react-native";
 import Animated, {
@@ -42,11 +43,8 @@ export default function Dashboard() {
 	const scrollY = useSharedValue(0);
 
 	const router = useRouter();
+	const muted = useColor("textMuted");
 
-	const [selectedChatId, setSelectedChatId] = useState<string | undefined>(
-		undefined,
-	);
-	const [isChatOpen, setIsChatOpen] = useState(false);
 	const [searchQuery, setSearchQuery] = useState("");
 	const [modelLoadError, setModelLoadError] = useState(false);
 	const [updateNotificationVisible, setUpdateNotificationVisible] =
@@ -497,8 +495,7 @@ export default function Dashboard() {
 										name={preview.name}
 										text={preview.text}
 										onPress={() => {
-											setSelectedChatId(preview.chatId);
-											setIsChatOpen(true);
+											router.push(`/chat?id=${preview.chatId}`);
 										}}
 									/>
 								</View>
@@ -521,8 +518,7 @@ export default function Dashboard() {
 									variant="secondary"
 									size="lg"
 									onPress={() => {
-										setSelectedChatId(undefined);
-										setIsChatOpen(true);
+										router.push("/chat");
 									}}
 								>
 									Start a conversation
@@ -592,12 +588,12 @@ export default function Dashboard() {
 					}}
 				>
 					<View style={{ borderRadius: 24, boxShadow: "0 0 5px pink" }}>
-						<Chat
-							chatId={selectedChatId}
-							isOpen={isChatOpen}
-							onClose={() => {
-								setSelectedChatId(undefined);
-								setIsChatOpen(false);
+						<SearchButton
+							label="Chat..."
+							leftIcon={<Icon name={MessageCircle} size={16} color={muted} />}
+							loading={false}
+							onPress={() => {
+								router.push("/chat");
 							}}
 						/>
 					</View>
