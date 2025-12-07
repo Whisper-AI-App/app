@@ -4,6 +4,7 @@ import { ScrollView } from "react-native-gesture-handler";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import { Image } from "expo-image";
+import * as Haptics from "expo-haptics";
 import { useValue } from "tinybase/ui-react";
 import { ChevronLeft } from "lucide-react-native";
 import Ionicons from "@expo/vector-icons/Ionicons";
@@ -12,7 +13,7 @@ import { Button } from "@/components/ui/button";
 import { Text } from "@/components/ui/text";
 import { View } from "@/components/ui/view";
 import { Separator } from "@/components/ui/separator";
-import { Slider } from "@/components/ui/slider";
+import { Dial } from "@/components/ui/dial";
 import { BackgroundPresetGrid } from "@/components/background-preset-grid";
 import { Colors } from "@/theme/colors";
 import { BORDER_RADIUS } from "@/theme/globals";
@@ -176,74 +177,49 @@ export default function BackgroundSettings() {
         {/* Customization Controls - only show when a background is selected */}
         {showCustomizationControls && (
           <View style={styles.section}>
-            <Text style={[styles.sectionLabel, { opacity: 0.7 }]}>
-              ADJUSTMENTS
-            </Text>
-
-            {/* Opacity Slider */}
-            <View style={styles.sliderContainer}>
-              <View style={styles.sliderHeader}>
-                <Text style={[styles.sliderLabel, { color: theme.text }]}>
-                  Opacity
-                </Text>
-                <Text style={[styles.sliderValue, { color: theme.textMuted }]}>
-                  {Math.round(localOpacity)}%
-                </Text>
-              </View>
-              <Slider
+            {/* Dials Row */}
+            <View style={styles.dialsContainer}>
+              <Dial
                 value={localOpacity}
                 onValueChange={setLocalOpacity}
-                onSlidingComplete={setBackgroundOpacity}
+                onDialComplete={setBackgroundOpacity}
                 minimumValue={10}
                 maximumValue={100}
                 step={1}
+                size={110}
+                label="Opacity"
+                unit="%"
               />
-            </View>
-
-            {/* Blur Slider */}
-            <View style={styles.sliderContainer}>
-              <View style={styles.sliderHeader}>
-                <Text style={[styles.sliderLabel, { color: theme.text }]}>
-                  Blur
-                </Text>
-                <Text style={[styles.sliderValue, { color: theme.textMuted }]}>
-                  {Math.round(localBlur)}
-                </Text>
-              </View>
-              <Slider
+              <Dial
                 value={localBlur}
                 onValueChange={setLocalBlur}
-                onSlidingComplete={setBackgroundBlur}
+                onDialComplete={setBackgroundBlur}
                 minimumValue={0}
                 maximumValue={20}
                 step={1}
+                size={110}
+                label="Blur"
               />
-            </View>
-
-            {/* Grain Slider */}
-            <View style={styles.sliderContainer}>
-              <View style={styles.sliderHeader}>
-                <Text style={[styles.sliderLabel, { color: theme.text }]}>
-                  Grain
-                </Text>
-                <Text style={[styles.sliderValue, { color: theme.textMuted }]}>
-                  {Math.round(localGrain)}%
-                </Text>
-              </View>
-              <Slider
+              <Dial
                 value={localGrain}
                 onValueChange={setLocalGrain}
-                onSlidingComplete={setBackgroundGrain}
+                onDialComplete={setBackgroundGrain}
                 minimumValue={0}
                 maximumValue={100}
                 step={1}
+                size={110}
+                label="Grain"
+                unit="%"
               />
             </View>
 
             {/* Reset Adjustments Button */}
             <TouchableOpacity
               style={styles.resetAdjustmentsButton}
-              onPress={resetBackgroundAdjustments}
+              onPress={() => {
+                Haptics.selectionAsync();
+                resetBackgroundAdjustments();
+              }}
               activeOpacity={0.7}
             >
               <Text style={[styles.resetAdjustmentsText, { color: theme.blue }]}>
@@ -398,23 +374,12 @@ const styles = StyleSheet.create({
     marginTop: 8,
     paddingHorizontal: 24,
   },
-  sliderContainer: {
-    paddingHorizontal: 24,
-    marginBottom: 24,
-  },
-  sliderHeader: {
+  dialsContainer: {
     flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: 12,
-  },
-  sliderLabel: {
-    fontSize: 16,
-    fontWeight: "500",
-  },
-  sliderValue: {
-    fontSize: 14,
-    fontWeight: "400",
+    justifyContent: "space-around",
+    alignItems: "flex-start",
+    paddingHorizontal: 16,
+    marginBottom: 16,
   },
   resetAdjustmentsButton: {
     alignItems: "center",
