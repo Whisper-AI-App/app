@@ -94,7 +94,7 @@ export function useChatRenderers({
 						{...props}
 						wrapperStyle={{
 							left: {
-								backgroundColor: theme.background,
+								backgroundColor: theme.card,
 								borderRadius: 24,
 								marginBottom,
 								marginTop,
@@ -188,6 +188,7 @@ export function useChatRenderers({
 				>
 					<View style={{ flex: 1 }}>
 						<Input
+							key={`chat-input-${isTyping}`}
 							variant="chat"
 							accessible
 							value={text}

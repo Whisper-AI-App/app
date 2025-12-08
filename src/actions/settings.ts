@@ -32,6 +32,29 @@ export async function checkLocalAuthAvailable(): Promise<{
 	};
 }
 
+function getFriendlyAuthError(errorCode: string | undefined): string {
+	switch (errorCode) {
+		case "user_cancel":
+			return "Authentication cancelled";
+		case "user_fallback":
+			return "Please try again";
+		case "system_cancel":
+			return "Authentication was interrupted";
+		case "not_enrolled":
+			return "No biometrics enrolled on this device";
+		case "passcode_not_set":
+			return "Please set up a device passcode first";
+		case "not_available":
+			return "Biometric authentication is not available";
+		case "lockout":
+			return "Too many failed attempts. Please try again later";
+		case "lockout_permanent":
+			return "Biometrics disabled. Use your device passcode";
+		default:
+			return "Authentication failed. Please try again";
+	}
+}
+
 export async function authenticate(): Promise<{
 	success: boolean;
 	error?: string;
@@ -46,5 +69,5 @@ export async function authenticate(): Promise<{
 		return { success: true };
 	}
 
-	return { success: false, error: result.error };
+	return { success: false, error: getFriendlyAuthError(result.error) };
 }

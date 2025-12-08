@@ -8,6 +8,7 @@ import { useChatRenderers } from "@/hooks/useChatRenderers";
 import { useChatState } from "@/hooks/useChatState";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useCallback, useState } from "react";
+import { View as RNView } from "react-native";
 import { GiftedChat, type IMessage } from "react-native-gifted-chat";
 import { SafeAreaView } from "react-native-safe-area-context";
 
@@ -82,8 +83,9 @@ export default function ChatPage() {
 	);
 
 	return (
-		<SafeAreaView style={{ flex: 1 }} edges={["top", "left", "right"]}>
-			<ChatBackground>
+		<RNView style={{ flex: 1 }}>
+			<ChatBackground asBackgroundLayer />
+			<SafeAreaView style={{ flex: 1 }} edges={["top", "left", "right"]}>
 				<View style={{ flex: 1 }}>
 					<ChatPageHeader
 						chatName={chatRow.name as string | undefined}
@@ -168,7 +170,7 @@ export default function ChatPage() {
 						/>
 					</View>
 				</View>
-			</ChatBackground>
+			</SafeAreaView>
 			<InputToolbar
 				text={inputText}
 				onChangeText={setInputText}
@@ -178,6 +180,6 @@ export default function ChatPage() {
 					}
 				}}
 			/>
-		</SafeAreaView>
+		</RNView>
 	);
 }
