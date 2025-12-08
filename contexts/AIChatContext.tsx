@@ -9,7 +9,7 @@ import React, {
 	useRef,
 	useState,
 } from "react";
-import { store } from "@/src/store";
+import { getModelFileUri, store } from "@/src/store";
 
 export type AIChatConfig = { ggufPath: string; stopWords?: string[] };
 
@@ -34,11 +34,10 @@ export function AIChatProvider({ children }: { children: ReactNode }) {
 	const [isLoaded, setIsLoaded] = useState(false);
 	const stopWordsRef = useRef<string[]>([]);
 
-	// Validate GGUF file existence on mount and when fileUri changes
+	// Validate GGUF file existence on mount
 	useEffect(() => {
-		const fileUri = store.getValue("ai_chat_model_fileUri") as
-			| string
-			| undefined;
+		// Use helper that reconstructs path from filename (handles app updates)
+		const fileUri = getModelFileUri();
 		const downloadedAt = store.getValue("ai_chat_model_downloadedAt") as
 			| string
 			| undefined;
@@ -54,6 +53,7 @@ export function AIChatProvider({ children }: { children: ReactNode }) {
 				);
 
 				// Clear the store state since file is gone
+				store.delValue("ai_chat_model_filename");
 				store.delValue("ai_chat_model_fileUri");
 				store.delValue("ai_chat_model_downloadedAt");
 				store.setValue("ai_chat_model_fileRemoved", true);

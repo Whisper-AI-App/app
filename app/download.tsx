@@ -39,7 +39,8 @@ export default function Download() {
 	const [configVersion, setConfigVersion] = useState<string>("1.0.0");
 
 	// Subscribe to download state from tinybase
-	const fileUri = useValue("ai_chat_model_fileUri") as string | undefined;
+	// Use filename instead of full path (path changes between app updates)
+	const filename = useValue("ai_chat_model_filename") as string | undefined;
 	const downloadedAt = useValue("ai_chat_model_downloadedAt") as
 		| string
 		| undefined;
@@ -106,14 +107,14 @@ export default function Download() {
 
 	// Track download state from isPaused
 	useEffect(() => {
-		if (isPaused === false && fileUri && !downloadedAt) {
+		if (isPaused === false && filename && !downloadedAt) {
 			// Download is actively running
 			setIsDownloading(true);
 		} else if (isPaused === true) {
 			// Download is paused
 			setIsDownloading(false);
 		}
-	}, [isPaused, fileUri, downloadedAt]);
+	}, [isPaused, filename, downloadedAt]);
 
 	const handleStartDownload = async (restart: boolean = false) => {
 		setIsDownloading(true);
@@ -146,7 +147,7 @@ export default function Download() {
 		}
 	};
 
-	const hasPartialDownload = fileUri && !downloadedAt;
+	const hasPartialDownload = filename && !downloadedAt;
 	const totalSizeGB = modelCard.sizeGB;
 	const progressValue =
 		totalSizeGB && progressSizeGB ? progressSizeGB / totalSizeGB : 0;

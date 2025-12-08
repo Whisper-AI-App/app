@@ -1,5 +1,5 @@
 import * as FileSystem from "expo-file-system";
-import { initStore, store } from "../store";
+import { getModelFileUri, initStore, store } from "../store";
 
 export function clearConversations() {
 	// Delete all chats and messages while keeping settings and model
@@ -9,9 +9,8 @@ export function clearConversations() {
 
 export async function resetEverything() {
 	// Delete downloaded model file before clearing store
-	const modelFileUri = store.getValue("ai_chat_model_fileUri") as
-		| string
-		| undefined;
+	// Use helper to reconstruct path from filename (handles app updates)
+	const modelFileUri = getModelFileUri();
 
 	if (modelFileUri) {
 		const file = new FileSystem.File(modelFileUri);

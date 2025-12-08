@@ -13,6 +13,7 @@ import {
   checkForModelUpdates,
   type ModelUpdateInfo,
 } from "@/src/actions/ai-chat-model";
+import { getModelFileUri } from "@/src/store";
 import { Colors } from "@/theme/colors";
 import { ImageBackground } from "expo-image";
 import { useRouter } from "expo-router";
@@ -80,7 +81,8 @@ export default function Dashboard() {
   const downloadedAt = useValue("ai_chat_model_downloadedAt") as
     | string
     | undefined;
-  const fileUri = useValue("ai_chat_model_fileUri") as string | undefined;
+  // Use filename (not full path) to detect changes, then reconstruct full path
+  const filename = useValue("ai_chat_model_filename") as string | undefined;
   const storedConfigVersion = useValue("ai_chat_model_config_version") as
     | string
     | undefined;
@@ -135,7 +137,11 @@ export default function Dashboard() {
 
   // Check for completed model on mount and load it if available
   useEffect(() => {
-    if (downloadedAt && fileUri && !aiChat.isLoaded && !modelLoadError) {
+    if (downloadedAt && filename && !aiChat.isLoaded && !modelLoadError) {
+      // Reconstruct full path from filename (handles app updates changing paths)
+      const fileUri = getModelFileUri();
+      if (!fileUri) return;
+
       // Model is downloaded but not loaded yet, load it
       console.log("[Dashboard] Loading model from:", fileUri);
       aiChat
@@ -149,7 +155,7 @@ export default function Dashboard() {
           setModelLoadError(true);
         });
     }
-  }, [downloadedAt, fileUri, aiChat, modelLoadError]);
+  }, [downloadedAt, filename, aiChat, modelLoadError]);
 
   // Function to retry loading the model
   const retryLoadModel = () => {

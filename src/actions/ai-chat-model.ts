@@ -118,7 +118,8 @@ export async function checkForModelUpdates(): Promise<ModelUpdateInfo> {
 	const storedConfigVersion = store.getValue("ai_chat_model_config_version") as
 		| string
 		| undefined;
-	const fileUri = store.getValue("ai_chat_model_fileUri") as
+	// Use filename instead of full path (path changes between app updates)
+	const filename = store.getValue("ai_chat_model_filename") as
 		| string
 		| undefined;
 
@@ -132,8 +133,7 @@ export async function checkForModelUpdates(): Promise<ModelUpdateInfo> {
 
 	// Check if filename matches expected version/hash
 	let filenameValid = false;
-	if (fileUri && currentCard && storedConfigVersion) {
-		const filename = fileUri.split("/").pop() || "";
+	if (filename && currentCard && storedConfigVersion) {
 		filenameValid = validateModelFileName(
 			filename,
 			currentCard,
@@ -146,7 +146,7 @@ export async function checkForModelUpdates(): Promise<ModelUpdateInfo> {
 	}
 
 	// If filename doesn't match, treat as version mismatch (force update)
-	if (fileUri && !filenameValid && currentCard) {
+	if (filename && !filenameValid && currentCard) {
 		console.log(
 			"[checkForModelUpdates] Filename mismatch detected - treating as outdated",
 		);
@@ -182,7 +182,7 @@ export async function checkForModelUpdates(): Promise<ModelUpdateInfo> {
 	}
 
 	// No update needed if versions match AND cards match AND filename is valid (or no file yet)
-	if (versionsMatch && cardsMatch && (filenameValid || !fileUri)) {
+	if (versionsMatch && cardsMatch && (filenameValid || !filename)) {
 		console.log(
 			"[checkForModelUpdates] No update available, versions and metadata match",
 		);
@@ -373,12 +373,20 @@ export async function startOrResumeDownloadOfAIChatModel(
 
 	// Generate versioned filename with hash
 	const versionedFilename = generateModelFileName(card, configVersion);
+	// Store only filename, not full path (path changes between app updates)
 	const fileUri = `${new FileSystem.Directory(FileSystem.Paths.document).uri}/${versionedFilename}`;
 
+	const existingFilename = store.getValue("ai_chat_model_filename") as string | undefined;
+	// Also check legacy fileUri for migration
 	const existingFileUri = store.getValue("ai_chat_model_fileUri");
 	const downloadedAt = store.getValue("ai_chat_model_downloadedAt");
 
-	if (existingFileUri && downloadedAt && existingFileUri === fileUri) {
+	// Check if already downloaded (by filename, not full path which changes between updates)
+	if (existingFilename && downloadedAt && existingFilename === versionedFilename) {
+		return;
+	}
+	// Legacy check for migration from old fileUri storage
+	if (!existingFilename && existingFileUri && downloadedAt && existingFileUri === fileUri) {
 		return;
 	}
 
@@ -395,6 +403,9 @@ export async function startOrResumeDownloadOfAIChatModel(
 	store.setValue("ai_chat_model_card", JSON.stringify(card));
 	store.setValue("ai_chat_model_cardId", cardId);
 	store.setValue("ai_chat_model_config_version", configVersion);
+	// Store filename instead of full path (path changes between app updates)
+	store.setValue("ai_chat_model_filename", versionedFilename);
+	// Keep fileUri for backward compatibility during transition
 	store.setValue("ai_chat_model_fileUri", fileUri);
 	store.delValue("ai_chat_model_downloadedAt");
 	store.delValue("ai_chat_model_downloadError");
