@@ -188,6 +188,7 @@ export function useChatRenderers({
 				>
 					<View style={{ flex: 1 }}>
 						<Input
+							key={`chat-input-${isTyping}`}
 							variant="chat"
 							accessible
 							value={text}
