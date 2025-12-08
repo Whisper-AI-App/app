@@ -94,7 +94,7 @@ export function useChatRenderers({
 						{...props}
 						wrapperStyle={{
 							left: {
-								backgroundColor: theme.background,
+								backgroundColor: theme.card,
 								borderRadius: 24,
 								marginBottom,
 								marginTop,
