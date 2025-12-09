@@ -13,7 +13,8 @@ const valuesSchema = {
 	ai_chat_model_config_version: { type: "string" as const },
 	// Download state
 	ai_chat_model_downloadedAt: { type: "string" as const },
-	ai_chat_model_fileUri: { type: "string" as const },
+	ai_chat_model_filename: { type: "string" as const }, // Just filename, not full path (path changes between app updates)
+	ai_chat_model_fileUri: { type: "string" as const }, // Deprecated: kept for backward compatibility
 	ai_chat_model_progressSizeGB: { type: "number" as const },
 	ai_chat_model_downloadError: { type: "string" as const },
 	ai_chat_model_resumableState: { type: "string" as const },
@@ -48,6 +49,20 @@ export const store = createStore()
 	.setTablesSchema(tablesSchema);
 
 export const storeFilePath = `${new FileSystem.Directory(FileSystem.Paths.document).uri}/whisper.json`;
+
+/**
+ * Gets the full file URI for the AI model from the stored filename.
+ * This reconstructs the path at runtime since the document directory path
+ * can change between app updates.
+ */
+export function getModelFileUri(): string | undefined {
+	const filename = store.getValue("ai_chat_model_filename") as string | undefined;
+	if (filename) {
+		return `${new FileSystem.Directory(FileSystem.Paths.document).uri}/${filename}`;
+	}
+	// Fallback to legacy fileUri for migration
+	return store.getValue("ai_chat_model_fileUri") as string | undefined;
+}
 
 export function initStore() {
 	if (
