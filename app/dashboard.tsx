@@ -566,7 +566,7 @@ export default function Dashboard() {
                   key={preview.chatId}
                   style={{
                     paddingBottom: index >= array.length - 1 ? 160 : 0,
-                    paddingTop: index === 0 ? 128 : 16,
+                    paddingTop: index === 0 ? 148 : 16,
                   }}
                 >
                   <ChatPreview

@@ -14,7 +14,6 @@ import {
 	View,
 	type ViewStyle,
 } from "react-native";
-import { AutoGrowingTextInput } from "react-native-autogrow-textinput";
 
 export interface InputProps extends Omit<TextInputProps, "style"> {
 	label?: string;
@@ -212,13 +211,14 @@ export const Input = forwardRef<TextInput, InputProps>(
 
 							{/* TextInput section */}
 
-							<AutoGrowingTextInput
-								ref={ref as any}
+							<TextInput
+								ref={ref}
 								style={[
 									getInputStyle(),
 									inputStyle,
 									{
 										backgroundColor: "transparent",
+										maxHeight: 200,
 									},
 								]}
 								placeholderTextColor={error ? danger + "99" : muted}
@@ -227,7 +227,7 @@ export const Input = forwardRef<TextInput, InputProps>(
 								onBlur={handleBlur}
 								editable={!disabled}
 								selectionColor={primary}
-								maxHeight={200}
+								multiline
 								{...props}
 							/>
 						</>
@@ -527,8 +527,8 @@ export const GroupedInputItem = forwardRef<TextInput, GroupedInputItemProps>(
 							)}
 
 							{/* Textarea Input */}
-							<AutoGrowingTextInput
-								ref={ref as any}
+							<TextInput
+								ref={ref}
 								style={[
 									{
 										fontSize: FONT_SIZE,
@@ -536,6 +536,8 @@ export const GroupedInputItem = forwardRef<TextInput, GroupedInputItemProps>(
 										color: disabled ? muted : error ? danger : text,
 										textAlignVertical: "top",
 										paddingVertical: 0,
+										minHeight: 32,
+										maxHeight: 200,
 									},
 									inputStyle,
 								]}
@@ -545,8 +547,7 @@ export const GroupedInputItem = forwardRef<TextInput, GroupedInputItemProps>(
 								selectionColor={primary}
 								onFocus={handleFocus}
 								onBlur={handleBlur}
-								minHeight={32}
-								maxHeight={200}
+								multiline
 								{...props}
 							/>
 						</>

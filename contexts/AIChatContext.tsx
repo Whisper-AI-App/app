@@ -86,11 +86,12 @@ export function AIChatProvider({ children }: { children: ReactNode }) {
 			}
 
 			try {
+				const isAndroid = process.env.EXPO_OS === "android";
 				const llamaContext = await initLlama({
 					model: config.ggufPath,
-					use_mlock: true,
+					use_mlock: !isAndroid, // mlock can fail on Android without permissions
 					n_ctx: 2048,
-					n_gpu_layers: 99,
+					n_gpu_layers: isAndroid ? 0 : 99, // GPU layers can cause issues on some Android devices
 				});
 
 				setContext(llamaContext);
