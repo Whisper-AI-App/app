@@ -47,6 +47,9 @@ importers:
       expo-dev-client:
         specifier: ~6.0.16
         version: 6.0.16(expo@54.0.22)
+      expo-device:
+        specifier: ~8.0.10
+        version: 8.0.10(expo@54.0.22)
       expo-file-system:
         specifier: ~19.0.17
         version: 19.0.17(expo@54.0.22)(react-native@0.81.5(@babel/core@7.28.4)(@types/react@19.1.16)(react@19.1.0))
@@ -93,8 +96,8 @@ importers:
         specifier: ~15.0.9
         version: 15.0.9(expo@54.0.22)(react-native@0.81.5(@babel/core@7.28.4)(@types/react@19.1.16)(react@19.1.0))
       llama.rn:
-        specifier: ^0.8.0
-        version: 0.8.0(react-native@0.81.5(@babel/core@7.28.4)(@types/react@19.1.16)(react@19.1.0))(react@19.1.0)
+        specifier: ^0.10.0-rc.0
+        version: 0.10.0-rc.6(react-native@0.81.5(@babel/core@7.28.4)(@types/react@19.1.16)(react@19.1.0))(react@19.1.0)
       lucide-react-native:
         specifier: ^0.544.0
         version: 0.544.0(react-native-svg@15.12.1(react-native@0.81.5(@babel/core@7.28.4)(@types/react@19.1.16)(react@19.1.0))(react@19.1.0))(react-native@0.81.5(@babel/core@7.28.4)(@types/react@19.1.16)(react@19.1.0))(react@19.1.0)
@@ -150,8 +153,8 @@ importers:
         specifier: ^13.0.0
         version: 13.0.0
       whisper-llm-cards:
-        specifier: github:Ava-Technologies-Org/whisper-llm-cards#semver:^2.0.1
-        version: https://codeload.github.com/Ava-Technologies-Org/whisper-llm-cards/tar.gz/6551eccd3de3e1b2f041096f8cbf9a7b67fd5c95
+        specifier: github:Ava-Technologies-Org/whisper-llm-cards#semver:^4.0.1
+        version: git+https://git@github.com:Ava-Technologies-Org/whisper-llm-cards.git#09a1546da0c41ea4a2d25289e01a34b23969981e
     devDependencies:
       '@biomejs/biome':
         specifier: 2.3.4
@@ -2586,6 +2589,11 @@ packages:
     peerDependencies:
       expo: '*'
 
+  expo-device@8.0.10:
+    resolution: {integrity: sha512-jd5BxjaF7382JkDMaC+P04aXXknB2UhWaVx5WiQKA05ugm/8GH5uaz9P9ckWdMKZGQVVEOC8MHaUADoT26KmFA==}
+    peerDependencies:
+      expo: '*'
+
   expo-file-system@19.0.17:
     resolution: {integrity: sha512-WwaS01SUFrxBnExn87pg0sCTJjZpf2KAOzfImG0o8yhkU7fbYpihpl/oocXBEsNbj58a8hVt1Y4CVV5c1tzu/g==}
     peerDependencies:
@@ -3385,8 +3393,8 @@ packages:
   lines-and-columns@1.2.4:
     resolution: {integrity: sha512-7ylylesZQ/PV29jhEDl3Ufjo6ZX7gCqJr5F7PKrqc93v7fzSymt1BpwEU8nAUXs8qzzvqhbjhK5QZg6Mt/HkBg==}
 
-  llama.rn@0.8.0:
-    resolution: {integrity: sha512-5YXikSdt2dD3CN5o9zj72bxzG6yIBpDevQt63KoZJYat06SqIr7h86p2Nldq17VWFPfuHLR77grwt0U/t8jiLA==}
+  llama.rn@0.10.0-rc.6:
+    resolution: {integrity: sha512-07FixSWYcevU1WYjyPfYoyrrbnq6TdGMMaRrR1vwBXJxNxZ/qg2kjA+WqR7+XZVXb/eABSnickLFEmXEltI/7Q==}
     engines: {node: '>= 16.0.0'}
     peerDependencies:
       react: '*'
@@ -4587,6 +4595,10 @@ packages:
     engines: {node: '>=14.17'}
     hasBin: true
 
+  ua-parser-js@0.7.41:
+    resolution: {integrity: sha512-O3oYyCMPYgNNHuO7Jjk3uacJWZF8loBgwrfd/5LE/HyZ3lUIOdniQ7DNXJcIgZbwioZxk0fLfI4EVnetdiX5jg==}
+    hasBin: true
+
   ua-parser-js@1.0.41:
     resolution: {integrity: sha512-LbBDqdIC5s8iROCUjMbW1f5dJQTEFB1+KO9ogbvlb3nm9n4YHa5p4KTvFPWvh2Hs8gZMBuiB1/8+pdfe/tDPug==}
     hasBin: true
@@ -4744,9 +4756,9 @@ packages:
     engines: {node: '>= 8'}
     hasBin: true
 
-  whisper-llm-cards@https://codeload.github.com/Ava-Technologies-Org/whisper-llm-cards/tar.gz/6551eccd3de3e1b2f041096f8cbf9a7b67fd5c95:
-    resolution: {tarball: https://codeload.github.com/Ava-Technologies-Org/whisper-llm-cards/tar.gz/6551eccd3de3e1b2f041096f8cbf9a7b67fd5c95}
-    version: 2.0.1
+  whisper-llm-cards@git+https://git@github.com:Ava-Technologies-Org/whisper-llm-cards.git#09a1546da0c41ea4a2d25289e01a34b23969981e:
+    resolution: {commit: 09a1546da0c41ea4a2d25289e01a34b23969981e, repo: git@github.com:Ava-Technologies-Org/whisper-llm-cards.git, type: git}
+    version: 4.0.1
 
   wonka@6.3.5:
     resolution: {integrity: sha512-SSil+ecw6B4/Dm7Pf2sAshKQ5hWFvfyGlfPbEd6A14dOH6VDjrmbY86u6nZvy9omGwwIPFR8V41+of1EezgoUw==}
@@ -7825,6 +7837,11 @@ snapshots:
       expo: 54.0.22(@babel/core@7.28.4)(@expo/metro-runtime@6.1.2)(expo-router@6.0.14)(react-native@0.81.5(@babel/core@7.28.4)(@types/react@19.1.16)(react@19.1.0))(react@19.1.0)
       expo-dev-menu-interface: 2.0.0(expo@54.0.22)
 
+  expo-device@8.0.10(expo@54.0.22):
+    dependencies:
+      expo: 54.0.22(@babel/core@7.28.4)(@expo/metro-runtime@6.1.2)(expo-router@6.0.14)(react-native@0.81.5(@babel/core@7.28.4)(@types/react@19.1.16)(react@19.1.0))(react@19.1.0)
+      ua-parser-js: 0.7.41
+
   expo-file-system@19.0.17(expo@54.0.22)(react-native@0.81.5(@babel/core@7.28.4)(@types/react@19.1.16)(react@19.1.0)):
     dependencies:
       expo: 54.0.22(@babel/core@7.28.4)(@expo/metro-runtime@6.1.2)(expo-router@6.0.14)(react-native@0.81.5(@babel/core@7.28.4)(@types/react@19.1.16)(react@19.1.0))(react@19.1.0)
@@ -8676,7 +8693,7 @@ snapshots:
 
   lines-and-columns@1.2.4: {}
 
-  llama.rn@0.8.0(react-native@0.81.5(@babel/core@7.28.4)(@types/react@19.1.16)(react@19.1.0))(react@19.1.0):
+  llama.rn@0.10.0-rc.6(react-native@0.81.5(@babel/core@7.28.4)(@types/react@19.1.16)(react@19.1.0))(react@19.1.0):
     dependencies:
       react: 19.1.0
       react-native: 0.81.5(@babel/core@7.28.4)(@types/react@19.1.16)(react@19.1.0)
@@ -10012,6 +10029,8 @@ snapshots:
 
   typescript@5.9.3: {}
 
+  ua-parser-js@0.7.41: {}
+
   ua-parser-js@1.0.41: {}
 
   unbox-primitive@1.1.0:
@@ -10192,7 +10211,7 @@ snapshots:
     dependencies:
       isexe: 2.0.0
 
-  whisper-llm-cards@https://codeload.github.com/Ava-Technologies-Org/whisper-llm-cards/tar.gz/6551eccd3de3e1b2f041096f8cbf9a7b67fd5c95:
+  whisper-llm-cards@git+https://git@github.com:Ava-Technologies-Org/whisper-llm-cards.git#09a1546da0c41ea4a2d25289e01a34b23969981e:
     dependencies:
       tsx: 4.20.6
       typescript: 5.9.3

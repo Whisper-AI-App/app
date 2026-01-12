@@ -1,12 +1,14 @@
+import * as Device from "expo-device";
 import * as FileSystem from "expo-file-system";
 import {
 	createDownloadResumable,
 	type DownloadResumable,
 } from "expo-file-system/legacy";
 import {
+	getLatestConfig,
+	recommendModelCard,
 	type WhisperLLMCard,
 	type WhisperLLMCardsJSON,
-	getLatestConfig,
 	whisperLLMCardsJson,
 } from "whisper-llm-cards";
 import { store } from "../store";
@@ -34,8 +36,17 @@ export async function fetchLatestRecommendedModel(): Promise<{
 }> {
 	try {
 		const config = await getLatestConfig();
-		const cardId = config.recommendedCard;
+
+		// Get device RAM in GB for model recommendation
+		const deviceMemoryBytes = Device.totalMemory;
+		const ramGB = deviceMemoryBytes ? bytesToGB(deviceMemoryBytes) : null;
+
+		console.info(`Device RAM GB: ${ramGB}`);
+
+		const cardId = recommendModelCard(ramGB);
 		const recommendedCard = config.cards[cardId];
+
+		console.info(`Recommended card ID: ${cardId}`);
 
 		if (!recommendedCard) {
 			throw new Error(
@@ -376,17 +387,28 @@ export async function startOrResumeDownloadOfAIChatModel(
 	// Store only filename, not full path (path changes between app updates)
 	const fileUri = `${new FileSystem.Directory(FileSystem.Paths.document).uri}/${versionedFilename}`;
 
-	const existingFilename = store.getValue("ai_chat_model_filename") as string | undefined;
+	const existingFilename = store.getValue("ai_chat_model_filename") as
+		| string
+		| undefined;
 	// Also check legacy fileUri for migration
 	const existingFileUri = store.getValue("ai_chat_model_fileUri");
 	const downloadedAt = store.getValue("ai_chat_model_downloadedAt");
 
 	// Check if already downloaded (by filename, not full path which changes between updates)
-	if (existingFilename && downloadedAt && existingFilename === versionedFilename) {
+	if (
+		existingFilename &&
+		downloadedAt &&
+		existingFilename === versionedFilename
+	) {
 		return;
 	}
 	// Legacy check for migration from old fileUri storage
-	if (!existingFilename && existingFileUri && downloadedAt && existingFileUri === fileUri) {
+	if (
+		!existingFilename &&
+		existingFileUri &&
+		downloadedAt &&
+		existingFileUri === fileUri
+	) {
 		return;
 	}
 
