@@ -1,3 +1,4 @@
+import { getModelFileUri, store } from "@/src/store";
 import * as FileSystem from "expo-file-system";
 import { initLlama, type LlamaContext, releaseAllLlama } from "llama.rn";
 import React, {
@@ -9,7 +10,6 @@ import React, {
 	useRef,
 	useState,
 } from "react";
-import { getModelFileUri, store } from "@/src/store";
 
 export type AIChatConfig = { ggufPath: string; stopWords?: string[] };
 

@@ -20,7 +20,7 @@ import {
 
 // Default fallback model from bundled config
 export const DEFAULT_AI_CHAT_MODEL: WhisperLLMCard =
-	whisperLLMCardsJson.cards[whisperLLMCardsJson.recommendedCard];
+	whisperLLMCardsJson.cards[whisperLLMCardsJson.defaultRecommendedCard];
 
 // Keep a reference to the active download
 let activeDownloadResumable: DownloadResumable | null = null;
@@ -39,7 +39,7 @@ export async function fetchLatestRecommendedModel(): Promise<{
 
 		// Get device RAM in GB for model recommendation
 		const deviceMemoryBytes = Device.totalMemory;
-		const ramGB = deviceMemoryBytes ? bytesToGB(deviceMemoryBytes) : null;
+		const ramGB = deviceMemoryBytes ? bytesToGB(deviceMemoryBytes) : undefined;
 
 		console.info(`Device RAM GB: ${ramGB}`);
 

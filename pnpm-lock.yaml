@@ -96,7 +96,7 @@ importers:
         specifier: ~15.0.9
         version: 15.0.9(expo@54.0.22)(react-native@0.81.5(@babel/core@7.28.4)(@types/react@19.1.16)(react@19.1.0))
       llama.rn:
-        specifier: ^0.10.0-rc.0
+        specifier: ^0.10.0-rc.6
         version: 0.10.0-rc.6(react-native@0.81.5(@babel/core@7.28.4)(@types/react@19.1.16)(react@19.1.0))(react@19.1.0)
       lucide-react-native:
         specifier: ^0.544.0
@@ -150,8 +150,8 @@ importers:
         specifier: ^13.0.0
         version: 13.0.0
       whisper-llm-cards:
-        specifier: github:Ava-Technologies-Org/whisper-llm-cards#semver:^4.0.1
-        version: git+https://git@github.com:Ava-Technologies-Org/whisper-llm-cards.git#09a1546da0c41ea4a2d25289e01a34b23969981e
+        specifier: github:Whisper-AI-App/marketplace#semver:^4.0.5
+        version: https://codeload.github.com/Whisper-AI-App/marketplace/tar.gz/14916e298846c468cf134a94c7af234e8eea1748
     devDependencies:
       '@biomejs/biome':
         specifier: 2.3.4
@@ -4747,9 +4747,9 @@ packages:
     engines: {node: '>= 8'}
     hasBin: true
 
-  whisper-llm-cards@git+https://git@github.com:Ava-Technologies-Org/whisper-llm-cards.git#09a1546da0c41ea4a2d25289e01a34b23969981e:
-    resolution: {commit: 09a1546da0c41ea4a2d25289e01a34b23969981e, repo: git@github.com:Ava-Technologies-Org/whisper-llm-cards.git, type: git}
-    version: 4.0.1
+  whisper-llm-cards@https://codeload.github.com/Whisper-AI-App/marketplace/tar.gz/14916e298846c468cf134a94c7af234e8eea1748:
+    resolution: {tarball: https://codeload.github.com/Whisper-AI-App/marketplace/tar.gz/14916e298846c468cf134a94c7af234e8eea1748}
+    version: 4.0.5
 
   wonka@6.3.5:
     resolution: {integrity: sha512-SSil+ecw6B4/Dm7Pf2sAshKQ5hWFvfyGlfPbEd6A14dOH6VDjrmbY86u6nZvy9omGwwIPFR8V41+of1EezgoUw==}
@@ -10197,7 +10197,7 @@ snapshots:
     dependencies:
       isexe: 2.0.0
 
-  whisper-llm-cards@git+https://git@github.com:Ava-Technologies-Org/whisper-llm-cards.git#09a1546da0c41ea4a2d25289e01a34b23969981e:
+  whisper-llm-cards@https://codeload.github.com/Whisper-AI-App/marketplace/tar.gz/14916e298846c468cf134a94c7af234e8eea1748:
     dependencies:
       tsx: 4.20.6
       typescript: 5.9.3
