@@ -18,8 +18,8 @@ import {
 } from "@/src/actions/settings";
 import { Colors } from "@/theme/colors";
 import { BORDER_RADIUS } from "@/theme/globals";
-import { useRouter } from "expo-router";
 import * as Haptics from "expo-haptics";
+import { useRouter } from "expo-router";
 import { ChevronLeft, ChevronRight } from "lucide-react-native";
 import { useEffect, useState } from "react";
 import { Switch, TouchableOpacity, useColorScheme } from "react-native";
@@ -508,6 +508,36 @@ export default function Settings() {
 								</Button>
 							)}
 						</View>
+					</View>
+
+					<Separator />
+
+					{/* About Section */}
+					<View style={{ marginBottom: 8 }}>
+						<Text
+							variant="label"
+							style={{
+								fontSize: 13,
+								fontWeight: "600",
+								opacity: 0.7,
+								marginBottom: 12,
+							}}
+						>
+							WITH THANKS TO
+						</Text>
+
+						{/* Open Source Credits */}
+						<Button
+							variant="secondary"
+							size="sm"
+							style={{ flex: 1 }}
+							onPress={() => {
+								Haptics.selectionAsync();
+								router.push("/settings/credits");
+							}}
+						>
+							Open Source Credits
+						</Button>
 					</View>
 
 					<Separator />

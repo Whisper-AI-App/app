@@ -14,7 +14,9 @@
 		"format": "biome check --write",
 		"expo:version": "expo --version",
 		"pnpm:version": "pnpm --version",
-		"node:version": "node --version"
+		"node:version": "node --version",
+		"generate-credits": "node ./scripts/generate-credits.js",
+		"postinstall": "node ./scripts/generate-credits.js"
 	},
 	"dependencies": {
 		"@expo-google-fonts/inter": "^0.4.2",

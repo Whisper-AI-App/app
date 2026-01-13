@@ -14,7 +14,8 @@ type TextVariant =
 	| "subtitle"
 	| "caption"
 	| "heading"
-	| "link";
+	| "link"
+	| "label";
 
 interface TextProps extends RNTextProps {
 	variant?: TextVariant;
@@ -63,6 +64,14 @@ export const Text = forwardRef<RNText, TextProps>(
 						...baseStyle,
 						fontSize: FONT_SIZE,
 						fontWeight: "400",
+						color: mutedColor,
+					};
+				case "label":
+					return {
+						...baseStyle,
+						fontSize: 13,
+						fontWeight: "600",
+						textTransform: "uppercase",
 						color: mutedColor,
 					};
 				case "link":
