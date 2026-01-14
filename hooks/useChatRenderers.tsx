@@ -176,7 +176,7 @@ export function useChatRenderers({
 							right: 0,
 							zIndex: 100,
 							paddingTop: 8,
-							paddingBottom: 8,
+							paddingBottom: process.env.EXPO_OS === "android" ? 32 : 8,
 							paddingHorizontal: 8,
 							flexDirection: "row",
 							alignItems: "flex-end",
