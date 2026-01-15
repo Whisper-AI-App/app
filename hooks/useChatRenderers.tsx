@@ -60,7 +60,7 @@ export function useChatRenderers({
 
 			// Margins adjusted for full page vs bottom sheet context
 			const firstMessageMarginTop = isFullPage ? 16 : 92;
-			const lastMessageMarginBottom = isFullPage ? 100 : 300;
+			const lastMessageMarginBottom = isFullPage ? 124 : 300;
 
 			// Render typing indicator for special message
 			if (message._id === "typing-indicator") {
