@@ -1,5 +1,5 @@
 import * as FileSystem from "expo-file-system";
-import { getModelFileUri, initStore, store } from "../store";
+import { getModelFileUri, initStore, store } from "../stores/store";
 
 export function clearConversations() {
 	// Delete all chats and messages while keeping settings and model

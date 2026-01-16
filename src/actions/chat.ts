@@ -1,5 +1,5 @@
 import { Share } from "react-native";
-import { store } from "../store";
+import { store } from "../stores/store";
 
 export function upsertChat(id: string, name: string) {
 	const existingChat = store.getRow("chats", id);

@@ -1,3 +1,6 @@
+import { authenticate } from "@/src/actions/settings";
+import { sessionStore } from "@/src/stores/session-store";
+import { Colors } from "@/theme/colors";
 import { ImageBackground } from "expo-image";
 import { Lock } from "lucide-react-native";
 import { useCallback, useEffect, useMemo, useState } from "react";
@@ -12,8 +15,6 @@ import Animated, {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Defs, RadialGradient, Rect, Stop, Svg } from "react-native-svg";
 import { useValue } from "tinybase/ui-react";
-import { authenticate } from "@/src/actions/settings";
-import { Colors } from "@/theme/colors";
 import { Button } from "./ui/button";
 import { Icon } from "./ui/icon";
 import { Text } from "./ui/text";
@@ -25,7 +26,9 @@ interface AuthGateProps {
 
 export function AuthGate({ children }: AuthGateProps) {
 	const localAuthEnabled = useValue("localAuthEnabled") as boolean | undefined;
-	const [isAuthenticated, setIsAuthenticated] = useState(false);
+	const [isAuthenticated, setIsAuthenticated] = useState(
+		() => sessionStore.getValue("isAuthenticated") as boolean,
+	);
 	const [isAuthenticating, setIsAuthenticating] = useState(false);
 	const [authError, setAuthError] = useState<string | null>(null);
 
@@ -42,7 +45,7 @@ export function AuthGate({ children }: AuthGateProps) {
 				easing: Easing.inOut(Easing.quad),
 			}),
 			-1,
-			true
+			true,
 		);
 	}, []);
 
@@ -59,7 +62,7 @@ export function AuthGate({ children }: AuthGateProps) {
 			width: "100%" as const,
 			height: Dimensions.get("window").height,
 		}),
-		[]
+		[],
 	);
 
 	const svgViewBox = useMemo(
@@ -67,7 +70,7 @@ export function AuthGate({ children }: AuthGateProps) {
 			`0 0 1 ${
 				Dimensions.get("window").height / Dimensions.get("window").width
 			}`,
-		[]
+		[],
 	);
 
 	const handleAuthenticate = useCallback(async () => {
@@ -79,17 +82,12 @@ export function AuthGate({ children }: AuthGateProps) {
 		setIsAuthenticating(false);
 
 		if (result.success) {
+			sessionStore.setValue("isAuthenticated", true);
 			setIsAuthenticated(true);
 		} else {
 			setAuthError(result.error || "Authentication failed");
 		}
 	}, []);
-
-	useEffect(() => {
-		if (localAuthEnabled && !isAuthenticated) {
-			handleAuthenticate();
-		}
-	}, [localAuthEnabled, isAuthenticated, handleAuthenticate]);
 
 	// If local auth is not enabled, render children directly
 	if (!localAuthEnabled) {

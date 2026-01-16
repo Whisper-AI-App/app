@@ -1,7 +1,7 @@
 import { AuthGate } from "@/components/auth-gate";
 import { StatusBar } from "@/components/status-bar";
 import { AIChatProvider } from "@/contexts/AIChatContext";
-import { initStore, store, storeFilePath } from "@/src/store";
+import { initStore, store, storeFilePath } from "@/src/stores/store";
 import { ThemeProvider } from "@/theme/theme-provider";
 import {
 	Inter_400Regular,
@@ -35,12 +35,6 @@ export default function RootLayout() {
 			await persister.startAutoLoad();
 			await persister.startAutoSave();
 			initStore(persister);
-			console.log(
-				"File path:",
-				(
-					persister as ReturnType<typeof createExpoFileSystemPersister>
-				).getFilePath(),
-			);
 		},
 	);
 

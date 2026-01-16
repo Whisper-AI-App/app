@@ -49,3 +49,12 @@ app-example
 
 # service account JSON
 **/service-account.json
+
+# misc
+
+**/*.zip
+**/*.jar
+**/*.aab
+
+# test coverage
+coverage/

@@ -1,4 +1,4 @@
-import { store } from "@/src/store";
+import { store } from "@/src/stores/store";
 import { useMemo } from "react";
 import type { IMessage } from "react-native-gifted-chat";
 import { useRowIds } from "tinybase/ui-react";

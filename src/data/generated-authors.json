@@ -1,0 +1,315 @@
+{
+  "generatedAt": "2026-01-13T15:05:29.213Z",
+  "credits": [
+    {
+      "author": "llama.RN",
+      "description": "On-device LLM inference engine enabling completely private AI conversations",
+      "packages": [
+        "llama.rn"
+      ],
+      "url": "https://github.com/mybigday/llama.rn",
+      "priority": 1,
+      "pinned": true,
+      "section": "featured"
+    },
+    {
+      "author": "Tinybase",
+      "description": "Reactive data store powering Whisper's state management and persistence",
+      "packages": [
+        "tinybase"
+      ],
+      "url": "https://tinybase.org",
+      "priority": 2,
+      "pinned": true,
+      "section": "featured"
+    },
+    {
+      "author": "Expo",
+      "description": "Complete platform for building, deploying, and updating React Native apps",
+      "packages": [
+        "@expo/metro-runtime",
+        "@expo/vector-icons",
+        "expo"
+      ],
+      "url": "https://expo.dev",
+      "priority": 3,
+      "section": "platform"
+    },
+    {
+      "author": "Meta",
+      "description": "Creators of React and React Native, the foundation of modern mobile development",
+      "packages": [
+        "react",
+        "react-dom",
+        "react-native"
+      ],
+      "url": "https://reactnative.dev",
+      "priority": 4,
+      "section": "platform"
+    },
+    {
+      "author": "650 Industries, Inc.",
+      "description": "Contributing 20 open source libraries",
+      "packages": [
+        "expo-blur",
+        "expo-clipboard",
+        "expo-constants",
+        "+ 17 more"
+      ],
+      "priority": 50,
+      "section": "libraries"
+    },
+    {
+      "author": "Eric Fennis",
+      "description": "Creator of lucide-react-native",
+      "packages": [
+        "lucide-react-native"
+      ],
+      "url": "https://lucide.dev",
+      "priority": 50,
+      "section": "libraries"
+    },
+    {
+      "author": "Expo Team",
+      "description": "Contributing 2 open source libraries",
+      "packages": [
+        "@expo-google-fonts/inter",
+        "@expo-google-fonts/lexend"
+      ],
+      "priority": 50,
+      "section": "libraries"
+    },
+    {
+      "author": "Farid Safi",
+      "description": "Creator of react-native-gifted-chat",
+      "packages": [
+        "react-native-gifted-chat"
+      ],
+      "url": "https://github.com/FaridSafi/react-native-gifted-chat#readme",
+      "priority": 50,
+      "section": "libraries"
+    },
+    {
+      "author": "Gowtham G",
+      "description": "Creator of react-native-marked",
+      "packages": [
+        "react-native-marked"
+      ],
+      "url": "https://github.com/gmsgowtham/react-native-marked#readme",
+      "priority": 50,
+      "section": "libraries"
+    },
+    {
+      "author": "Janic Duplessis",
+      "description": "Creator of react-native-safe-area-context",
+      "packages": [
+        "react-native-safe-area-context"
+      ],
+      "url": "https://github.com/th3rdwave/react-native-safe-area-context#readme",
+      "priority": 50,
+      "section": "libraries"
+    },
+    {
+      "author": "Kiryl Ziusko",
+      "description": "Creator of react-native-keyboard-controller",
+      "packages": [
+        "react-native-keyboard-controller"
+      ],
+      "url": "https://kirillzyusko.github.io/react-native-keyboard-controller/",
+      "priority": 50,
+      "section": "libraries"
+    },
+    {
+      "author": "Krzysztof Magiera",
+      "description": "Contributing 3 open source libraries",
+      "packages": [
+        "react-native-gesture-handler",
+        "react-native-reanimated",
+        "react-native-screens"
+      ],
+      "priority": 50,
+      "section": "libraries"
+    },
+    {
+      "author": "Nicolas Gallagher",
+      "description": "Creator of react-native-web",
+      "packages": [
+        "react-native-web"
+      ],
+      "url": "https://github.com/necolas/react-native-web",
+      "priority": 50,
+      "section": "libraries"
+    },
+    {
+      "author": "Open Source Contributors",
+      "description": "Contributing 9 open source libraries",
+      "packages": [
+        "@mote-software/tinybase-persister-expo-file-system",
+        "@react-navigation/bottom-tabs",
+        "@react-navigation/elements",
+        "+ 6 more"
+      ],
+      "priority": 99,
+      "section": "libraries"
+    }
+  ],
+  "creditsBySection": {
+    "featured": [
+      {
+        "author": "llama.RN",
+        "description": "On-device LLM inference engine enabling completely private AI conversations",
+        "packages": [
+          "llama.rn"
+        ],
+        "url": "https://github.com/mybigday/llama.rn",
+        "priority": 1,
+        "pinned": true,
+        "section": "featured"
+      },
+      {
+        "author": "Tinybase",
+        "description": "Reactive data store powering Whisper's state management and persistence",
+        "packages": [
+          "tinybase"
+        ],
+        "url": "https://tinybase.org",
+        "priority": 2,
+        "pinned": true,
+        "section": "featured"
+      }
+    ],
+    "platform": [
+      {
+        "author": "Expo",
+        "description": "Complete platform for building, deploying, and updating React Native apps",
+        "packages": [
+          "@expo/metro-runtime",
+          "@expo/vector-icons",
+          "expo"
+        ],
+        "url": "https://expo.dev",
+        "priority": 3,
+        "section": "platform"
+      },
+      {
+        "author": "Meta",
+        "description": "Creators of React and React Native, the foundation of modern mobile development",
+        "packages": [
+          "react",
+          "react-dom",
+          "react-native"
+        ],
+        "url": "https://reactnative.dev",
+        "priority": 4,
+        "section": "platform"
+      }
+    ],
+    "libraries": [
+      {
+        "author": "650 Industries, Inc.",
+        "description": "Contributing 20 open source libraries",
+        "packages": [
+          "expo-blur",
+          "expo-clipboard",
+          "expo-constants",
+          "+ 17 more"
+        ],
+        "priority": 50,
+        "section": "libraries"
+      },
+      {
+        "author": "Eric Fennis",
+        "description": "Creator of lucide-react-native",
+        "packages": [
+          "lucide-react-native"
+        ],
+        "url": "https://lucide.dev",
+        "priority": 50,
+        "section": "libraries"
+      },
+      {
+        "author": "Expo Team",
+        "description": "Contributing 2 open source libraries",
+        "packages": [
+          "@expo-google-fonts/inter",
+          "@expo-google-fonts/lexend"
+        ],
+        "priority": 50,
+        "section": "libraries"
+      },
+      {
+        "author": "Farid Safi",
+        "description": "Creator of react-native-gifted-chat",
+        "packages": [
+          "react-native-gifted-chat"
+        ],
+        "url": "https://github.com/FaridSafi/react-native-gifted-chat#readme",
+        "priority": 50,
+        "section": "libraries"
+      },
+      {
+        "author": "Gowtham G",
+        "description": "Creator of react-native-marked",
+        "packages": [
+          "react-native-marked"
+        ],
+        "url": "https://github.com/gmsgowtham/react-native-marked#readme",
+        "priority": 50,
+        "section": "libraries"
+      },
+      {
+        "author": "Janic Duplessis",
+        "description": "Creator of react-native-safe-area-context",
+        "packages": [
+          "react-native-safe-area-context"
+        ],
+        "url": "https://github.com/th3rdwave/react-native-safe-area-context#readme",
+        "priority": 50,
+        "section": "libraries"
+      },
+      {
+        "author": "Kiryl Ziusko",
+        "description": "Creator of react-native-keyboard-controller",
+        "packages": [
+          "react-native-keyboard-controller"
+        ],
+        "url": "https://kirillzyusko.github.io/react-native-keyboard-controller/",
+        "priority": 50,
+        "section": "libraries"
+      },
+      {
+        "author": "Krzysztof Magiera",
+        "description": "Contributing 3 open source libraries",
+        "packages": [
+          "react-native-gesture-handler",
+          "react-native-reanimated",
+          "react-native-screens"
+        ],
+        "priority": 50,
+        "section": "libraries"
+      },
+      {
+        "author": "Nicolas Gallagher",
+        "description": "Creator of react-native-web",
+        "packages": [
+          "react-native-web"
+        ],
+        "url": "https://github.com/necolas/react-native-web",
+        "priority": 50,
+        "section": "libraries"
+      },
+      {
+        "author": "Open Source Contributors",
+        "description": "Contributing 9 open source libraries",
+        "packages": [
+          "@mote-software/tinybase-persister-expo-file-system",
+          "@react-navigation/bottom-tabs",
+          "@react-navigation/elements",
+          "+ 6 more"
+        ],
+        "priority": 99,
+        "section": "libraries"
+      }
+    ]
+  }
+}

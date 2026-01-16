@@ -86,7 +86,7 @@ export default function Download() {
 
 			// Clear the file removed flag since we have a new download
 			if (fileRemoved) {
-				const { store } = require("@/src/store");
+				const { store } = require("@/src/stores/store");
 				store.delValue("ai_chat_model_fileRemoved");
 			}
 
