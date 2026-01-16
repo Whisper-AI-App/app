@@ -1,5 +1,5 @@
 import * as LocalAuthentication from "expo-local-authentication";
-import { store } from "../store";
+import { store } from "../stores/store";
 
 export function setName(value: string) {
 	store.setValue("name", value);

@@ -11,7 +11,7 @@ import {
 	type WhisperLLMCardsJSON,
 	whisperLLMCardsJson,
 } from "whisper-llm-cards";
-import { store } from "../store";
+import { store } from "../stores/store";
 import { bytesToGB } from "../utils/bytes";
 import {
 	generateModelFileName,
