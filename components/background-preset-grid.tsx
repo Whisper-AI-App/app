@@ -65,14 +65,6 @@ export function BackgroundPresetGrid({
 								<Ionicons name="checkmark" size={16} color="#FFFFFF" />
 							</View>
 						)}
-						{/* <Text
-              style={[
-                styles.presetName,
-                { color: isSelected ? theme.blue : theme.text },
-              ]}
-            >
-              {preset.name}
-            </Text> */}
 					</TouchableOpacity>
 				);
 			})}
