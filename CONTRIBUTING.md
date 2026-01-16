@@ -2,6 +2,14 @@
 
 Thanks for your interest in contributing to Whisper! We welcome contributions from everyone.
 
+## Requirements
+
+- [Node.js](https://nodejs.org/) (LTS recommended)
+- [pnpm](https://pnpm.io/)
+- [Expo CLI](https://docs.expo.dev/get-started/installation/)
+- For iOS: macOS with Xcode
+- For Android: Android Studio with an emulator or physical device
+
 ## Getting Started
 
 1. Fork the repository
