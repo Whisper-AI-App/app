@@ -1,12 +1,12 @@
-import { AlertTriangle, RefreshCw } from "lucide-react-native";
-import { Component, type ErrorInfo, type ReactNode } from "react";
-import { useColorScheme } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
 import { Button } from "@/components/ui/button";
 import { Text } from "@/components/ui/text";
 import { View } from "@/components/ui/view";
 import { Colors } from "@/theme/colors";
 import { BORDER_RADIUS } from "@/theme/globals";
+import { AlertTriangle, RefreshCw } from "lucide-react-native";
+import { Component, type ErrorInfo, type ReactNode } from "react";
+import { useColorScheme } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 interface ErrorBoundaryProps {
 	children: ReactNode;
@@ -83,7 +83,7 @@ export function ErrorFallback({
 	error,
 	onReset,
 	title = "Something went wrong",
-	message = "An unexpected error occurred. Pleadse try again.",
+	message = "An unexpected error occurred. Please try again.",
 }: ErrorFallbackProps) {
 	const colorScheme = useColorScheme() ?? "light";
 	const theme = Colors[colorScheme];
