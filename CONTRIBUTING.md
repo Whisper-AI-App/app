@@ -1,47 +1,42 @@
-WIP - general notes to include, carry forwards however
+# Contributing to Whisper
 
-# Running on iOS
+Thanks for your interest in contributing to Whisper! We welcome contributions from everyone.
 
-## Running in an emulator
+## Requirements
 
-Relatively straightforward.
+- [Node.js](https://nodejs.org/) (LTS recommended)
+- [pnpm](https://pnpm.io/)
+- [Expo CLI](https://docs.expo.dev/get-started/installation/)
+- For iOS: macOS with Xcode
+- For Android: Android Studio with an emulator or physical device
 
-Pre-reqs:
+## Getting Started
 
-- xcode
-- emulator
-- mac device
+1. Fork the repository
+2. Clone your fork locally
+3. Install dependencies with `pnpm install`
+4. Run the app with `pnpm ios` or `pnpm android`
 
-Run:
+## How to Contribute
 
-`pnpm run ios`
+### Finding Work
 
-## Running on a device
+Browse our open issues. If you find an unassigned issue you'd like to work on, comment on it to let us know you're picking it up.
 
-> This guidance is for contributors who are named on the Apple team and have the right access to code signing and provisional profiles.
+### Working on an Issue
 
-Whisper has additional entitlements to support the resources needed to run LLMs on a mobile phone. With that in mind, runing the app on a real device in development requires a slightly different approach.
+1. **Check for a spec** - Some issues include a specification or implementation details. Feel free to follow it or propose alternatives if you think you have a better approach.
 
-This means `pnpm ios --device` tends not to work well. Below is an alternative approach.
+2. **No spec? Write one** - If the issue lacks a spec, draft one and post it in the issue comments for approval before starting work.
 
-Pre-reqs:
+3. **Submit a PR** - When ready, open a pull request referencing the issue. We'll review it and work with you to get it merged.
 
-- xcode
-- iphone
-- mac device
+## Guidelines
 
-Run:
+- Keep PRs focused on a single issue
+- Follow existing code patterns and conventions
+- Run `pnpm lint` before submitting
 
-1. `pnpm prebuild --platform ios --clean`
+## Questions?
 
-2. `pnpm start` - once running, continue to step 3
-
-3. `xed ios` - this will open xcode with the Whisper project
-
-.. probably some steps for developer to be able to actually build...
-
-4. Tap the 'Run' icon, top left. This will build the app, with the correct provision profile and access.
-
-5. Once the app has built and been installed on your phone, you'll want to open your Camera app and scan the QR code in the termal that has `pnpm start` running.
-
-This should open Whisper and link the app to the dev server.
+Open an issue or comment on an existing one. We're happy to help.
