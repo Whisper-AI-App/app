@@ -55,7 +55,7 @@ export function useChatRenderers({
 	}));
 
 	const renderBubble = useCallback(
-		(props: any) => {
+		(props: React.ComponentProps<typeof Bubble>) => {
 			const message = props.currentMessage;
 
 			// Margins adjusted for full page vs bottom sheet context
@@ -123,13 +123,6 @@ export function useChatRenderers({
 								marginLeft: 8,
 								marginRight: 8,
 							},
-						}}
-						textProps={{
-							selectable: true,
-							selectionColor:
-								colorScheme === "dark"
-									? "rgba(255, 255, 255, 0.3)"
-									: "rgba(0, 0, 0, 0.2)",
 						}}
 						renderMessageText={
 							isSystemMessage

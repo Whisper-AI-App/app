@@ -34,14 +34,14 @@ interface SearchButtonProps {
 	disabled?: boolean;
 }
 
-const GRADIENT_COLORS = [
+const GRADIENT_COLORS: readonly [string, string, ...string[]] = [
 	"#ff9e37",
 	"#ff5b91",
 	"#ff95ff",
 	"#69b7ff",
 	"#0017c2",
 	"#333333",
-];
+] as const;
 
 const BORDER_WIDTH = 2;
 
@@ -56,9 +56,9 @@ export function SearchButton({
 	disabled = false,
 }: SearchButtonProps) {
 	const cardColor = useColor("card");
-	const textColor = useColor("text");
+	const _textColor = useColor("text");
 	const muted = useColor("textMuted");
-	const icon = useColor("icon");
+	const _icon = useColor("icon");
 
 	// Animation values
 	const rotation = useSharedValue(0);
@@ -136,7 +136,12 @@ export function SearchButton({
 						]}
 					>
 						<LinearGradient
-							colors={[...GRADIENT_COLORS, GRADIENT_COLORS[0]]}
+							colors={[
+								GRADIENT_COLORS[0],
+								GRADIENT_COLORS[1],
+								...GRADIENT_COLORS.slice(2),
+								GRADIENT_COLORS[0],
+							]}
 							locations={[0, 0.166, 0.333, 0.5, 0.666, 0.833, 1]}
 							start={{ x: 0, y: 0 }}
 							end={{ x: 1, y: 1 }}

@@ -103,7 +103,7 @@ export const Input = forwardRef<TextInput, InputProps>(
 						...baseStyle,
 						borderWidth: 1,
 						borderColor: error ? danger : cardColor,
-						backgroundColor: disabled ? muted + "20" : cardColor,
+						backgroundColor: disabled ? `${muted}20` : cardColor,
 					};
 			}
 		};
@@ -117,12 +117,12 @@ export const Input = forwardRef<TextInput, InputProps>(
 			textAlignVertical: isTextarea ? "top" : "center",
 		});
 
-		const handleFocus = (e: any) => {
+		const handleFocus = (e: Parameters<NonNullable<TextInputProps["onFocus"]>>[0]) => {
 			setIsFocused(true);
 			onFocus?.(e);
 		};
 
-		const handleBlur = (e: any) => {
+		const handleBlur = (e: Parameters<NonNullable<TextInputProps["onBlur"]>>[0]) => {
 			setIsFocused(false);
 			onBlur?.(e);
 		};
@@ -221,7 +221,7 @@ export const Input = forwardRef<TextInput, InputProps>(
 										maxHeight: 200,
 									},
 								]}
-								placeholderTextColor={error ? danger + "99" : muted}
+								placeholderTextColor={error ? `${danger}99` : muted}
 								placeholder={placeholder || "Type your message..."}
 								onFocus={handleFocus}
 								onBlur={handleBlur}
@@ -336,8 +336,8 @@ export const GroupedInput = ({
 
 	const errors = childrenArray
 		.filter(
-			(child): child is ReactElement<any> =>
-				React.isValidElement(child) && !!(child.props as any).error,
+			(child): child is ReactElement<{ error?: string }> =>
+				React.isValidElement(child) && !!(child.props as { error?: string }).error,
 		)
 		.map((child) => child.props.error);
 
@@ -363,7 +363,7 @@ export const GroupedInput = ({
 			>
 				{childrenArray.map((child, index) => (
 					<View
-						key={index}
+						key={`grouped-input-${index}`}
 						style={{
 							minHeight: HEIGHT,
 							paddingVertical: 12,
@@ -380,13 +380,13 @@ export const GroupedInput = ({
 
 			{errors.length > 0 && (
 				<View style={{ marginTop: 6 }}>
-					{errors.map((error, i) => (
+					{errors.map((error, errorIndex) => (
 						<Text
-							key={i}
+							key={error}
 							style={{
 								fontSize: 14,
 								color: danger,
-								marginTop: i === 0 ? 0 : 1,
+								marginTop: errorIndex === 0 ? 0 : 1,
 								marginLeft: 8,
 							}}
 						>
@@ -434,7 +434,7 @@ export const GroupedInputItem = forwardRef<TextInput, GroupedInputItemProps>(
 		},
 		ref,
 	) => {
-		const [isFocused, setIsFocused] = useState(false);
+		const [_isFocused, setIsFocused] = useState(false);
 
 		const text = useColor("text");
 		const muted = useColor("textMuted");
@@ -443,12 +443,12 @@ export const GroupedInputItem = forwardRef<TextInput, GroupedInputItemProps>(
 
 		const isTextarea = type === "textarea" || props.multiline;
 
-		const handleFocus = (e: any) => {
+		const handleFocus = (e: Parameters<NonNullable<TextInputProps["onFocus"]>>[0]) => {
 			setIsFocused(true);
 			onFocus?.(e);
 		};
 
-		const handleBlur = (e: any) => {
+		const handleBlur = (e: Parameters<NonNullable<TextInputProps["onBlur"]>>[0]) => {
 			setIsFocused(false);
 			onBlur?.(e);
 		};
@@ -541,7 +541,7 @@ export const GroupedInputItem = forwardRef<TextInput, GroupedInputItemProps>(
 									},
 									inputStyle,
 								]}
-								placeholderTextColor={error ? danger + "99" : muted}
+								placeholderTextColor={error ? `${danger}99` : muted}
 								placeholder={placeholder || "Type your message..."}
 								editable={!disabled}
 								selectionColor={primary}
@@ -606,7 +606,7 @@ export const GroupedInputItem = forwardRef<TextInput, GroupedInputItemProps>(
 										inputStyle,
 									]}
 									placeholder={placeholder}
-									placeholderTextColor={error ? danger + "99" : muted}
+									placeholderTextColor={error ? `${danger}99` : muted}
 									editable={!disabled}
 									selectionColor={primary}
 									onFocus={handleFocus}

@@ -214,7 +214,7 @@ function CreditCard({ credit, theme, onOpenUrl }: CreditCardProps) {
 
 	return (
 		<TouchableOpacity
-			onPress={() => onOpenUrl(credit.url!)}
+			onPress={() => credit.url && onOpenUrl(credit.url)}
 			activeOpacity={0.7}
 		>
 			{CardContent}

@@ -1,7 +1,7 @@
 import { getModelFileUri, store } from "@/src/stores/store";
 import * as FileSystem from "expo-file-system";
 import { initLlama, type LlamaContext, releaseAllLlama } from "llama.rn";
-import React, {
+import {
 	createContext,
 	type ReactNode,
 	useCallback,

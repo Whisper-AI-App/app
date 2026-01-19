@@ -93,7 +93,7 @@ export const TypingIndicator: React.FC<TypingIndicatorProps> = ({
 			>
 				{[dot1Opacity, dot2Opacity, dot3Opacity].map((opacity, index) => (
 					<Animated.View
-						key={index}
+						key={`typing-dot-${index}`}
 						style={[
 							{ width: 6, height: 6, borderRadius: 3, marginHorizontal: 3 },
 							{ backgroundColor: theme.text, opacity },

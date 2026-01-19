@@ -4,8 +4,8 @@
  * This runs during postinstall to avoid runtime overhead
  */
 
-const fs = require("fs");
-const path = require("path");
+const fs = require("node:fs");
+const path = require("node:path");
 
 const packageJsonPath = path.join(__dirname, "..", "package.json");
 const outputPath = path.join(
@@ -97,7 +97,7 @@ function readPackageJson(packageName) {
 		);
 		const content = fs.readFileSync(pkgPath, "utf8");
 		return JSON.parse(content);
-	} catch (error) {
+	} catch (_error) {
 		return null;
 	}
 }

@@ -24,7 +24,7 @@ interface PopoverContextType {
 	isOpen: boolean;
 	setIsOpen: (open: boolean) => void;
 	triggerLayout: { x: number; y: number; width: number; height: number };
-	setTriggerLayout: (layout: any) => void;
+	setTriggerLayout: (layout: { x: number; y: number; width: number; height: number }) => void;
 }
 
 const PopoverContext = createContext<PopoverContextType | undefined>(undefined);
@@ -100,8 +100,8 @@ export function PopoverTrigger({
 		if (triggerRef.current) {
 			triggerRef.current.measure(
 				(
-					x: number,
-					y: number,
+					_x: number,
+					_y: number,
 					width: number,
 					height: number,
 					pageX: number,
@@ -123,8 +123,8 @@ export function PopoverTrigger({
 		return React.cloneElement(children, {
 			ref: triggerRef,
 			onPress: handlePress,
-			style: [(children.props as any).style, style],
-		} as any);
+			style: [(children.props as { style?: ViewStyle }).style, style],
+		} as React.Attributes);
 	}
 
 	return (
@@ -302,7 +302,7 @@ export function PopoverContent({
 
 	const position = getPosition();
 
-	const handleContentLayout = (event: any) => {
+	const handleContentLayout = (event: { nativeEvent: { layout: { width: number; height: number } } }) => {
 		const { width, height } = event.nativeEvent.layout;
 		setContentSize({ width, height });
 	};
@@ -401,8 +401,8 @@ export function PopoverClose({
 	if (asChild && React.isValidElement(children)) {
 		return React.cloneElement(children, {
 			onPress: handlePress,
-			style: [(children.props as any).style, style],
-		} as any);
+			style: [(children.props as { style?: ViewStyle }).style, style],
+		} as React.Attributes);
 	}
 
 	return (
