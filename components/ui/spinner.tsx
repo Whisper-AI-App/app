@@ -202,7 +202,9 @@ export function Spinner({
 				);
 			});
 		} else {
-			dotsAnims.forEach((anim) => (anim.value = 0.3)); // Reset
+			dotsAnims.forEach((anim) => {
+				anim.value = 0.3; // Reset
+			});
 		}
 	}, [dotsAnims, variant, animationDuration]);
 
@@ -222,7 +224,9 @@ export function Spinner({
 				);
 			});
 		} else {
-			barsAnims.forEach((anim) => (anim.value = 0.3)); // Reset
+			barsAnims.forEach((anim) => {
+				anim.value = 0.3; // Reset
+			});
 		}
 	}, [barsAnims, variant, animationDuration]);
 
@@ -279,7 +283,7 @@ export function Spinner({
 					<View style={[styles.dotsContainer, { gap: config.size / 4 }]}>
 						{dotsAnims.map((anim, index) => (
 							<AnimatedDot
-								key={index}
+								key={`dot-${index}`}
 								anim={anim}
 								color={spinnerColor}
 								size={config.size / 3}
@@ -294,7 +298,7 @@ export function Spinner({
 					<View style={[styles.barsContainer, { gap: config.size / 6 }]}>
 						{barsAnims.map((anim, index) => (
 							<AnimatedBar
-								key={index}
+								key={`bar-${index}`}
 								anim={anim}
 								color={spinnerColor}
 								size={config.size}

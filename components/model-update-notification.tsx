@@ -4,7 +4,6 @@ import { Text } from "@/components/ui/text";
 import { View } from "@/components/ui/view";
 import { useColor } from "@/hooks/useColor";
 import { useRouter } from "expo-router";
-import React from "react";
 import type { WhisperLLMCard } from "whisper-llm-cards";
 
 interface ModelUpdateNotificationProps {
@@ -20,10 +19,10 @@ interface ModelUpdateNotificationProps {
 export function ModelUpdateNotification({
 	isVisible,
 	onClose,
-	currentCard,
+	currentCard: _currentCard,
 	newCard,
-	currentVersion,
-	newVersion,
+	currentVersion: _currentVersion,
+	newVersion: _newVersion,
 	requiresDownload,
 }: ModelUpdateNotificationProps) {
 	const router = useRouter();

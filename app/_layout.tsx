@@ -34,7 +34,7 @@ export default function RootLayout() {
 			await persister.load();
 			await persister.startAutoLoad();
 			await persister.startAutoSave();
-			initStore(persister);
+			initStore();
 		},
 	);
 

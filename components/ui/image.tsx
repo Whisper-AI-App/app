@@ -1,28 +1,33 @@
+import { Text } from "@/components/ui/text";
+import { View } from "@/components/ui/view";
+import { useColor } from "@/hooks/useColor";
+import { BORDER_RADIUS, CORNERS } from "@/theme/globals";
 import {
 	Image as ExpoImage,
 	type ImageProps as ExpoImageProps,
 	type ImageSource,
 } from "expo-image";
 import { forwardRef, useState } from "react";
-import { ActivityIndicator, StyleSheet } from "react-native";
-import { Text } from "@/components/ui/text";
-import { View } from "@/components/ui/view";
-import { useColor } from "@/hooks/useColor";
-import { BORDER_RADIUS, CORNERS } from "@/theme/globals";
+import {
+	ActivityIndicator,
+	type DimensionValue,
+	StyleSheet,
+	type ViewStyle,
+} from "react-native";
 
 export interface ImageProps extends Omit<ExpoImageProps, "style"> {
 	variant?: "rounded" | "circle" | "default";
 	source: ImageSource;
 	style?: ExpoImageProps["style"];
-	containerStyle?: any;
+	containerStyle?: ViewStyle;
 	showLoadingIndicator?: boolean;
 	showErrorFallback?: boolean;
 	errorFallbackText?: string;
 	loadingIndicatorSize?: "small" | "large";
 	loadingIndicatorColor?: string;
 	aspectRatio?: number;
-	width?: number | string;
-	height?: number | string;
+	width?: DimensionValue;
+	height?: DimensionValue;
 }
 
 export const Image = forwardRef<ExpoImage, ImageProps>(
@@ -71,12 +76,12 @@ export const Image = forwardRef<ExpoImage, ImageProps>(
 		const borderRadius = getBorderRadius();
 
 		// Container dimensions - fill container by default, or use provided dimensions
-		const containerDimensions =
+		const containerDimensions: ViewStyle =
 			width || height || aspectRatio
 				? {
-						...(width ? { width } : {}),
-						...(height ? { height } : {}),
-						...(aspectRatio ? { aspectRatio } : {}),
+						...(width !== undefined ? { width } : {}),
+						...(height !== undefined ? { height } : {}),
+						...(aspectRatio !== undefined ? { aspectRatio } : {}),
 					}
 				: { width: "100%", height: "100%" };
 

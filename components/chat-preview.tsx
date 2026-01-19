@@ -50,14 +50,14 @@ export function ChatPreview({
 		}
 	}, [peekOnMount]);
 
-	const handlePressIn = (event: any) => {
+	const handlePressIn = (event: { nativeEvent: { pageX: number; pageY: number } }) => {
 		pressStartPosition.current = {
 			x: event.nativeEvent.pageX,
 			y: event.nativeEvent.pageY,
 		};
 	};
 
-	const handlePress = (event: any) => {
+	const handlePress = (event: { nativeEvent: { pageX: number; pageY: number } }) => {
 		// Check if this was a tap or a swipe
 		if (pressStartPosition.current) {
 			const deltaX = Math.abs(
@@ -107,8 +107,8 @@ export function ChatPreview({
 				},
 				{
 					text: "Rename",
-					onPress: (newName) => {
-						if (newName && newName.trim()) {
+					onPress: (newName: string | undefined) => {
+						if (newName?.trim()) {
 							renameChat(chatId, newName.trim());
 						}
 					},

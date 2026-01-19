@@ -44,7 +44,7 @@ export function SearchBar({
 	...props
 }: SearchBarProps) {
 	const [internalValue, setInternalValue] = useState(value || "");
-	const debounceRef = useRef<NodeJS.Timeout | null>(null);
+	const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 	const inputRef = useRef<TextInput>(null);
 
 	// Theme colors
@@ -63,7 +63,7 @@ export function SearchBar({
 				if (debounceRef.current) {
 					clearTimeout(debounceRef.current);
 				}
-				(debounceRef.current as any) = setTimeout(() => {
+				debounceRef.current = setTimeout(() => {
 					onSearch(text);
 				}, debounceMs);
 			} else if (onSearch) {
@@ -109,7 +109,7 @@ export function SearchBar({
 
 	// Handle focus with haptics
 	const handleFocus = useCallback(
-		(e: any) => {
+		(e: Parameters<NonNullable<TextInputProps["onFocus"]>>[0]) => {
 			if (process.env.EXPO_OS === "ios") {
 				Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
 			}
@@ -240,7 +240,7 @@ export function SearchBarWithSuggestions({
 				>
 					{filteredSuggestions.map((suggestion, index) => (
 						<TouchableOpacity
-							key={`${suggestion}-${index}`}
+							key={suggestion}
 							onPress={() => handleSuggestionPress(suggestion)}
 							style={{
 								paddingHorizontal: 16,

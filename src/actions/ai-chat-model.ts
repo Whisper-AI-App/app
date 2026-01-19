@@ -61,7 +61,7 @@ export async function fetchLatestRecommendedModel(): Promise<{
 		return {
 			config: whisperLLMCardsJson,
 			recommendedCard: DEFAULT_AI_CHAT_MODEL,
-			cardId: whisperLLMCardsJson.recommendedCard,
+			cardId: whisperLLMCardsJson.defaultRecommendedCard,
 		};
 	}
 }
@@ -357,7 +357,7 @@ export async function resumeDownload(): Promise<void> {
 			return;
 		}
 
-		handleDownloadComplete(result);
+		handleDownloadComplete(result ?? null);
 	} catch (error) {
 		handleDownloadError(error);
 	}
@@ -453,7 +453,7 @@ export async function startOrResumeDownloadOfAIChatModel(
 			return;
 		}
 
-		handleDownloadComplete(result);
+		handleDownloadComplete(result ?? null);
 	} catch (error) {
 		handleDownloadError(error);
 	}

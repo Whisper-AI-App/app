@@ -56,7 +56,7 @@ export async function shareChat(chatId: string) {
 		.filter(Boolean)
 		.sort(
 			(a, b) =>
-				new Date(a!.createdAt).getTime() - new Date(b!.createdAt).getTime(),
+				new Date(a?.createdAt ?? 0).getTime() - new Date(b?.createdAt ?? 0).getTime(),
 		);
 
 	// Format chat as text

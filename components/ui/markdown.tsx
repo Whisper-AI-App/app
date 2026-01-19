@@ -1,4 +1,3 @@
-import * as Linking from "expo-linking";
 import RNMarkdown, { type MarkedStyles } from "react-native-marked";
 import { useColorScheme } from "@/hooks/useColorScheme";
 import { Colors } from "@/theme/colors";
@@ -15,14 +14,6 @@ interface MarkdownProps {
 export function Markdown({ children }: MarkdownProps) {
 	const colorScheme = useColorScheme() ?? "light";
 	const theme = Colors[colorScheme];
-
-	// Handle link presses to open URLs in browser
-	const handleLinkPress = (url: string) => {
-		Linking.openURL(url).catch((err) =>
-			console.error("Failed to open URL:", err),
-		);
-		return false; // Prevent default behavior
-	};
 
 	// Create theme configuration for react-native-marked
 	const markedTheme = {
@@ -110,7 +101,6 @@ export function Markdown({ children }: MarkdownProps) {
 				styles={markedStyles}
 				flatListProps={{
 					scrollEnabled: false,
-					onLinkPress: handleLinkPress,
 					style: { flexShrink: 1 },
 					contentContainerStyle: { flexShrink: 1 },
 				}}
