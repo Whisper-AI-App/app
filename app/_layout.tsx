@@ -1,4 +1,5 @@
 import { AuthGate } from "@/components/auth-gate";
+import { ErrorBoundary } from "@/components/error-boundary";
 import { StatusBar } from "@/components/status-bar";
 import { AIChatProvider } from "@/contexts/AIChatContext";
 import {
@@ -50,18 +51,22 @@ export default function RootLayout() {
 		<GestureHandlerRootView>
 			<Provider store={mainStore as unknown as Store}>
 				<AuthGate>
-					<AIChatProvider>
-						<ThemeProvider>
-							<StatusBar />
-							<Stack screenOptions={{ headerShown: false }}>
-								<Stack.Screen name="index" />
-								<Stack.Screen name="download" />
-								<Stack.Screen name="dashboard" />
-								<Stack.Screen name="settings" />
-								<Stack.Screen name="chat" />
-							</Stack>
-						</ThemeProvider>
-					</AIChatProvider>
+					<ErrorBoundary>
+						<AIChatProvider>
+							<ThemeProvider>
+								<StatusBar />
+								<ErrorBoundary>
+									<Stack screenOptions={{ headerShown: false }}>
+										<Stack.Screen name="index" />
+										<Stack.Screen name="download" />
+										<Stack.Screen name="dashboard" />
+										<Stack.Screen name="settings" />
+										<Stack.Screen name="chat" />
+									</Stack>
+								</ErrorBoundary>
+							</ThemeProvider>
+						</AIChatProvider>
+					</ErrorBoundary>
 				</AuthGate>
 			</Provider>
 		</GestureHandlerRootView>
