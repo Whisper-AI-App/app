@@ -11,7 +11,7 @@ Thanks for your interest in contributing to Whisper! We welcome contributions fr
 - [License](#license)
 - [Contributor License Agreement (CLA)](#contributor-license-agreement-cla)
 - [Commercial Use & Enterprise Inquiries](#commercial-use--enterprise-inquiries)
-- [Questions?](#questions)
+- [Community & Questions](#community--questions)
 
 ## Requirements
 
@@ -48,6 +48,13 @@ Browse our open issues. If you find an unassigned issue you'd like to work on, c
 - Follow existing code patterns and conventions
 - Run `pnpm lint` before submitting
 
+## Community & Questions
+
+Join our Discord to connect with other contributors, ask questions, and share ideas:
+[Join our Discord](https://discord.gg/A6JxByaKNX)
+
+You can also open an issue or comment on an existing one. We're happy to help.
+
 ## License
 
 This project uses the [PolyForm Noncommercial License](./LICENSE).
@@ -72,7 +79,3 @@ The highlights:
 This software is licensed for non-commercial use only. If you wish to use this software for business purposes, commercial redistribution, or are interested in our upcoming Enterprise Offering, please contact:
 
 https://avatechnologies.org/contact
-
-## Questions?
-
-Open an issue or comment on an existing one. We're happy to help.

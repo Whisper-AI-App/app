@@ -41,3 +41,22 @@ To learn more about developing your project with Expo, look at the following res
 
 - [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
 
+## Community
+
+We're building Whisper as an open App and would love your help! Whether you're interested in suggesting ideas, contributing code, documentation, design, or just being part of our community, there are several ways to get involved.
+
+**Want to contribute code?**
+- Read our [CONTRIBUTING.md](./CONTRIBUTING.md) guide for development setup, coding standards, and how to submit changes
+
+**Want to be part of the community?**
+- [Join our Discord](https://discord.gg/A6JxByaKNX) to connect with other users, ask questions, and share ideas
+- Head to our [GitHub Issues](https://github.com/Whisper-AI-App/app/issues) or [Discussions](https://github.com/Whisper-AI-App/app/discussions) to join conversations
+
+**Areas where we need help:**
+- Improving on-device AI performance and model support
+- Enhancing the user experience
+- Reporting bugs or suggesting features
+- Design and UI improvements
+- Getting the word out about private AI
+
+All contributions are welcome!
