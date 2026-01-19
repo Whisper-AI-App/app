@@ -58,7 +58,9 @@ We chose a fair-source license because transparency is at the heart of Whisper. 
 
 Thank you for contributing! We fair-source our code for transparency and welcome community improvements.
 
-By submitting a Pull Request or contributing code to this repository, you agree to the following terms:
+By submitting a Pull Request or contributing code to this repository, you agree to our full [Contributor License Agreement](./CLA.md).
+
+The highlights:
 
 1. **Grant of Rights:** You grant Ava Technologies Global Ltd a perpetual, worldwide, non-exclusive, no-charge, royalty-free, irrevocable copyright license to reproduce, prepare derivative works of, publicly display, sublicense, and distribute your contributions.
 2. **Right to Commercialize:** You specifically acknowledge that Ava Technologies Global Ltd may include your contributions in paid versions of the software (such as the App Store/Google Play versions) and future Enterprise offerings under different license terms.
