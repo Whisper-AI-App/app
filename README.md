@@ -1,6 +1,8 @@
-# Whisper
+# Whisper AI App
 
-A 100% private AI Chat app.
+![Banner](./.github/assets/readme-top-banner.png)
+
+The 100% private AI Chat App.
 
 ## Tech Stack
 
