@@ -1,5 +1,5 @@
 import { authenticate } from "@/src/actions/settings";
-import { sessionStore } from "@/src/stores/session-store";
+import { sessionStore } from "@/src/stores/session/session-store";
 import { Colors } from "@/theme/colors";
 import { ImageBackground } from "expo-image";
 import { Lock } from "lucide-react-native";

@@ -11,7 +11,7 @@ import {
 	type WhisperLLMCardsJSON,
 	whisperLLMCardsJson,
 } from "whisper-llm-cards";
-import { store } from "../stores/store";
+import { mainStore } from "../stores/main/main-store";
 import { bytesToGB } from "../utils/bytes";
 import {
 	generateModelFileName,
@@ -75,9 +75,9 @@ export function updateModelCard(
 	cardId: string,
 	configVersion: string,
 ): void {
-	store.setValue("ai_chat_model_card", JSON.stringify(card));
-	store.setValue("ai_chat_model_cardId", cardId);
-	store.setValue("ai_chat_model_config_version", configVersion);
+	mainStore.setValue("ai_chat_model_card", JSON.stringify(card));
+	mainStore.setValue("ai_chat_model_cardId", cardId);
+	mainStore.setValue("ai_chat_model_config_version", configVersion);
 }
 
 /**
@@ -85,7 +85,9 @@ export function updateModelCard(
  * @returns The stored card or null if not found
  */
 export function getStoredModelCard(): WhisperLLMCard | null {
-	const cardJson = store.getValue("ai_chat_model_card") as string | undefined;
+	const cardJson = mainStore.getValue("ai_chat_model_card") as
+		| string
+		| undefined;
 	if (!cardJson) return null;
 
 	try {
@@ -126,11 +128,11 @@ export interface ModelUpdateInfo {
  * @returns Update information including whether download is required
  */
 export async function checkForModelUpdates(): Promise<ModelUpdateInfo> {
-	const storedConfigVersion = store.getValue("ai_chat_model_config_version") as
-		| string
-		| undefined;
+	const storedConfigVersion = mainStore.getValue(
+		"ai_chat_model_config_version",
+	) as string | undefined;
 	// Use filename instead of full path (path changes between app updates)
-	const filename = store.getValue("ai_chat_model_filename") as
+	const filename = mainStore.getValue("ai_chat_model_filename") as
 		| string
 		| undefined;
 
@@ -256,7 +258,7 @@ function createProgressCallback() {
 		totalBytesExpectedToWrite: number;
 	}) => {
 		const progressSizeGB = bytesToGB(progressData.totalBytesWritten);
-		store.setValue("ai_chat_model_progressSizeGB", progressSizeGB);
+		mainStore.setValue("ai_chat_model_progressSizeGB", progressSizeGB);
 	};
 }
 
@@ -264,16 +266,16 @@ function createProgressCallback() {
  * Checks if the download was paused by the user
  */
 function checkIfPaused(): boolean {
-	return store.getValue("ai_chat_model_isPaused") as boolean;
+	return mainStore.getValue("ai_chat_model_isPaused") as boolean;
 }
 
 /**
  * Cleans up download state in the store
  */
 function cleanupDownloadState(): void {
-	store.delValue("ai_chat_model_downloadError");
-	store.delValue("ai_chat_model_resumableState");
-	store.delValue("ai_chat_model_isPaused");
+	mainStore.delValue("ai_chat_model_downloadError");
+	mainStore.delValue("ai_chat_model_resumableState");
+	mainStore.delValue("ai_chat_model_isPaused");
 }
 
 /**
@@ -281,7 +283,7 @@ function cleanupDownloadState(): void {
  */
 function handleDownloadComplete(result: { status: number } | null): void {
 	if (result?.status === 200 || result?.status === 206) {
-		store.setValue("ai_chat_model_downloadedAt", new Date().toISOString());
+		mainStore.setValue("ai_chat_model_downloadedAt", new Date().toISOString());
 		cleanupDownloadState();
 		activeDownloadResumable = null;
 	} else {
@@ -300,8 +302,8 @@ function handleDownloadError(error: unknown): void {
 	console.error("[AI Model Download] Error occurred", error);
 	const errorMessage =
 		error instanceof Error ? error.message : "Unknown error occurred";
-	store.setValue("ai_chat_model_downloadError", errorMessage);
-	store.setValue("ai_chat_model_isPaused", true); // Mark as paused so user can retry
+	mainStore.setValue("ai_chat_model_downloadError", errorMessage);
+	mainStore.setValue("ai_chat_model_isPaused", true); // Mark as paused so user can retry
 	activeDownloadResumable = null;
 	throw error;
 }
@@ -318,8 +320,8 @@ export async function pauseDownload(): Promise<void> {
 		await activeDownloadResumable.pauseAsync();
 		const savable = activeDownloadResumable.savable();
 
-		store.setValue("ai_chat_model_resumableState", JSON.stringify(savable));
-		store.setValue("ai_chat_model_isPaused", true);
+		mainStore.setValue("ai_chat_model_resumableState", JSON.stringify(savable));
+		mainStore.setValue("ai_chat_model_isPaused", true);
 	} catch (error) {
 		console.error("[AI Model Download] Error pausing download", error);
 		throw error;
@@ -330,7 +332,7 @@ export async function pauseDownload(): Promise<void> {
  * Resumes a paused download
  */
 export async function resumeDownload(): Promise<void> {
-	const resumableStateStr = store.getValue("ai_chat_model_resumableState");
+	const resumableStateStr = mainStore.getValue("ai_chat_model_resumableState");
 
 	if (!resumableStateStr) {
 		return;
@@ -338,7 +340,7 @@ export async function resumeDownload(): Promise<void> {
 
 	try {
 		const resumableState = JSON.parse(resumableStateStr as string);
-		const fileUri = store.getValue("ai_chat_model_fileUri") as string;
+		const fileUri = mainStore.getValue("ai_chat_model_fileUri") as string;
 
 		const resumable = createDownloadResumable(
 			resumableState.url,
@@ -349,7 +351,7 @@ export async function resumeDownload(): Promise<void> {
 		);
 
 		activeDownloadResumable = resumable;
-		store.setValue("ai_chat_model_isPaused", false);
+		mainStore.setValue("ai_chat_model_isPaused", false);
 
 		const result = await resumable.downloadAsync();
 
@@ -373,10 +375,10 @@ export async function startOrResumeDownloadOfAIChatModel(
 	restart: boolean = false,
 ): Promise<void> {
 	const sourceUrl = card.sourceUrl;
-	const isPaused = store.getValue("ai_chat_model_isPaused") as
+	const isPaused = mainStore.getValue("ai_chat_model_isPaused") as
 		| boolean
 		| undefined;
-	const resumableStateStr = store.getValue("ai_chat_model_resumableState");
+	const resumableStateStr = mainStore.getValue("ai_chat_model_resumableState");
 
 	if (isPaused && resumableStateStr && !restart) {
 		return resumeDownload();
@@ -387,12 +389,12 @@ export async function startOrResumeDownloadOfAIChatModel(
 	// Store only filename, not full path (path changes between app updates)
 	const fileUri = `${new FileSystem.Directory(FileSystem.Paths.document).uri}/${versionedFilename}`;
 
-	const existingFilename = store.getValue("ai_chat_model_filename") as
+	const existingFilename = mainStore.getValue("ai_chat_model_filename") as
 		| string
 		| undefined;
 	// Also check legacy fileUri for migration
-	const existingFileUri = store.getValue("ai_chat_model_fileUri");
-	const downloadedAt = store.getValue("ai_chat_model_downloadedAt");
+	const existingFileUri = mainStore.getValue("ai_chat_model_fileUri");
+	const downloadedAt = mainStore.getValue("ai_chat_model_downloadedAt");
 
 	// Check if already downloaded (by filename, not full path which changes between updates)
 	if (
@@ -417,24 +419,24 @@ export async function startOrResumeDownloadOfAIChatModel(
 		if (file.exists) {
 			await file.delete();
 		}
-		store.setValue("ai_chat_model_progressSizeGB", 0);
+		mainStore.setValue("ai_chat_model_progressSizeGB", 0);
 		cleanupDownloadState();
 	}
 
 	// Save card metadata
-	store.setValue("ai_chat_model_card", JSON.stringify(card));
-	store.setValue("ai_chat_model_cardId", cardId);
-	store.setValue("ai_chat_model_config_version", configVersion);
+	mainStore.setValue("ai_chat_model_card", JSON.stringify(card));
+	mainStore.setValue("ai_chat_model_cardId", cardId);
+	mainStore.setValue("ai_chat_model_config_version", configVersion);
 	// Store filename instead of full path (path changes between app updates)
-	store.setValue("ai_chat_model_filename", versionedFilename);
+	mainStore.setValue("ai_chat_model_filename", versionedFilename);
 	// Keep fileUri for backward compatibility during transition
-	store.setValue("ai_chat_model_fileUri", fileUri);
-	store.delValue("ai_chat_model_downloadedAt");
-	store.delValue("ai_chat_model_downloadError");
-	store.setValue("ai_chat_model_isPaused", false);
+	mainStore.setValue("ai_chat_model_fileUri", fileUri);
+	mainStore.delValue("ai_chat_model_downloadedAt");
+	mainStore.delValue("ai_chat_model_downloadError");
+	mainStore.setValue("ai_chat_model_isPaused", false);
 
-	if (!store.getValue("ai_chat_model_progressSizeGB")) {
-		store.setValue("ai_chat_model_progressSizeGB", 0);
+	if (!mainStore.getValue("ai_chat_model_progressSizeGB")) {
+		mainStore.setValue("ai_chat_model_progressSizeGB", 0);
 	}
 
 	try {

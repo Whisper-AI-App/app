@@ -1,10 +1,10 @@
 import { Share } from "react-native";
-import { store } from "../stores/store";
+import { mainStore } from "../stores/main/main-store";
 
 export function upsertChat(id: string, name: string) {
-	const existingChat = store.getRow("chats", id);
+	const existingChat = mainStore.getRow("chats", id);
 
-	store.setRow("chats", id, {
+	mainStore.setRow("chats", id, {
 		id,
 		name,
 		createdAt: existingChat?.createdAt || new Date().toISOString(),
@@ -12,22 +12,22 @@ export function upsertChat(id: string, name: string) {
 }
 
 export function deleteChat(chatId: string) {
-	store.delRow("chats", chatId);
+	mainStore.delRow("chats", chatId);
 
 	// Also delete all messages associated with this chat
-	const messageIds = store.getRowIds("messages");
+	const messageIds = mainStore.getRowIds("messages");
 	messageIds.forEach((messageId) => {
-		const message = store.getRow("messages", messageId);
+		const message = mainStore.getRow("messages", messageId);
 		if (message?.chatId === chatId) {
-			store.delRow("messages", messageId);
+			mainStore.delRow("messages", messageId);
 		}
 	});
 }
 
 export function renameChat(chatId: string, newName: string) {
-	const existingChat = store.getRow("chats", chatId);
+	const existingChat = mainStore.getRow("chats", chatId);
 	if (existingChat) {
-		store.setRow("chats", chatId, {
+		mainStore.setRow("chats", chatId, {
 			...existingChat,
 			name: newName,
 		});
@@ -35,17 +35,17 @@ export function renameChat(chatId: string, newName: string) {
 }
 
 export async function shareChat(chatId: string) {
-	const chat = store.getRow("chats", chatId);
+	const chat = mainStore.getRow("chats", chatId);
 	if (!chat) {
 		console.log("[shareChat] Chat not found:", chatId);
 		return;
 	}
 
 	// Get all messages for this chat
-	const messageIds = store.getRowIds("messages");
+	const messageIds = mainStore.getRowIds("messages");
 	const chatMessages = messageIds
 		.map((id) => {
-			const msg = store.getRow("messages", id);
+			const msg = mainStore.getRow("messages", id);
 			if (msg?.chatId !== chatId) return null;
 			return {
 				role: msg.role,
@@ -56,7 +56,8 @@ export async function shareChat(chatId: string) {
 		.filter(Boolean)
 		.sort(
 			(a, b) =>
-				new Date(a?.createdAt ?? 0).getTime() - new Date(b?.createdAt ?? 0).getTime(),
+				new Date(a?.createdAt ?? 0).getTime() -
+				new Date(b?.createdAt ?? 0).getTime(),
 		);
 
 	// Format chat as text

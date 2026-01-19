@@ -13,7 +13,7 @@ import {
 	checkForModelUpdates,
 	type ModelUpdateInfo,
 } from "@/src/actions/ai-chat-model";
-import { getModelFileUri } from "@/src/stores/store";
+import { getModelFileUri } from "@/src/stores/main/main-store";
 import { Colors } from "@/theme/colors";
 import { ImageBackground } from "expo-image";
 import { useRouter } from "expo-router";

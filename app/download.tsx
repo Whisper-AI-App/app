@@ -12,6 +12,7 @@ import {
 	startOrResumeDownloadOfAIChatModel,
 } from "@/src/actions/ai-chat-model";
 import { completeOnboarding } from "@/src/actions/settings";
+import { mainStore } from "@/src/stores/main/main-store";
 import { ImageBackground } from "expo-image";
 import { useRouter } from "expo-router";
 import { useEffect, useState } from "react";
@@ -86,8 +87,7 @@ export default function Download() {
 
 			// Clear the file removed flag since we have a new download
 			if (fileRemoved) {
-				const { store } = require("@/src/stores/store");
-				store.delValue("ai_chat_model_fileRemoved");
+				mainStore.delValue("ai_chat_model_fileRemoved");
 			}
 
 			// Complete onboarding if first time

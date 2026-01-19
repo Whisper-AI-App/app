@@ -1,4 +1,4 @@
-import { store } from "@/src/stores/store";
+import { mainStore } from "@/src/stores/main/main-store";
 import * as FileSystem from "expo-file-system/legacy";
 import * as ImagePicker from "expo-image-picker";
 
@@ -53,9 +53,9 @@ export async function pickBackgroundFromLibrary(): Promise<{
 		});
 
 		// Update store
-		store.setValue("chat_background_type", "custom");
-		store.setValue("chat_background_uri", destinationUri);
-		store.setValue("chat_background_preset_id", "");
+		mainStore.setValue("chat_background_type", "custom");
+		mainStore.setValue("chat_background_uri", destinationUri);
+		mainStore.setValue("chat_background_preset_id", "");
 
 		return { success: true };
 	} catch (error: unknown) {
@@ -84,9 +84,9 @@ export function setPresetBackground(presetId: string): void {
 	// Clean up any existing custom background
 	cleanupOldCustomBackground();
 
-	store.setValue("chat_background_type", "preset");
-	store.setValue("chat_background_uri", "");
-	store.setValue("chat_background_preset_id", presetId);
+	mainStore.setValue("chat_background_type", "preset");
+	mainStore.setValue("chat_background_uri", "");
+	mainStore.setValue("chat_background_preset_id", presetId);
 }
 
 /**
@@ -95,17 +95,17 @@ export function setPresetBackground(presetId: string): void {
 export function resetToDefaultBackground(): void {
 	cleanupOldCustomBackground();
 
-	store.setValue("chat_background_type", "preset");
-	store.setValue("chat_background_uri", "");
-	store.setValue("chat_background_preset_id", "none");
+	mainStore.setValue("chat_background_type", "preset");
+	mainStore.setValue("chat_background_uri", "");
+	mainStore.setValue("chat_background_preset_id", "none");
 }
 
 /**
  * Remove old custom background file if it exists
  */
 async function cleanupOldCustomBackground(): Promise<void> {
-	const currentType = store.getValue("chat_background_type");
-	const currentUri = store.getValue("chat_background_uri");
+	const currentType = mainStore.getValue("chat_background_type");
+	const currentUri = mainStore.getValue("chat_background_uri");
 
 	if (currentType === "custom" && currentUri) {
 		try {
@@ -126,8 +126,8 @@ async function cleanupOldCustomBackground(): Promise<void> {
  * Used to handle cases where the file was deleted externally
  */
 export async function validateCustomBackground(): Promise<boolean> {
-	const currentType = store.getValue("chat_background_type");
-	const currentUri = store.getValue("chat_background_uri");
+	const currentType = mainStore.getValue("chat_background_type");
+	const currentUri = mainStore.getValue("chat_background_uri");
 
 	if (currentType !== "custom" || !currentUri) {
 		return true; // Not a custom background, so nothing to validate
@@ -152,7 +152,7 @@ export async function validateCustomBackground(): Promise<boolean> {
  */
 export function setBackgroundBlur(blur: number): void {
 	const clampedBlur = Math.max(0, Math.min(20, blur));
-	store.setValue("chat_background_blur", clampedBlur);
+	mainStore.setValue("chat_background_blur", clampedBlur);
 }
 
 /**
@@ -160,7 +160,7 @@ export function setBackgroundBlur(blur: number): void {
  */
 export function setBackgroundGrain(grain: number): void {
 	const clampedGrain = Math.max(0, Math.min(100, grain));
-	store.setValue("chat_background_grain", clampedGrain);
+	mainStore.setValue("chat_background_grain", clampedGrain);
 }
 
 /**
@@ -168,14 +168,14 @@ export function setBackgroundGrain(grain: number): void {
  */
 export function setBackgroundOpacity(opacity: number): void {
 	const clampedOpacity = Math.max(10, Math.min(100, opacity));
-	store.setValue("chat_background_opacity", clampedOpacity);
+	mainStore.setValue("chat_background_opacity", clampedOpacity);
 }
 
 /**
  * Reset adjustments to default values (blur: 0, grain: 0, opacity: 70)
  */
 export function resetBackgroundAdjustments(): void {
-	store.setValue("chat_background_blur", 0);
-	store.setValue("chat_background_grain", 0);
-	store.setValue("chat_background_opacity", 70);
+	mainStore.setValue("chat_background_blur", 0);
+	mainStore.setValue("chat_background_grain", 0);
+	mainStore.setValue("chat_background_opacity", 70);
 }

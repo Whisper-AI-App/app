@@ -1,10 +1,14 @@
 import * as FileSystem from "expo-file-system";
-import { getModelFileUri, initStore, store } from "../stores/store";
+import {
+	getModelFileUri,
+	initMainStore,
+	mainStore,
+} from "../stores/main/main-store";
 
 export function clearConversations() {
 	// Delete all chats and messages while keeping settings and model
-	store.delTable("chats");
-	store.delTable("messages");
+	mainStore.delTable("chats");
+	mainStore.delTable("messages");
 }
 
 export async function resetEverything() {
@@ -19,7 +23,7 @@ export async function resetEverything() {
 		}
 	}
 
-	store.delValues();
-	store.delTables();
-	initStore();
+	mainStore.delValues();
+	mainStore.delTables();
+	initMainStore();
 }
