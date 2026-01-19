@@ -13,7 +13,7 @@ import {
 	checkForModelUpdates,
 	type ModelUpdateInfo,
 } from "@/src/actions/ai-chat-model";
-import { getModelFileUri } from "@/src/stores/store";
+import { getModelFileUri } from "@/src/stores/main/main-store";
 import { Colors } from "@/theme/colors";
 import { ImageBackground } from "expo-image";
 import { useRouter } from "expo-router";
@@ -257,6 +257,10 @@ export default function Dashboard() {
 		[],
 	);
 
+	const showUpdateAlert = useMemo(() => {
+		return updateAvailable && !updateNotificationVisible && updateInfo;
+	}, [updateAvailable, updateNotificationVisible, updateInfo]);
+
 	return (
 		<View style={{ flex: 1 }}>
 			{/* Background gradient layer - base (dim) */}
@@ -394,7 +398,7 @@ export default function Dashboard() {
 				{modelLoadError && <ModelLoadError onRetry={retryLoadModel} />}
 
 				{/* Update Available Banner */}
-				{updateAvailable && !updateNotificationVisible && updateInfo && (
+				{showUpdateAlert && (
 					<View
 						style={{
 							backgroundColor: theme.green,
@@ -414,14 +418,14 @@ export default function Dashboard() {
 									color: theme.secondary,
 								}}
 							>
-								{updateInfo.requiresDownload
+								{updateInfo?.requiresDownload
 									? "AI Update Available"
 									: "AI Updated!"}
 							</Text>
 							<Text
 								style={{ fontSize: 12, opacity: 0.9, color: theme.secondary }}
 							>
-								{updateInfo.requiresDownload
+								{updateInfo?.requiresDownload
 									? "New version ready to download"
 									: "Tap to see what's new"}
 							</Text>
@@ -445,7 +449,7 @@ export default function Dashboard() {
 						style={[
 							{
 								position: "absolute",
-								top: 128 + 40,
+								top: 128 + 40 + (showUpdateAlert ? 72 : 0),
 								left: 0,
 								width: "100%",
 								display: "flex",

@@ -1,7 +1,7 @@
-import { getModelFileUri, store } from "@/src/stores/store";
+import { getModelFileUri, mainStore } from "@/src/stores/main/main-store";
 import * as FileSystem from "expo-file-system";
 import { initLlama, type LlamaContext, releaseAllLlama } from "llama.rn";
-import React, {
+import {
 	createContext,
 	type ReactNode,
 	useCallback,
@@ -38,7 +38,7 @@ export function AIChatProvider({ children }: { children: ReactNode }) {
 	useEffect(() => {
 		// Use helper that reconstructs path from filename (handles app updates)
 		const fileUri = getModelFileUri();
-		const downloadedAt = store.getValue("ai_chat_model_downloadedAt") as
+		const downloadedAt = mainStore.getValue("ai_chat_model_downloadedAt") as
 			| string
 			| undefined;
 
@@ -53,10 +53,10 @@ export function AIChatProvider({ children }: { children: ReactNode }) {
 				);
 
 				// Clear the store state since file is gone
-				store.delValue("ai_chat_model_filename");
-				store.delValue("ai_chat_model_fileUri");
-				store.delValue("ai_chat_model_downloadedAt");
-				store.setValue("ai_chat_model_fileRemoved", true);
+				mainStore.delValue("ai_chat_model_filename");
+				mainStore.delValue("ai_chat_model_fileUri");
+				mainStore.delValue("ai_chat_model_downloadedAt");
+				mainStore.setValue("ai_chat_model_fileRemoved", true);
 			}
 		}
 	}, []); // Run once on mount

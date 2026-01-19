@@ -1,4 +1,4 @@
-import { store } from "../stores/store";
+import { mainStore } from "../stores/main/main-store";
 
 export function upsertMessage(
 	id: string,
@@ -6,9 +6,9 @@ export function upsertMessage(
 	contents: string,
 	role: string,
 ) {
-	const existingMessage = store.getRow("messages", id);
+	const existingMessage = mainStore.getRow("messages", id);
 
-	store.setRow("messages", id, {
+	mainStore.setRow("messages", id, {
 		id,
 		chatId,
 		contents,
@@ -18,5 +18,5 @@ export function upsertMessage(
 }
 
 export function deleteMessage(messageId: string) {
-	store.delRow("messages", messageId);
+	mainStore.delRow("messages", messageId);
 }

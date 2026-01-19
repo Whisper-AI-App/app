@@ -1,47 +1,78 @@
-WIP - general notes to include, carry forwards however
+# Contributing to Whisper AI
 
-# Running on iOS
+Thanks for your interest in contributing to Whisper! We welcome contributions from everyone.
 
-## Running in an emulator
+## Contents
 
-Relatively straightforward.
+- [Requirements](#requirements)
+- [Getting Started](#getting-started)
+- [How to Contribute](#how-to-contribute)
+- [Guidelines](#guidelines)
+- [License](#license)
+- [Contributor License Agreement (CLA)](#contributor-license-agreement-cla)
+- [Commercial Use & Enterprise Inquiries](#commercial-use--enterprise-inquiries)
+- [Questions?](#questions)
 
-Pre-reqs:
+## Requirements
 
-- xcode
-- emulator
-- mac device
+- [Node.js](https://nodejs.org/) (LTS recommended)
+- [pnpm](https://pnpm.io/)
+- [Expo CLI](https://docs.expo.dev/get-started/installation/)
+- For iOS: macOS with Xcode
+- For Android: Android Studio with an emulator or physical device
 
-Run:
+## Getting Started
 
-`pnpm run ios`
+1. Fork the repository
+2. Clone your fork locally
+3. Install dependencies with `pnpm install`
+4. Run the app with `pnpm ios` or `pnpm android`
 
-## Running on a device
+## How to Contribute
 
-> This guidance is for contributors who are named on the Apple team and have the right access to code signing and provisional profiles.
+### Finding Work
 
-Whisper has additional entitlements to support the resources needed to run LLMs on a mobile phone. With that in mind, runing the app on a real device in development requires a slightly different approach.
+Browse our open issues. If you find an unassigned issue you'd like to work on, comment on it to let us know you're picking it up.
 
-This means `pnpm ios --device` tends not to work well. Below is an alternative approach.
+### Working on an Issue
 
-Pre-reqs:
+1. **Check for a spec** - Some issues include a specification or implementation details. Feel free to follow it or propose alternatives if you think you have a better approach.
 
-- xcode
-- iphone
-- mac device
+2. **No spec? Write one** - If the issue lacks a spec, draft one and post it in the issue comments for approval before starting work.
 
-Run:
+3. **Submit a PR** - When ready, open a pull request referencing the issue. By doing so, you agree to the CLA terms stated above. We'll review it and work with you to get it merged.
 
-1. `pnpm prebuild --platform ios --clean`
+## Guidelines
 
-2. `pnpm start` - once running, continue to step 3
+- Keep PRs focused on a single issue
+- Follow existing code patterns and conventions
+- Run `pnpm lint` before submitting
 
-3. `xed ios` - this will open xcode with the Whisper project
+## License
 
-.. probably some steps for developer to be able to actually build...
+This project uses the [PolyForm Noncommercial License](./LICENSE).
 
-4. Tap the 'Run' icon, top left. This will build the app, with the correct provision profile and access.
+We chose a fair-source license because transparency is at the heart of Whisper. You can read, verify, and trust the code that runs on your device. Personal and non-commercial use is free. If you'd like to use Whisper commercially, [get in touch](#commercial-use--enterprise-inquiries).
 
-5. Once the app has built and been installed on your phone, you'll want to open your Camera app and scan the QR code in the termal that has `pnpm start` running.
+## Contributor License Agreement (CLA)
 
-This should open Whisper and link the app to the dev server.
+Thank you for contributing! We fair-source our code for transparency and welcome community improvements.
+
+By submitting a Pull Request or contributing code to this repository, you agree to our full [Contributor License Agreement](./CLA.md).
+
+The highlights:
+
+1. **Grant of Rights:** You grant Ava Technologies Global Ltd a perpetual, worldwide, non-exclusive, no-charge, royalty-free, irrevocable copyright license to reproduce, prepare derivative works of, publicly display, sublicense, and distribute your contributions.
+2. **Right to Commercialize:** You specifically acknowledge that Ava Technologies Global Ltd may include your contributions in paid versions of the software (such as the App Store/Google Play versions) and future Enterprise offerings under different license terms.
+3. **Ownership:** You represent that you are the owner of the code you are contributing or have the legal right to submit it.
+4. **No Warranty:** You provide your contributions on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND.
+
+## Commercial Use & Enterprise Inquiries
+
+This software is licensed for non-commercial use only. If you wish to use this software for business purposes, commercial redistribution, or are interested in our upcoming Enterprise Offering, please contact:
+
+https://avatechnologies.org/contact
+
+## Questions?
+
+Open an issue or comment on an existing one. We're happy to help.

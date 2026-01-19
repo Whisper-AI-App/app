@@ -61,7 +61,7 @@ export function useChatState(options: UseChatStateOptions): UseChatStateReturn {
 					},
 					{
 						text: "Rename",
-						onPress: (newName) => {
+						onPress: (newName: string | undefined) => {
 							if (newName?.trim()) {
 								renameChat(currentChatId, newName.trim());
 							}

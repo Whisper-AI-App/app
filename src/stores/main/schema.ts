@@ -1,7 +1,11 @@
-import * as FileSystem from "expo-file-system";
-import { createStore } from "tinybase/with-schemas";
+/**
+ * TinyBase schema definitions for the Whisper app store.
+ *
+ * This file is kept separate from store.ts to avoid side effects
+ * when importing schemas in tests or mocks.
+ */
 
-const valuesSchema = {
+export const valuesSchemaMainStore = {
 	version: { type: "string" as const },
 	name: { type: "string" as const },
 	onboardedAt: { type: "string" as const },
@@ -29,7 +33,7 @@ const valuesSchema = {
 	chat_background_opacity: { type: "number" as const }, // Background opacity (0-100)
 };
 
-const tablesSchema = {
+export const tablesSchemaMainStore = {
 	chats: {
 		id: { type: "string" as const },
 		name: { type: "string" as const },
@@ -43,32 +47,3 @@ const tablesSchema = {
 		createdAt: { type: "string" as const },
 	},
 } as const;
-
-export const store = createStore()
-	.setValuesSchema(valuesSchema)
-	.setTablesSchema(tablesSchema);
-
-export const storeFilePath = `${new FileSystem.Directory(FileSystem.Paths.document).uri}/whisper.json`;
-
-/**
- * Gets the full file URI for the AI model from the stored filename.
- * This reconstructs the path at runtime since the document directory path
- * can change between app updates.
- */
-export function getModelFileUri(): string | undefined {
-	const filename = store.getValue("ai_chat_model_filename") as string | undefined;
-	if (filename) {
-		return `${new FileSystem.Directory(FileSystem.Paths.document).uri}/${filename}`;
-	}
-	// Fallback to legacy fileUri for migration
-	return store.getValue("ai_chat_model_fileUri") as string | undefined;
-}
-
-export function initStore() {
-	if (
-		typeof store.getValue("version") === "undefined" ||
-		!store.getValue("version")
-	) {
-		store.setValue("version", "1");
-	}
-}

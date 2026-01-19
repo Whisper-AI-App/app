@@ -2,7 +2,11 @@ import { AuthGate } from "@/components/auth-gate";
 import { ErrorBoundary } from "@/components/error-boundary";
 import { StatusBar } from "@/components/status-bar";
 import { AIChatProvider } from "@/contexts/AIChatContext";
-import { initStore, store, storeFilePath } from "@/src/stores/store";
+import {
+	initMainStore,
+	mainStore,
+	mainStoreFilePath,
+} from "@/src/stores/main/main-store";
 import { ThemeProvider } from "@/theme/theme-provider";
 import {
 	Inter_400Regular,
@@ -25,9 +29,9 @@ export default function RootLayout() {
 	});
 
 	useCreatePersister(
-		store as unknown as Store,
+		mainStore as unknown as Store,
 		(_store) =>
-			createExpoFileSystemPersister(_store, storeFilePath, (error) => {
+			createExpoFileSystemPersister(_store, mainStoreFilePath, (error) => {
 				console.error("Persister error:", error);
 			}),
 		[],
@@ -35,7 +39,7 @@ export default function RootLayout() {
 			await persister.load();
 			await persister.startAutoLoad();
 			await persister.startAutoSave();
-			initStore();
+			initMainStore();
 		},
 	);
 
@@ -45,7 +49,7 @@ export default function RootLayout() {
 
 	return (
 		<GestureHandlerRootView>
-			<Provider store={store as unknown as Store}>
+			<Provider store={mainStore as unknown as Store}>
 				<AuthGate>
 					<ErrorBoundary>
 						<AIChatProvider>

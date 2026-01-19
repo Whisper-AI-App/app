@@ -1,21 +1,21 @@
 import * as LocalAuthentication from "expo-local-authentication";
-import { store } from "../stores/store";
+import { mainStore } from "../stores/main/main-store";
 
 export function setName(value: string) {
-	store.setValue("name", value);
+	mainStore.setValue("name", value);
 }
 
 export function completeOnboarding(value: boolean = true) {
 	if (value === false) {
-		store.delValue("onboardedAt");
+		mainStore.delValue("onboardedAt");
 		return;
 	}
 
-	store.setValue("onboardedAt", new Date().toISOString());
+	mainStore.setValue("onboardedAt", new Date().toISOString());
 }
 
 export function setLocalAuth(enabled: boolean) {
-	store.setValue("localAuthEnabled", enabled);
+	mainStore.setValue("localAuthEnabled", enabled);
 }
 
 export async function checkLocalAuthAvailable(): Promise<{

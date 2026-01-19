@@ -1,4 +1,4 @@
-import { store } from "@/src/stores/store";
+import { mainStore } from "@/src/stores/main/main-store";
 import { useMemo } from "react";
 import type { IMessage } from "react-native-gifted-chat";
 import { useRowIds } from "tinybase/ui-react";
@@ -18,7 +18,7 @@ export function useChatMessages(chatId: string | undefined): IMessage[] {
 
 		const chatMessages = allMessageIds
 			.map((id) => {
-				const msg = store.getRow("messages", id);
+				const msg = mainStore.getRow("messages", id);
 				if (msg?.chatId !== chatId) return null;
 
 				return {

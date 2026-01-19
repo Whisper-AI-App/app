@@ -37,7 +37,7 @@ export const ModeToggle = ({
 	);
 
 	const colorScheme = useColorScheme() ?? "light";
-	const theme = Colors[colorScheme];
+	const _theme = Colors[colorScheme];
 
 	useEffect(() => {
 		// Animate icon change

@@ -60,7 +60,7 @@ export function useChatCompletion(
 				setStreamingText(""); // Clear any previous streaming text
 
 				// Start periodic haptic feedback
-				let hapticInterval: NodeJS.Timeout | null = null;
+				let hapticInterval: ReturnType<typeof setInterval> | null = null;
 				if (process.env.EXPO_OS === "ios") {
 					// Trigger initial haptic immediately
 					Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -74,7 +74,7 @@ export function useChatCompletion(
 				try {
 					// Prepare conversation history
 					const conversationMessages = messages.map((msg) => ({
-						role: msg.user._id === 1 ? "user" : ("system" as const),
+						role: msg.user._id === 1 ? ("user" as const) : ("system" as const),
 						content: msg.text,
 					}));
 

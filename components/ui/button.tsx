@@ -2,6 +2,7 @@ import * as Haptics from "expo-haptics";
 import type { LucideProps } from "lucide-react-native";
 import { forwardRef } from "react";
 import {
+	type GestureResponderEvent,
 	Pressable,
 	type TextStyle,
 	TouchableOpacity,
@@ -78,7 +79,6 @@ export const Button = forwardRef<View, ButtonProps>(
 			"destructiveForeground",
 		);
 		const greenColor = useThemeColor({}, "green");
-		const borderColor: "rgba(240,240,240,0.4)" = useThemeColor({}, "border");
 
 		// Animation values for liquid glass effect
 		const scale = useSharedValue(1);
@@ -214,7 +214,7 @@ export const Button = forwardRef<View, ButtonProps>(
 		};
 
 		// Improved animation handlers for liquid glass effect
-		const handlePressIn = (ev?: any) => {
+		const handlePressIn = (ev: GestureResponderEvent) => {
 			"worklet";
 			// Trigger haptic feedback
 			triggerHapticFeedback();
@@ -236,7 +236,7 @@ export const Button = forwardRef<View, ButtonProps>(
 			props.onPressIn?.(ev);
 		};
 
-		const handlePressOut = (ev?: any) => {
+		const handlePressOut = (ev: GestureResponderEvent) => {
 			"worklet";
 			// Return to original size with smooth spring
 			scale.value = withSpring(1, {
@@ -317,7 +317,7 @@ export const Button = forwardRef<View, ButtonProps>(
 			const styleArray = Array.isArray(style) ? style : [style];
 			return styleArray.map((s) => {
 				if (s && typeof s === "object" && "flex" in s) {
-					const { flex, ...restStyle } = s;
+					const { flex: _flex, ...restStyle } = s;
 					return restStyle;
 				}
 				return s;

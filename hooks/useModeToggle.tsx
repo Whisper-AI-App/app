@@ -1,5 +1,5 @@
 import { useColorScheme } from "@/hooks/useColorScheme";
-import { store } from "@/src/stores/store";
+import { mainStore } from "@/src/stores/main/main-store";
 import { useEffect } from "react";
 import { Appearance, type ColorSchemeName } from "react-native";
 import { useValue } from "tinybase/ui-react";
@@ -47,7 +47,7 @@ export function useModeToggle(): UseModeToggleReturn {
 
 	const setMode = (newMode: Mode) => {
 		// Persist theme to store
-		store.setValue("theme", newMode);
+		mainStore.setValue("theme", newMode);
 
 		if (newMode === "system") {
 			Appearance.setColorScheme(null); // Reset to system default

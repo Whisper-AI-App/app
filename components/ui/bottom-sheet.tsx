@@ -30,7 +30,7 @@ type BottomSheetContentProps = {
 	children: React.ReactNode;
 	title?: string;
 	style?: ViewStyle;
-	rBottomSheetStyle: any;
+	rBottomSheetStyle: ViewStyle;
 	cardColor: string;
 	mutedColor: string;
 	onHandlePress?: () => void;

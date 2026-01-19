@@ -1,8 +1,8 @@
-import { View } from "react-native";
+import { View, type ViewStyle } from "react-native";
 import { useColor } from "@/hooks/useColor";
 
 interface SeparatorProps {
-	style?: any;
+	style?: ViewStyle;
 }
 
 export function Separator({ style }: SeparatorProps) {

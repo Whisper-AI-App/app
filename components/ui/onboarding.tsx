@@ -46,7 +46,7 @@ export interface OnboardingProps {
 }
 
 // Enhanced Onboarding Step Component for complex layouts
-interface OnboardingStepContentProps {
+interface _OnboardingStepContentProps {
 	step: OnboardingStep;
 	isActive: boolean;
 	children?: React.ReactNode;
@@ -70,9 +70,9 @@ export function Onboarding({
 	const scrollViewRef = useRef<ScrollView>(null);
 	const translateX = useSharedValue(0);
 
-	const backgroundColor = useThemeColor({}, "background");
-	const primaryColor = useThemeColor({}, "primary");
-	const mutedColor = useThemeColor({}, "mutedForeground");
+	const _backgroundColor = useThemeColor({}, "background");
+	const _primaryColor = useThemeColor({}, "primary");
+	const _mutedColor = useThemeColor({}, "mutedForeground");
 
 	const isLastStep = currentStep === steps.length - 1;
 	const isFirstStep = currentStep === 0;
@@ -144,7 +144,7 @@ export function Onboarding({
 			<View style={styles.progressContainer}>
 				{steps.map((_, index) => (
 					<View
-						key={index}
+						key={`step-${index}`}
 						style={[
 							styles.progressDot,
 							// {
