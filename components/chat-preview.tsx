@@ -1,5 +1,5 @@
 import * as Haptics from "expo-haptics";
-import { Pencil, Share2, Trash2 } from "lucide-react-native";
+import { FolderInput, Pencil, Share2, Trash2 } from "lucide-react-native";
 import { useEffect, useRef, useState } from "react";
 import { Alert, Platform, Pressable, TouchableOpacity } from "react-native";
 import Swipeable from "react-native-gesture-handler/Swipeable";
@@ -18,6 +18,7 @@ export function ChatPreview({
 	date,
 	onPress,
 	onDelete,
+	onMoveToFolder,
 	peekOnMount = false,
 }: {
 	chatId: string;
@@ -26,6 +27,7 @@ export function ChatPreview({
 	date: Date;
 	onPress?: () => void;
 	onDelete?: () => void;
+	onMoveToFolder?: () => void;
 	peekOnMount?: boolean;
 }) {
 	const colorScheme = useColorScheme() ?? "light";
@@ -141,6 +143,11 @@ export function ChatPreview({
 		);
 	};
 
+	const handleMoveToFolder = () => {
+		swipeableRef.current?.close();
+		onMoveToFolder?.();
+	};
+
 	const renderRightActions = () => {
 		return (
 			<View
@@ -149,6 +156,28 @@ export function ChatPreview({
 					alignItems: "stretch",
 				}}
 			>
+				<TouchableOpacity
+					onPress={handleMoveToFolder}
+					style={{
+						width: 56,
+						justifyContent: "center",
+						alignItems: "center",
+					}}
+					activeOpacity={0.8}
+				>
+					<FolderInput size={22} color={theme.primary} strokeWidth={2} />
+					<Text
+						style={{
+							color: theme.primary,
+							fontSize: 10,
+							fontWeight: "400",
+							marginTop: 4,
+						}}
+					>
+						Move
+					</Text>
+				</TouchableOpacity>
+
 				<TouchableOpacity
 					onPress={handleShareChat}
 					style={{

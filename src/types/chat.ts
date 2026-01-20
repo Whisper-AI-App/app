@@ -50,6 +50,7 @@ export interface UseChatCompletionOptions {
 	chatId: string | undefined;
 	messages: IMessage[];
 	onChatCreated?: (newChatId: string) => void;
+	folderId?: string | null;
 }
 
 export interface UseChatCompletionReturn {

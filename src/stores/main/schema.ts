@@ -34,10 +34,16 @@ export const valuesSchemaMainStore = {
 };
 
 export const tablesSchemaMainStore = {
+	folders: {
+		id: { type: "string" as const },
+		name: { type: "string" as const },
+		createdAt: { type: "string" as const },
+	},
 	chats: {
 		id: { type: "string" as const },
 		name: { type: "string" as const },
 		createdAt: { type: "string" as const },
+		folderId: { type: "string" as const },
 	},
 	messages: {
 		id: { type: "string" as const },

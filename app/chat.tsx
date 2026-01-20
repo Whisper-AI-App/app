@@ -14,7 +14,10 @@ import { SafeAreaView } from "react-native-safe-area-context";
 
 export default function ChatPage() {
 	const router = useRouter();
-	const { id: chatIdParam } = useLocalSearchParams<{ id?: string }>();
+	const { id: chatIdParam, folderId: folderIdParam } = useLocalSearchParams<{
+		id?: string;
+		folderId?: string;
+	}>();
 
 	const [, setIsInputFocused] = useState(false);
 	const [inputText, setInputText] = useState("");
@@ -53,6 +56,7 @@ export default function ChatPage() {
 		chatId: currentChatId,
 		messages,
 		onChatCreated: setCurrentChatId,
+		folderId: folderIdParam || null,
 	});
 
 	// GiftedChat render functions - with isFullPage=true

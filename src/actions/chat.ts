@@ -1,13 +1,14 @@
 import { Share } from "react-native";
 import { mainStore } from "../stores/main/main-store";
 
-export function upsertChat(id: string, name: string) {
+export function upsertChat(id: string, name: string, folderId?: string | null) {
 	const existingChat = mainStore.getRow("chats", id);
 
 	mainStore.setRow("chats", id, {
 		id,
 		name,
 		createdAt: existingChat?.createdAt || new Date().toISOString(),
+		folderId: folderId ?? existingChat?.folderId ?? "",
 	});
 }
 
@@ -30,6 +31,24 @@ export function renameChat(chatId: string, newName: string) {
 		mainStore.setRow("chats", chatId, {
 			...existingChat,
 			name: newName,
+		});
+	}
+}
+
+/**
+ * Moves a chat to a folder or removes it from its current folder.
+ * @param chatId - The ID of the chat to move
+ * @param folderId - The ID of the target folder, or null to remove from folder
+ */
+export function moveChatToFolder(
+	chatId: string,
+	folderId: string | null,
+): void {
+	const existingChat = mainStore.getRow("chats", chatId);
+	if (existingChat) {
+		mainStore.setRow("chats", chatId, {
+			...existingChat,
+			folderId: folderId ?? "",
 		});
 	}
 }
