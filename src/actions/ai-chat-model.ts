@@ -250,15 +250,44 @@ export async function checkForModelUpdates(): Promise<ModelUpdateInfo> {
 }
 
 /**
- * Creates a progress callback for download operations
+ * Creates a throttled progress callback for download operations
+ * Only updates store at most once per 500ms to avoid flooding the JS thread
  */
 function createProgressCallback() {
+	let lastUpdateTime = 0;
+	let pendingProgress: number | null = null;
+	let timeoutId: ReturnType<typeof setTimeout> | null = null;
+
 	return (progressData: {
 		totalBytesWritten: number;
 		totalBytesExpectedToWrite: number;
 	}) => {
 		const progressSizeGB = bytesToGB(progressData.totalBytesWritten);
-		mainStore.setValue("ai_chat_model_progressSizeGB", progressSizeGB);
+		const now = Date.now();
+
+		// If enough time has passed, update immediately
+		if (now - lastUpdateTime >= 500) {
+			lastUpdateTime = now;
+			mainStore.setValue("ai_chat_model_progressSizeGB", progressSizeGB);
+			pendingProgress = null;
+			if (timeoutId) {
+				clearTimeout(timeoutId);
+				timeoutId = null;
+			}
+		} else {
+			// Otherwise, store the latest progress and schedule an update
+			pendingProgress = progressSizeGB;
+			if (!timeoutId) {
+				timeoutId = setTimeout(() => {
+					if (pendingProgress !== null) {
+						mainStore.setValue("ai_chat_model_progressSizeGB", pendingProgress);
+						lastUpdateTime = Date.now();
+						pendingProgress = null;
+					}
+					timeoutId = null;
+				}, 500 - (now - lastUpdateTime));
+			}
+		}
 	};
 }
 
