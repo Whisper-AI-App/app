@@ -62,6 +62,7 @@ export default function RootLayout() {
 										<Stack.Screen name="dashboard" />
 										<Stack.Screen name="settings" />
 										<Stack.Screen name="chat" />
+										<Stack.Screen name="game" />
 									</Stack>
 								</ErrorBoundary>
 							</ThemeProvider>
