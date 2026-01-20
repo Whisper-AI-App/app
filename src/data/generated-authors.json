@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-01-13T15:05:29.213Z",
+  "generatedAt": "2026-01-20T19:41:36.432Z",
   "credits": [
     {
       "author": "llama.RN",
@@ -49,12 +49,12 @@
     },
     {
       "author": "650 Industries, Inc.",
-      "description": "Contributing 20 open source libraries",
+      "description": "Contributing 21 open source libraries",
       "packages": [
+        "expo-av",
         "expo-blur",
         "expo-clipboard",
-        "expo-constants",
-        "+ 17 more"
+        "+ 18 more"
       ],
       "priority": 50,
       "section": "libraries"
@@ -141,7 +141,17 @@
       "section": "libraries"
     },
     {
-      "author": "Open Source Contributors",
+      "author": "Shopify Inc.",
+      "description": "Creator of @shopify/react-native-skia",
+      "packages": [
+        "@shopify/react-native-skia"
+      ],
+      "url": "https://github.com/Shopify/react-native-skia",
+      "priority": 50,
+      "section": "libraries"
+    },
+    {
+      "author": "Other Libraries",
       "description": "Contributing 9 open source libraries",
       "packages": [
         "@mote-software/tinybase-persister-expo-file-system",
@@ -207,12 +217,12 @@
     "libraries": [
       {
         "author": "650 Industries, Inc.",
-        "description": "Contributing 20 open source libraries",
+        "description": "Contributing 21 open source libraries",
         "packages": [
+          "expo-av",
           "expo-blur",
           "expo-clipboard",
-          "expo-constants",
-          "+ 17 more"
+          "+ 18 more"
         ],
         "priority": 50,
         "section": "libraries"
@@ -299,7 +309,17 @@
         "section": "libraries"
       },
       {
-        "author": "Open Source Contributors",
+        "author": "Shopify Inc.",
+        "description": "Creator of @shopify/react-native-skia",
+        "packages": [
+          "@shopify/react-native-skia"
+        ],
+        "url": "https://github.com/Shopify/react-native-skia",
+        "priority": 50,
+        "section": "libraries"
+      },
+      {
+        "author": "Other Libraries",
         "description": "Contributing 9 open source libraries",
         "packages": [
           "@mote-software/tinybase-persister-expo-file-system",

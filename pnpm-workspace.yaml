@@ -1,4 +1,5 @@
 onlyBuiltDependencies:
+  - '@shopify/react-native-skia'
   - esbuild
   - unrs-resolver
   - whisper-llm-cards
