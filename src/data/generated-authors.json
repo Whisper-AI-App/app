@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-01-20T19:41:36.432Z",
+  "generatedAt": "2026-01-21T10:57:31.694Z",
   "credits": [
     {
       "author": "llama.RN",
@@ -49,12 +49,12 @@
     },
     {
       "author": "650 Industries, Inc.",
-      "description": "Contributing 21 open source libraries",
+      "description": "Contributing 22 open source libraries",
       "packages": [
         "expo-av",
         "expo-blur",
         "expo-clipboard",
-        "+ 18 more"
+        "+ 19 more"
       ],
       "priority": 50,
       "section": "libraries"
@@ -217,12 +217,12 @@
     "libraries": [
       {
         "author": "650 Industries, Inc.",
-        "description": "Contributing 21 open source libraries",
+        "description": "Contributing 22 open source libraries",
         "packages": [
           "expo-av",
           "expo-blur",
           "expo-clipboard",
-          "+ 18 more"
+          "+ 19 more"
         ],
         "priority": 50,
         "section": "libraries"
