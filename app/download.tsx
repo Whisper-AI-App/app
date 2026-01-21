@@ -1,3 +1,4 @@
+import { FlappyBird } from "@/components/flappy-bird";
 import { Button } from "@/components/ui/button";
 import { ModeToggle } from "@/components/ui/mode-toggle";
 import { Progress } from "@/components/ui/progress";
@@ -16,7 +17,7 @@ import { mainStore } from "@/src/stores/main/main-store";
 import { ImageBackground } from "expo-image";
 import { useRouter } from "expo-router";
 import { useEffect, useState } from "react";
-import { ActivityIndicator, Dimensions } from "react-native";
+import { ActivityIndicator, Dimensions, Modal } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Defs, RadialGradient, Rect, Stop, Svg } from "react-native-svg";
 import { useValue } from "tinybase/ui-react";
@@ -38,6 +39,7 @@ export default function Download() {
 		"llama-3.2-1b-instruct-q4_0",
 	);
 	const [configVersion, setConfigVersion] = useState<string>("1.0.0");
+	const [showGame, setShowGame] = useState(false);
 
 	// Subscribe to download state from tinybase
 	// Use filename instead of full path (path changes between app updates)
@@ -367,6 +369,16 @@ export default function Download() {
 						</Text>
 					</View>
 
+					{/* Game option while downloading */}
+					{isDownloading && (
+						<Button
+							onPress={() => setShowGame(true)}
+							style={{ width: "100%" }}
+						>
+							Play a game while you wait
+						</Button>
+					)}
+
 					{hasPartialDownload ? (
 						<>
 							{/* Resume/Pause button */}
@@ -430,6 +442,18 @@ export default function Download() {
 					)}
 				</View>
 			</SafeAreaView>
+
+			{/* Flappy Bird Game Full Screen Modal */}
+			<Modal
+				visible={showGame}
+				animationType="slide"
+				presentationStyle="pageSheet"
+				onRequestClose={() => setShowGame(false)}
+			>
+				<View style={{ flex: 1, backgroundColor }}>
+					<FlappyBird onClose={() => setShowGame(false)} />
+				</View>
+			</Modal>
 		</View>
 	);
 }

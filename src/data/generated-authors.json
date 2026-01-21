@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-01-19T22:46:23.095Z",
+  "generatedAt": "2026-01-21T10:57:31.694Z",
   "credits": [
     {
       "author": "llama.RN",
@@ -49,12 +49,12 @@
     },
     {
       "author": "650 Industries, Inc.",
-      "description": "Contributing 21 open source libraries",
+      "description": "Contributing 22 open source libraries",
       "packages": [
+        "expo-av",
         "expo-blur",
         "expo-clipboard",
-        "expo-constants",
-        "+ 18 more"
+        "+ 19 more"
       ],
       "priority": 50,
       "section": "libraries"
@@ -141,6 +141,16 @@
       "section": "libraries"
     },
     {
+      "author": "Shopify Inc.",
+      "description": "Creator of @shopify/react-native-skia",
+      "packages": [
+        "@shopify/react-native-skia"
+      ],
+      "url": "https://github.com/Shopify/react-native-skia",
+      "priority": 50,
+      "section": "libraries"
+    },
+    {
       "author": "Other Libraries",
       "description": "Contributing 9 open source libraries",
       "packages": [
@@ -207,12 +217,12 @@
     "libraries": [
       {
         "author": "650 Industries, Inc.",
-        "description": "Contributing 21 open source libraries",
+        "description": "Contributing 22 open source libraries",
         "packages": [
+          "expo-av",
           "expo-blur",
           "expo-clipboard",
-          "expo-constants",
-          "+ 18 more"
+          "+ 19 more"
         ],
         "priority": 50,
         "section": "libraries"
@@ -295,6 +305,16 @@
           "react-native-web"
         ],
         "url": "https://github.com/necolas/react-native-web",
+        "priority": 50,
+        "section": "libraries"
+      },
+      {
+        "author": "Shopify Inc.",
+        "description": "Creator of @shopify/react-native-skia",
+        "packages": [
+          "@shopify/react-native-skia"
+        ],
+        "url": "https://github.com/Shopify/react-native-skia",
         "priority": 50,
         "section": "libraries"
       },

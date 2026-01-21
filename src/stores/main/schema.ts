@@ -31,6 +31,8 @@ export const valuesSchemaMainStore = {
 	chat_background_blur: { type: "number" as const }, // Blur amount (0-20)
 	chat_background_grain: { type: "number" as const }, // Grain/noise amount (0-100)
 	chat_background_opacity: { type: "number" as const }, // Background opacity (0-100)
+	// Game high scores
+	flappy_bird_high_score: { type: "number" as const },
 };
 
 export const tablesSchemaMainStore = {
