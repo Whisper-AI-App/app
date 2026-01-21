@@ -1,10 +1,11 @@
 import * as Haptics from "expo-haptics";
 import { Plus } from "lucide-react-native";
-import { useRef } from "react";
-import { Alert, Platform, Pressable, ScrollView } from "react-native";
+import { useRef, useState } from "react";
+import { Platform, Pressable, ScrollView } from "react-native";
 import { useColorScheme } from "@/hooks/useColorScheme";
 import { createFolder } from "@/src/actions/folder";
 import { Colors } from "@/theme/colors";
+import { PromptDialog } from "./ui/prompt-dialog";
 import { Text } from "./ui/text";
 import { View } from "./ui/view";
 
@@ -26,32 +27,24 @@ export function FolderSelector({
 	const colorScheme = useColorScheme() ?? "light";
 	const theme = Colors[colorScheme];
 	const scrollViewRef = useRef<ScrollView>(null);
+	const [promptVisible, setPromptVisible] = useState(false);
 
 	const handleCreateFolder = () => {
 		if (Platform.OS === "ios") {
 			Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
 		}
-		Alert.prompt(
-			"New Folder",
-			"Enter a name for the folder",
-			[
-				{
-					text: "Cancel",
-					style: "cancel",
-				},
-				{
-					text: "Create",
-					onPress: (folderName: string | undefined) => {
-						if (folderName?.trim()) {
-							const newFolderId = createFolder(folderName.trim());
-							onSelectFolder(newFolderId);
-						}
-					},
-				},
-			],
-			"plain-text",
-			"",
-		);
+		setPromptVisible(true);
+	};
+
+	const handleConfirmCreate = (folderName: string) => {
+		if (folderName.trim()) {
+			const newFolderId = createFolder(folderName.trim());
+			onSelectFolder(newFolderId);
+			if (Platform.OS === "ios") {
+				Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+			}
+		}
+		setPromptVisible(false);
 	};
 
 	const handleSelectFolder = (folderId: string | null) => {
@@ -110,14 +103,15 @@ export function FolderSelector({
 	);
 
 	return (
-		<View
-			style={{
-				paddingVertical: 12,
-				borderBottomColor: "rgba(125,125,125,0.15)",
-				borderBottomWidth: 1,
-			}}
-		>
-			<ScrollView
+		<>
+			<View
+				style={{
+					paddingVertical: 12,
+					borderBottomColor: "rgba(125,125,125,0.15)",
+					borderBottomWidth: 1,
+				}}
+			>
+				<ScrollView
 				ref={scrollViewRef}
 				horizontal
 				showsHorizontalScrollIndicator={false}
@@ -179,7 +173,18 @@ export function FolderSelector({
 						New
 					</Text>
 				</Pressable>
-			</ScrollView>
-		</View>
+				</ScrollView>
+			</View>
+
+			<PromptDialog
+				visible={promptVisible}
+				title="New Folder"
+				message="Enter a name for the folder"
+				placeholder="Folder name"
+				confirmText="Create"
+				onConfirm={handleConfirmCreate}
+				onCancel={() => setPromptVisible(false)}
+			/>
+		</>
 	);
 }

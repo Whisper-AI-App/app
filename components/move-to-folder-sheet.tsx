@@ -1,11 +1,13 @@
 import * as Haptics from "expo-haptics";
 import { Check, Folder, FolderMinus, FolderPlus } from "lucide-react-native";
-import { Alert, Platform, ScrollView, TouchableOpacity } from "react-native";
+import { useState } from "react";
+import { Platform, ScrollView, TouchableOpacity } from "react-native";
 import { useColorScheme } from "@/hooks/useColorScheme";
 import { moveChatToFolder } from "@/src/actions/chat";
 import { createFolder } from "@/src/actions/folder";
 import { Colors } from "@/theme/colors";
 import { BORDER_RADIUS } from "@/theme/globals";
+import { PromptDialog } from "./ui/prompt-dialog";
 import {
 	Sheet,
 	SheetContent,
@@ -36,6 +38,7 @@ export function MoveToFolderSheet({
 }: MoveToFolderSheetProps) {
 	const colorScheme = useColorScheme() ?? "light";
 	const theme = Colors[colorScheme];
+	const [promptVisible, setPromptVisible] = useState(false);
 
 	const handleMoveToFolder = (folderId: string | null) => {
 		moveChatToFolder(chatId, folderId);
@@ -47,37 +50,21 @@ export function MoveToFolderSheet({
 	};
 
 	const handleCreateNewFolder = () => {
-		onOpenChange(false);
-		setTimeout(() => {
-			Alert.prompt(
-				"New Folder",
-				"Enter a name for the folder",
-				[
-					{
-						text: "Cancel",
-						style: "cancel",
-					},
-					{
-						text: "Create & Move",
-						onPress: (folderName: string | undefined) => {
-							if (folderName?.trim()) {
-								const newFolderId = createFolder(folderName.trim());
-								moveChatToFolder(chatId, newFolderId);
-								if (Platform.OS === "ios") {
-									Haptics.notificationAsync(
-										Haptics.NotificationFeedbackType.Success,
-									);
-								}
-								onSelectFolder?.(newFolderId);
-								onMoved();
-							}
-						},
-					},
-				],
-				"plain-text",
-				"",
-			);
-		}, 300);
+		setPromptVisible(true);
+	};
+
+	const handleConfirmCreate = (folderName: string) => {
+		if (folderName.trim()) {
+			const newFolderId = createFolder(folderName.trim());
+			moveChatToFolder(chatId, newFolderId);
+			if (Platform.OS === "ios") {
+				Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+			}
+			onSelectFolder?.(newFolderId);
+			onMoved();
+			setPromptVisible(false);
+			onOpenChange(false);
+		}
 	};
 
 	const isInFolder = currentFolderId && currentFolderId !== "";
@@ -113,76 +100,99 @@ export function MoveToFolderSheet({
 			>
 				{label}
 			</Text>
-			{isSelected && <Check size={20} color={theme.primary} strokeWidth={2.5} />}
+			{isSelected && (
+				<Check size={20} color={theme.primary} strokeWidth={2.5} />
+			)}
 		</TouchableOpacity>
 	);
 
 	return (
-		<Sheet open={open} onOpenChange={onOpenChange} side="right">
-			<SheetContent>
-				<SheetHeader>
-					<SheetTitle>Move to Folder</SheetTitle>
-					<SheetDescription>Choose a folder for this chat</SheetDescription>
-				</SheetHeader>
+		<>
+			<Sheet open={open} onOpenChange={onOpenChange} side="right">
+				<SheetContent>
+					<SheetHeader>
+						<SheetTitle>Move to Folder</SheetTitle>
+						<SheetDescription>Choose a folder for this chat</SheetDescription>
+					</SheetHeader>
 
-				<ScrollView
-					style={{ flex: 1 }}
-					contentContainerStyle={{ paddingHorizontal: 24, gap: 12, paddingTop: 8, paddingBottom: 40 }}
-					showsVerticalScrollIndicator={false}
-				>
-					{isInFolder &&
-						renderFolderOption(
-							"Remove from folder",
-							null,
-							<FolderMinus size={22} color={theme.textMuted} strokeWidth={2} />,
-							false,
+					<ScrollView
+						style={{ flex: 1 }}
+						contentContainerStyle={{
+							paddingHorizontal: 24,
+							gap: 12,
+							paddingTop: 8,
+							paddingBottom: 40,
+						}}
+						showsVerticalScrollIndicator={false}
+					>
+						{isInFolder &&
+							renderFolderOption(
+								"Remove from folder",
+								null,
+								<FolderMinus
+									size={22}
+									color={theme.textMuted}
+									strokeWidth={2}
+								/>,
+								false,
+							)}
+
+						{folders.map((folder) =>
+							renderFolderOption(
+								folder.name,
+								folder.id,
+								<Folder size={22} color={theme.primary} strokeWidth={2} />,
+								folder.id === currentFolderId,
+							),
 						)}
 
-					{folders.map((folder) =>
-						renderFolderOption(
-							folder.name,
-							folder.id,
-							<Folder size={22} color={theme.primary} strokeWidth={2} />,
-							folder.id === currentFolderId,
-						),
-					)}
-
-					<TouchableOpacity
-						onPress={handleCreateNewFolder}
-						activeOpacity={0.7}
-						style={{
-							flexDirection: "row",
-							alignItems: "center",
-							paddingVertical: 16,
-							paddingHorizontal: 20,
-							backgroundColor:
-								colorScheme === "dark"
-									? "rgba(255,255,255,0.05)"
-									: "rgba(0,0,0,0.03)",
-							borderRadius: BORDER_RADIUS,
-							borderWidth: 1,
-							borderColor:
-								colorScheme === "dark"
-									? "rgba(255,255,255,0.1)"
-									: "rgba(0,0,0,0.08)",
-							borderStyle: "dashed",
-							gap: 14,
-						}}
-					>
-						<FolderPlus size={22} color={theme.textMuted} strokeWidth={2} />
-						<Text
+						<TouchableOpacity
+							onPress={handleCreateNewFolder}
+							activeOpacity={0.7}
 							style={{
-								flex: 1,
-								fontSize: 17,
-								fontWeight: "400",
-								color: theme.textMuted,
+								flexDirection: "row",
+								alignItems: "center",
+								paddingVertical: 16,
+								paddingHorizontal: 20,
+								backgroundColor:
+									colorScheme === "dark"
+										? "rgba(255,255,255,0.05)"
+										: "rgba(0,0,0,0.03)",
+								borderRadius: BORDER_RADIUS,
+								borderWidth: 1,
+								borderColor:
+									colorScheme === "dark"
+										? "rgba(255,255,255,0.1)"
+										: "rgba(0,0,0,0.08)",
+								borderStyle: "dashed",
+								gap: 14,
 							}}
 						>
-							Create new folder
-						</Text>
-					</TouchableOpacity>
-				</ScrollView>
-			</SheetContent>
-		</Sheet>
+							<FolderPlus size={22} color={theme.textMuted} strokeWidth={2} />
+							<Text
+								style={{
+									flex: 1,
+									fontSize: 17,
+									fontWeight: "400",
+									color: theme.textMuted,
+								}}
+							>
+								Create new folder
+							</Text>
+						</TouchableOpacity>
+					</ScrollView>
+				</SheetContent>
+			</Sheet>
+
+			<PromptDialog
+				visible={promptVisible}
+				title="New Folder"
+				message="Enter a name for the folder"
+				placeholder="Folder name"
+				confirmText="Create & Move"
+				onConfirm={handleConfirmCreate}
+				onCancel={() => setPromptVisible(false)}
+			/>
+		</>
 	);
 }

@@ -44,6 +44,9 @@ export interface UseChatStateReturn {
 	handleRenameChat: () => void;
 	handleDeleteChat: () => void;
 	handleNewChat: () => void;
+	renamePromptVisible: boolean;
+	setRenamePromptVisible: (visible: boolean) => void;
+	handleConfirmRename: (newName: string) => void;
 }
 
 export interface UseChatCompletionOptions {
@@ -69,6 +72,7 @@ export interface ChatHeaderProps {
 	onShare: () => void;
 	onRename: () => void;
 	onDelete: () => void;
+	onMoveToFolder?: () => void;
 }
 
 export interface ChatActionsMenuProps {
@@ -77,5 +81,6 @@ export interface ChatActionsMenuProps {
 	onShare: () => void;
 	onRename: () => void;
 	onDelete: () => void;
+	onMoveToFolder?: () => void;
 	trigger: React.ReactNode;
 }

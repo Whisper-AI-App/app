@@ -1,3 +1,4 @@
+import * as Haptics from "expo-haptics";
 import {
 	deleteChat,
 	renameChat,
@@ -8,7 +9,7 @@ import type {
 	UseChatStateReturn,
 } from "@/src/types/chat";
 import { useCallback, useEffect, useState } from "react";
-import { Alert } from "react-native";
+import { Alert, Platform } from "react-native";
 import { useRow } from "tinybase/ui-react";
 
 /**
@@ -22,6 +23,7 @@ export function useChatState(options: UseChatStateOptions): UseChatStateReturn {
 		initialChatId,
 	);
 	const [isMenuOpen, setIsMenuOpen] = useState(false);
+	const [renamePromptVisible, setRenamePromptVisible] = useState(false);
 
 	// Load chat data from TinyBase
 	const chatRow = useRow("chats", currentChatId ?? "");
@@ -51,28 +53,22 @@ export function useChatState(options: UseChatStateOptions): UseChatStateReturn {
 	const handleRenameChat = useCallback(() => {
 		if (currentChatId && chatRow) {
 			setIsMenuOpen(false);
-			Alert.prompt(
-				"Rename Chat",
-				"Enter a new name for this chat",
-				[
-					{
-						text: "Cancel",
-						style: "cancel",
-					},
-					{
-						text: "Rename",
-						onPress: (newName: string | undefined) => {
-							if (newName?.trim()) {
-								renameChat(currentChatId, newName.trim());
-							}
-						},
-					},
-				],
-				"plain-text",
-				chatRow.name as string,
-			);
+			setRenamePromptVisible(true);
 		}
 	}, [currentChatId, chatRow]);
+
+	const handleConfirmRename = useCallback(
+		(newName: string) => {
+			if (currentChatId && newName.trim()) {
+				renameChat(currentChatId, newName.trim());
+				if (Platform.OS === "ios") {
+					Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+				}
+			}
+			setRenamePromptVisible(false);
+		},
+		[currentChatId],
+	);
 
 	const handleDeleteChat = useCallback(() => {
 		if (currentChatId) {
@@ -113,5 +109,8 @@ export function useChatState(options: UseChatStateOptions): UseChatStateReturn {
 		handleRenameChat,
 		handleDeleteChat,
 		handleNewChat,
+		renamePromptVisible,
+		setRenamePromptVisible,
+		handleConfirmRename,
 	};
 }
