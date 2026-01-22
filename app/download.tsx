@@ -6,12 +6,12 @@ import { Text } from "@/components/ui/text";
 import { View } from "@/components/ui/view";
 import { useColor } from "@/hooks/useColor";
 import { useColorScheme } from "@/hooks/useColorScheme";
+import { DEFAULT_AI_CHAT_MODEL } from "@/src/actions/ai/constants";
 import {
-	DEFAULT_AI_CHAT_MODEL,
-	fetchLatestRecommendedModel,
 	pauseDownload,
 	startOrResumeDownloadOfAIChatModel,
-} from "@/src/actions/ai-chat-model";
+} from "@/src/actions/ai/download-control";
+import { fetchLatestRecommendedModel } from "@/src/actions/ai/model-config";
 import { completeOnboarding } from "@/src/actions/settings";
 import { mainStore } from "@/src/stores/main/main-store";
 import { ImageBackground } from "expo-image";

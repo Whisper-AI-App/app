@@ -123,17 +123,19 @@ jest.mock("../../utils/generate-model-filename", () => ({
 
 import * as whisperLLMCards from "whisper-llm-cards";
 // Import the functions under test AFTER mocks
+import { DEFAULT_AI_CHAT_MODEL } from "../../actions/ai/constants";
 import {
-	areCardsEqual,
-	checkForModelUpdates,
-	DEFAULT_AI_CHAT_MODEL,
-	fetchLatestRecommendedModel,
-	getStoredModelCard,
 	pauseDownload,
 	resumeDownload,
 	startOrResumeDownloadOfAIChatModel,
+} from "../../actions/ai/download-control";
+import {
+	areCardsEqual,
+	checkForModelUpdates,
+	fetchLatestRecommendedModel,
+	getStoredModelCard,
 	updateModelCard,
-} from "../../actions/ai-chat-model";
+} from "../../actions/ai/model-config";
 import { validateModelFileName } from "../../utils/generate-model-filename";
 
 // Get references to mocked functions

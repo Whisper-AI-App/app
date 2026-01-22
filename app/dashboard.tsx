@@ -9,10 +9,8 @@ import { Text } from "@/components/ui/text";
 import { View } from "@/components/ui/view";
 import { useAIChat } from "@/contexts/AIChatContext";
 import { useColor } from "@/hooks/useColor";
-import {
-	checkForModelUpdates,
-	type ModelUpdateInfo,
-} from "@/src/actions/ai-chat-model";
+import { checkForModelUpdates } from "@/src/actions/ai/model-config";
+import type { ModelUpdateInfo } from "@/src/actions/ai/types";
 import { getModelFileUri } from "@/src/stores/main/main-store";
 import { Colors } from "@/theme/colors";
 import { ImageBackground } from "expo-image";
