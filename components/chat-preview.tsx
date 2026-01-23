@@ -4,11 +4,10 @@ import { useEffect, useRef, useState } from "react";
 import { Alert, Platform, Pressable, TouchableOpacity } from "react-native";
 import Swipeable from "react-native-gesture-handler/Swipeable";
 import { useColorScheme } from "@/hooks/useColorScheme";
-import { deleteChat, renameChat, shareChat } from "@/src/actions/chat";
+import { deleteChat, shareChat } from "@/src/actions/chat";
 import { formatChatPreviewDate } from "@/src/utils/format-date";
 import { Colors } from "@/theme/colors";
 import { Card, CardContent } from "./ui/card";
-import { PromptDialog } from "./ui/prompt-dialog";
 import { Text } from "./ui/text";
 import { View } from "./ui/view";
 
@@ -20,6 +19,7 @@ export function ChatPreview({
 	onPress,
 	onDelete,
 	onMoveToFolder,
+	onRename,
 	peekOnMount = false,
 }: {
 	chatId: string;
@@ -29,6 +29,7 @@ export function ChatPreview({
 	onPress?: () => void;
 	onDelete?: () => void;
 	onMoveToFolder?: () => void;
+	onRename?: () => void;
 	peekOnMount?: boolean;
 }) {
 	const colorScheme = useColorScheme() ?? "light";
@@ -36,7 +37,6 @@ export function ChatPreview({
 	const swipeableRef = useRef<Swipeable>(null);
 	const [hasTriggeredHaptic, setHasTriggeredHaptic] = useState(false);
 	const pressStartPosition = useRef<{ x: number; y: number } | null>(null);
-	const [renamePromptVisible, setRenamePromptVisible] = useState(false);
 
 	useEffect(() => {
 		if (peekOnMount && swipeableRef.current && Platform.OS === "ios") {
@@ -101,17 +101,7 @@ export function ChatPreview({
 
 	const handleRenameChat = () => {
 		swipeableRef.current?.close();
-		setRenamePromptVisible(true);
-	};
-
-	const handleConfirmRename = (newName: string) => {
-		if (newName.trim()) {
-			renameChat(chatId, newName.trim());
-			if (Platform.OS === "ios") {
-				Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-			}
-		}
-		setRenamePromptVisible(false);
+		onRename?.();
 	};
 
 	const handleDeleteChat = () => {
@@ -298,49 +288,30 @@ export function ChatPreview({
 		setHasTriggeredHaptic(false);
 	};
 
-	const renameDialog = (
-		<PromptDialog
-			visible={renamePromptVisible}
-			title="Rename Chat"
-			message="Enter a new name for this chat"
-			placeholder="Chat name"
-			defaultValue={name}
-			confirmText="Rename"
-			onConfirm={handleConfirmRename}
-			onCancel={() => setRenamePromptVisible(false)}
-		/>
-	);
-
 	// Only use Swipeable on iOS
 	if (Platform.OS === "ios") {
 		return (
-			<>
-				<Swipeable
-					ref={swipeableRef}
-					renderRightActions={renderRightActions}
-					overshootRight={false}
-					friction={2}
-					rightThreshold={40}
-					onSwipeableOpenStartDrag={handleSwipeableWillOpen}
-					onSwipeableWillOpen={handleSwipeableOpen}
-					onSwipeableClose={handleSwipeableClose}
-				>
-					<Pressable onPressIn={handlePressIn} onPress={handlePress}>
-						{cardContent}
-					</Pressable>
-				</Swipeable>
-				{renameDialog}
-			</>
+			<Swipeable
+				ref={swipeableRef}
+				renderRightActions={renderRightActions}
+				overshootRight={false}
+				friction={2}
+				rightThreshold={40}
+				onSwipeableOpenStartDrag={handleSwipeableWillOpen}
+				onSwipeableWillOpen={handleSwipeableOpen}
+				onSwipeableClose={handleSwipeableClose}
+			>
+				<Pressable onPressIn={handlePressIn} onPress={handlePress}>
+					{cardContent}
+				</Pressable>
+			</Swipeable>
 		);
 	}
 
 	// For non-iOS platforms, just render the pressable card
 	return (
-		<>
-			<Pressable onPressIn={handlePressIn} onPress={handlePress}>
-				{cardContent}
-			</Pressable>
-			{renameDialog}
-		</>
+		<Pressable onPressIn={handlePressIn} onPress={handlePress}>
+			{cardContent}
+		</Pressable>
 	);
 }

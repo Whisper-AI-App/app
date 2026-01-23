@@ -50,7 +50,12 @@ export function MoveToFolderSheet({
 	};
 
 	const handleCreateNewFolder = () => {
-		setPromptVisible(true);
+		// Close the sheet first, then show the prompt dialog
+		// Multiple modals open simultaneously causes issues
+		onOpenChange(false);
+		setTimeout(() => {
+			setPromptVisible(true);
+		}, 300);
 	};
 
 	const handleConfirmCreate = (folderName: string) => {

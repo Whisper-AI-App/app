@@ -12,19 +12,22 @@ import { ModelUpdateNotification } from "@/components/model-update-notification"
 import { MoveToFolderSheet } from "@/components/move-to-folder-sheet";
 import { Button } from "@/components/ui/button";
 import { Icon } from "@/components/ui/icon";
+import { PromptDialog } from "@/components/ui/prompt-dialog";
 import { SearchBar } from "@/components/ui/searchbar";
 import { SearchButton } from "@/components/ui/searchbutton";
 import { View } from "@/components/ui/view";
 import { useAIChat } from "@/contexts/AIChatContext";
 import { useColor } from "@/hooks/useColor";
 import { checkForModelUpdates } from "@/src/actions/ai/model-config";
+import { renameChat } from "@/src/actions/chat";
 import type { ModelUpdateInfo } from "@/src/actions/ai/types";
 import { getModelFileUri } from "@/src/stores/main/main-store";
 import { Colors } from "@/theme/colors";
 import { useRouter } from "expo-router";
 import { MessageCircle, Settings } from "lucide-react-native";
+import * as Haptics from "expo-haptics";
 import { useEffect, useMemo, useState } from "react";
-import { useColorScheme } from "react-native";
+import { Platform, useColorScheme } from "react-native";
 import {
 	Extrapolation,
 	interpolate,
@@ -63,6 +66,11 @@ export default function Dashboard() {
 	const [managedFolderId, setManagedFolderId] = useState<string>("");
 	const [moveToFolderSheetOpen, setMoveToFolderSheetOpen] = useState(false);
 	const [movingChatId, setMovingChatId] = useState<string>("");
+
+	// Rename state
+	const [renamePromptVisible, setRenamePromptVisible] = useState(false);
+	const [renamingChatId, setRenamingChatId] = useState<string>("");
+	const [renamingChatName, setRenamingChatName] = useState<string>("");
 
 	const aiChat = useAIChat();
 
@@ -286,6 +294,25 @@ export default function Dashboard() {
 		setMoveToFolderSheetOpen(true);
 	};
 
+	// Rename handlers
+	const handleRename = (chatId: string, currentName: string) => {
+		setRenamingChatId(chatId);
+		setRenamingChatName(currentName);
+		setRenamePromptVisible(true);
+	};
+
+	const handleConfirmRename = (newName: string) => {
+		if (newName.trim() && renamingChatId) {
+			renameChat(renamingChatId, newName.trim());
+			if (Platform.OS === "ios") {
+				Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+			}
+		}
+		setRenamePromptVisible(false);
+		setRenamingChatId("");
+		setRenamingChatName("");
+	};
+
 	// Get the managed folder's name for the sheet
 	const managedFolderName =
 		foldersTable[managedFolderId]?.name?.toString() || "";
@@ -371,6 +398,7 @@ export default function Dashboard() {
 					onChatPress={(chatId) => router.push(`/chat?id=${chatId}`)}
 					onStartConversation={navigateToNewChat}
 					onMoveToFolder={handleMoveToFolder}
+					onRename={handleRename}
 				/>
 
 				<View
@@ -432,6 +460,22 @@ export default function Dashboard() {
 						requiresDownload={updateInfo.requiresDownload}
 					/>
 				)}
+
+				{/* Rename Chat Dialog */}
+				<PromptDialog
+					visible={renamePromptVisible}
+					title="Rename Chat"
+					message="Enter a new name for this chat"
+					placeholder="Chat name"
+					defaultValue={renamingChatName}
+					confirmText="Rename"
+					onConfirm={handleConfirmRename}
+					onCancel={() => {
+						setRenamePromptVisible(false);
+						setRenamingChatId("");
+						setRenamingChatName("");
+					}}
+				/>
 			</SafeAreaView>
 		</View>
 	);

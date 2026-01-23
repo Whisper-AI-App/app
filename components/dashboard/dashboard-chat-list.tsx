@@ -21,6 +21,7 @@ interface DashboardChatListProps {
 	onChatPress: (chatId: string) => void;
 	onStartConversation: () => void;
 	onMoveToFolder?: (chatId: string) => void;
+	onRename?: (chatId: string, currentName: string) => void;
 }
 
 export function DashboardChatList({
@@ -30,6 +31,7 @@ export function DashboardChatList({
 	onChatPress,
 	onStartConversation,
 	onMoveToFolder,
+	onRename,
 }: DashboardChatListProps) {
 	const colorScheme = useColorScheme() ?? "light";
 	const theme = Colors[colorScheme];
@@ -60,6 +62,7 @@ export function DashboardChatList({
 							text={preview.text}
 							onPress={() => onChatPress(preview.chatId)}
 							onMoveToFolder={onMoveToFolder ? () => onMoveToFolder(preview.chatId) : undefined}
+							onRename={onRename ? () => onRename(preview.chatId, preview.name) : undefined}
 						/>
 					</View>
 				))
