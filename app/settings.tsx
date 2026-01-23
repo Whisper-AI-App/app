@@ -8,8 +8,8 @@ import { View } from "@/components/ui/view";
 import {
 	checkForModelUpdates,
 	getStoredModelCard,
-	type ModelUpdateInfo,
-} from "@/src/actions/ai-chat-model";
+} from "@/src/actions/ai/model-config";
+import type { ModelUpdateInfo } from "@/src/actions/ai/types";
 import { clearConversations, resetEverything } from "@/src/actions/reset";
 import {
 	authenticate,

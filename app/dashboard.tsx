@@ -1,38 +1,36 @@
-import { ChatPreview } from "@/components/chat-preview";
+import {
+	type ChatPreviewData,
+	DashboardChatList,
+	DashboardGreeting,
+	UpdateBanner,
+} from "@/components/dashboard";
+import { GradientBackground } from "@/components/gradient-background";
 import { ModelLoadError } from "@/components/model-load-error";
 import { ModelUpdateNotification } from "@/components/model-update-notification";
 import { Button } from "@/components/ui/button";
 import { Icon } from "@/components/ui/icon";
 import { SearchBar } from "@/components/ui/searchbar";
 import { SearchButton } from "@/components/ui/searchbutton";
-import { Text } from "@/components/ui/text";
 import { View } from "@/components/ui/view";
 import { useAIChat } from "@/contexts/AIChatContext";
 import { useColor } from "@/hooks/useColor";
-import {
-	checkForModelUpdates,
-	type ModelUpdateInfo,
-} from "@/src/actions/ai-chat-model";
+import { checkForModelUpdates } from "@/src/actions/ai/model-config";
+import type { ModelUpdateInfo } from "@/src/actions/ai/types";
 import { getModelFileUri } from "@/src/stores/main/main-store";
 import { Colors } from "@/theme/colors";
-import { ImageBackground } from "expo-image";
 import { useRouter } from "expo-router";
-import { Hand, MessageCircle, Settings } from "lucide-react-native";
+import { MessageCircle, Settings } from "lucide-react-native";
 import { useEffect, useMemo, useState } from "react";
-import { Dimensions, Linking, Pressable, useColorScheme } from "react-native";
-import Animated, {
-	Easing,
+import { useColorScheme } from "react-native";
+import {
 	Extrapolation,
 	interpolate,
 	useAnimatedScrollHandler,
 	useAnimatedStyle,
 	useSharedValue,
-	withRepeat,
 	withSpring,
-	withTiming,
 } from "react-native-reanimated";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { Defs, RadialGradient, Rect, Stop, Svg } from "react-native-svg";
 import {
 	useRowIds,
 	useSortedRowIds,
@@ -43,26 +41,7 @@ import {
 export default function Dashboard() {
 	const colorScheme = useColorScheme() ?? "light";
 	const theme = Colors[colorScheme];
-	const backgroundColor = useColor("background");
 	const scrollY = useSharedValue(0);
-
-	// Gradient animation - animate opacity of bright overlay
-	const gradientOpacity = useSharedValue(0);
-
-	useEffect(() => {
-		gradientOpacity.value = withRepeat(
-			withTiming(1, {
-				duration: 6000,
-				easing: Easing.inOut(Easing.quad),
-			}),
-			-1,
-			true,
-		);
-	}, []);
-
-	const animatedGradientStyle = useAnimatedStyle(() => ({
-		opacity: gradientOpacity.value,
-	}));
 
 	const router = useRouter();
 	const muted = useColor("textMuted");
@@ -97,7 +76,7 @@ export default function Dashboard() {
 	const messagesTable = useTable("messages");
 
 	// Create a map of chatId -> latest message for preview
-	const chatPreviews = useMemo(() => {
+	const chatPreviews = useMemo<ChatPreviewData[]>(() => {
 		const allPreviews = chatIds.map((chatId) => {
 			const chat = chatsTable[chatId];
 
@@ -237,133 +216,13 @@ export default function Dashboard() {
 		return () => clearTimeout(timeout);
 	}, [downloadedAt, aiChat.isLoaded, storedConfigVersion]);
 
-	// SVG gradient styles
-	const svgStyle = useMemo(
-		() => ({
-			position: "absolute" as const,
-			top: 0,
-			left: 0,
-			width: "100%" as const,
-			height: Dimensions.get("window").height,
-		}),
-		[],
-	);
-
-	const svgViewBox = useMemo(
-		() =>
-			`0 0 1 ${
-				Dimensions.get("window").height / Dimensions.get("window").width
-			}`,
-		[],
-	);
-
 	const showUpdateAlert = useMemo(() => {
 		return updateAvailable && !updateNotificationVisible && updateInfo;
 	}, [updateAvailable, updateNotificationVisible, updateInfo]);
 
 	return (
 		<View style={{ flex: 1 }}>
-			{/* Background gradient layer - base (dim) */}
-			<View
-				style={{
-					position: "absolute",
-					top: 0,
-					left: 0,
-					width: "100%",
-					height: "100%",
-				}}
-			>
-				<Svg style={svgStyle} viewBox={svgViewBox}>
-					<Defs>
-						<RadialGradient
-							id="radialGradientBase"
-							gradientUnits="objectBoundingBox"
-							cx={0.5}
-							cy={0.5}
-							r={0.75}
-						>
-							<Stop offset="0" stopColor="#ff5b91ff" stopOpacity={0.05} />
-							<Stop offset="0.15" stopColor="#ff5b91ff" stopOpacity={0.05} />
-							<Stop offset="0.2" stopColor="#ff95ffff" stopOpacity={0.025} />
-							<Stop offset="0.25" stopColor="#69b7ffff" stopOpacity={0.0125} />
-							<Stop offset="0.3" stopColor={theme.card} stopOpacity={0} />
-							<Stop offset="0.4" stopColor={theme.background} stopOpacity={1} />
-						</RadialGradient>
-					</Defs>
-					<Rect
-						x={-1.5}
-						y={0.125}
-						width="4"
-						height="4"
-						fill="url(#radialGradientBase)"
-					/>
-				</Svg>
-			</View>
-
-			{/* Background gradient layer - bright overlay (animated opacity) */}
-			<Animated.View
-				style={[
-					{
-						position: "absolute",
-						top: 0,
-						left: 0,
-						width: "100%",
-						height: "100%",
-					},
-					animatedGradientStyle,
-				]}
-			>
-				<Svg style={svgStyle} viewBox={svgViewBox}>
-					<Defs>
-						<RadialGradient
-							id="radialGradientBright"
-							gradientUnits="objectBoundingBox"
-							cx={0.5}
-							cy={0.5}
-							r={0.75}
-						>
-							<Stop offset="0" stopColor="#ff5b91ff" stopOpacity={0.2} />
-							<Stop offset="0.15" stopColor="#ff5b91ff" stopOpacity={0.16} />
-							<Stop offset="0.2" stopColor="#ff95ffff" stopOpacity={0.1} />
-							<Stop offset="0.25" stopColor="#69b7ffff" stopOpacity={0.05} />
-							<Stop offset="0.3" stopColor={theme.card} stopOpacity={0} />
-							<Stop offset="0.4" stopColor={theme.background} stopOpacity={0} />
-						</RadialGradient>
-					</Defs>
-					<Rect
-						x={-1.5}
-						y={0.125}
-						width="4"
-						height="4"
-						fill="url(#radialGradientBright)"
-					/>
-				</Svg>
-			</Animated.View>
-
-			{/* Grain texture overlay */}
-			<View
-				style={{
-					position: "absolute",
-					top: 0,
-					left: 0,
-					width: "100%",
-					height: "100%",
-				}}
-				pointerEvents="none"
-			>
-				<ImageBackground
-					source={
-						colorScheme === "dark"
-							? require(`../assets/images/grain-dark.png`)
-							: require(`../assets/images/grain.png`)
-					}
-					style={{
-						flex: 1,
-						opacity: 0.2,
-						backgroundColor: backgroundColor,
-					}}
-				/>
-			</View>
+			<GradientBackground variant="animated" />
 
 			<SafeAreaView edges={["right", "top", "left"]} style={{ flex: 1 }}>
 				<View
@@ -397,268 +256,28 @@ export default function Dashboard() {
 
 				{modelLoadError && <ModelLoadError onRetry={retryLoadModel} />}
 
-				{/* Update Available Banner */}
-				{showUpdateAlert && (
-					<View
-						style={{
-							backgroundColor: theme.green,
-							paddingVertical: 8,
-							paddingHorizontal: 16,
-							flexDirection: "row",
-							alignItems: "center",
-							justifyContent: "space-between",
-						}}
-					>
-						<View style={{ flex: 1 }}>
-							<Text
-								style={{
-									fontSize: 14,
-									fontWeight: "600",
-									marginBottom: 1,
-									color: theme.secondary,
-								}}
-							>
-								{updateInfo?.requiresDownload
-									? "AI Update Available"
-									: "AI Updated!"}
-							</Text>
-							<Text
-								style={{ fontSize: 12, opacity: 0.9, color: theme.secondary }}
-							>
-								{updateInfo?.requiresDownload
-									? "New version ready to download"
-									: "Tap to see what's new"}
-							</Text>
-						</View>
-						<View>
-							<Button
-								size="sm"
-								onPress={() => setUpdateNotificationVisible(true)}
-								style={{ paddingHorizontal: 24 }}
-								textStyle={{ fontSize: 14 }}
-								variant="secondary"
-							>
-								View
-							</Button>
-						</View>
-					</View>
+				{showUpdateAlert && updateInfo && (
+					<UpdateBanner
+						updateInfo={updateInfo}
+						onViewPress={() => setUpdateNotificationVisible(true)}
+					/>
 				)}
 
 				{chatPreviews.length > 0 && (
-					<Animated.View
-						style={[
-							{
-								position: "absolute",
-								top: 128 + 40 + (showUpdateAlert ? 72 : 0),
-								left: 0,
-								width: "100%",
-								display: "flex",
-								flexDirection: "column",
-								justifyContent: "center",
-								alignItems: "center",
-
-								gap: 1,
-								paddingHorizontal: 20,
-								zIndex: 10,
-							},
-							greetingAnimatedStyle,
-						]}
-					>
-						<View
-							style={{
-								display: "flex",
-								alignItems: "center",
-								flexDirection: "row",
-								gap: 6,
-								opacity: 0.75,
-							}}
-						>
-							<Text style={{ fontSize: 18, fontWeight: "500" }}>
-								{new Date().getHours() < 5
-									? "Good night"
-									: new Date().getHours() < 12
-										? "Good morning"
-										: new Date().getHours() < 17
-											? "Good afternoon"
-											: new Date().getHours() < 21
-												? "Good evening"
-												: "Good evening"}
-							</Text>
-							<Hand
-								color={theme.text}
-								width={16}
-								strokeWidth={2}
-								style={{
-									width: 8,
-									height: 8,
-									transform: [{ rotate: "40deg" }],
-								}}
-							/>
-						</View>
-
-						<View
-							style={{
-								display: "flex",
-								flexDirection: "row",
-								gap: 12,
-								paddingVertical: 6,
-							}}
-						>
-							<Pressable
-								onPress={() => Linking.openURL("https://usewhisper.org/news")}
-							>
-								<Text
-									style={{
-										display: "flex",
-										flexDirection: "row",
-										alignItems: "center",
-										paddingBottom: 0.05,
-										borderBottomColor: "rgba(150,150,150,0.25)",
-										borderBottomWidth: 2,
-										fontSize: 12,
-										color: theme.textMuted,
-									}}
-								>
-									Latest updates
-								</Text>
-							</Pressable>
-							<Pressable
-								onPress={() =>
-									Linking.openURL("https://usewhisper.org/chat-with-us")
-								}
-							>
-								<Text
-									style={{
-										display: "flex",
-										flexDirection: "row",
-										alignItems: "center",
-										paddingBottom: 0.05,
-										borderBottomColor: "rgba(150,150,150,0.25)",
-										borderBottomWidth: 2,
-										fontSize: 12,
-										color: theme.textMuted,
-									}}
-								>
-									Request feature
-								</Text>
-							</Pressable>
-						</View>
-
-						{chatPreviews.length > 0 && (
-							<Text style={{ fontSize: 12, opacity: 0.5 }}>
-								You have {chatPreviews.length} chat
-								{chatPreviews.length > 1 && "s"}
-							</Text>
-						)}
-					</Animated.View>
+					<DashboardGreeting
+						chatCount={chatPreviews.length}
+						animatedStyle={greetingAnimatedStyle}
+						showUpdateAlert={!!showUpdateAlert}
+					/>
 				)}
 
-				<Animated.ScrollView
-					style={{
-						position: "relative",
-						flex: 1,
-						paddingHorizontal: 16,
-					}}
-					onScroll={scrollHandler}
-					scrollEventThrottle={16}
-				>
-					{chatPreviews.length > 0 ? (
-						chatPreviews.map((preview, index, array) => {
-							const previewWrapper = (
-								<View
-									key={preview.chatId}
-									style={{
-										paddingBottom: index >= array.length - 1 ? 160 : 0,
-										paddingTop: index === 0 ? 148 : 16,
-									}}
-								>
-									<ChatPreview
-										chatId={preview.chatId}
-										date={preview.date}
-										name={preview.name}
-										text={preview.text}
-										onPress={() => {
-											router.push(`/chat?id=${preview.chatId}`);
-										}}
-									/>
-								</View>
-							);
-
-							return <View key={preview.chatId}>{previewWrapper}</View>;
-						})
-					) : (
-						<View style={{ padding: 32, alignItems: "center", gap: 16 }}>
-							<Text
-								style={{
-									opacity: 0.75,
-									fontSize: searchQuery.trim() ? 16 : 14,
-								}}
-							>
-								{searchQuery.trim() ? "No chats found" : "No chats yet"}
-							</Text>
-							{!searchQuery.trim() && (
-								<Button
-									variant="secondary"
-									size="lg"
-									onPress={() => {
-										router.push("/chat");
-									}}
-								>
-									Start a conversation
-								</Button>
-							)}
-
-							<View
-								style={{
-									display: "flex",
-									flexDirection: "row",
-									gap: 12,
-									paddingVertical: 6,
-									opacity: 0.5,
-								}}
-							>
-								<Pressable
-									onPress={() => Linking.openURL("https://usewhisper.org/news")}
-								>
-									<Text
-										style={{
-											display: "flex",
-											flexDirection: "row",
-											alignItems: "center",
-											paddingBottom: 0.05,
-											borderBottomColor: "rgba(150,150,150,0.25)",
-											borderBottomWidth: 2,
-											fontSize: 12,
-											color: theme.textMuted,
-										}}
-									>
-										Latest news
-									</Text>
-								</Pressable>
-								<Pressable
-									onPress={() =>
-										Linking.openURL("https://usewhisper.org/chat-with-us")
-									}
-								>
-									<Text
-										style={{
-											display: "flex",
-											flexDirection: "row",
-											alignItems: "center",
-											paddingBottom: 0.05,
-											borderBottomColor: "rgba(150,150,150,0.25)",
-											borderBottomWidth: 2,
-											fontSize: 12,
-											color: theme.textMuted,
-										}}
-									>
-										Report problem
-									</Text>
-								</Pressable>
-							</View>
-						</View>
-					)}
-				</Animated.ScrollView>
+				<DashboardChatList
+					chatPreviews={chatPreviews}
+					searchQuery={searchQuery}
+					scrollHandler={scrollHandler}
+					onChatPress={(chatId) => router.push(`/chat?id=${chatId}`)}
+					onStartConversation={() => router.push("/chat")}
+				/>
 
 				<View
 					style={{
