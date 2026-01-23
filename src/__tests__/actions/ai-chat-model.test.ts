@@ -58,17 +58,27 @@ jest.mock(
 		const mockCards = {
 			"default-card-id": {
 				name: "Default Test Model",
+				type: "gguf" as const,
 				sourceUrl: "https://example.com/default-model.gguf",
 				sizeGB: 0.5,
-				minRAM: 2,
-				parameters: "0.5B",
+				parametersB: 0.5,
+				ramGB: 2,
+				systemMessage: {
+					template: "You are a helpful assistant.",
+					defaultTemplateValues: {},
+				},
 			},
 			"other-card-id": {
 				name: "Other Test Model",
+				type: "gguf" as const,
 				sourceUrl: "https://example.com/other-model.gguf",
 				sizeGB: 1.0,
-				minRAM: 4,
-				parameters: "1B",
+				parametersB: 1,
+				ramGB: 4,
+				systemMessage: {
+					template: "You are a helpful assistant.",
+					defaultTemplateValues: {},
+				},
 			},
 		};
 
@@ -93,17 +103,27 @@ const mockWhisperLLMCardsJson = {
 	cards: {
 		"default-card-id": {
 			name: "Default Test Model",
+			type: "gguf" as const,
 			sourceUrl: "https://example.com/default-model.gguf",
 			sizeGB: 0.5,
-			minRAM: 2,
-			parameters: "0.5B",
+			parametersB: 0.5,
+			ramGB: 2,
+			systemMessage: {
+				template: "You are a helpful assistant.",
+				defaultTemplateValues: {},
+			},
 		},
 		"other-card-id": {
 			name: "Other Test Model",
+			type: "gguf" as const,
 			sourceUrl: "https://example.com/other-model.gguf",
 			sizeGB: 1.0,
-			minRAM: 4,
-			parameters: "1B",
+			parametersB: 1,
+			ramGB: 4,
+			systemMessage: {
+				template: "You are a helpful assistant.",
+				defaultTemplateValues: {},
+			},
 		},
 	},
 };
@@ -123,17 +143,19 @@ jest.mock("../../utils/generate-model-filename", () => ({
 
 import * as whisperLLMCards from "whisper-llm-cards";
 // Import the functions under test AFTER mocks
+import { DEFAULT_AI_CHAT_MODEL } from "../../actions/ai/constants";
 import {
-	areCardsEqual,
-	checkForModelUpdates,
-	DEFAULT_AI_CHAT_MODEL,
-	fetchLatestRecommendedModel,
-	getStoredModelCard,
 	pauseDownload,
 	resumeDownload,
 	startOrResumeDownloadOfAIChatModel,
+} from "../../actions/ai/download-control";
+import {
+	areCardsEqual,
+	checkForModelUpdates,
+	fetchLatestRecommendedModel,
+	getStoredModelCard,
 	updateModelCard,
-} from "../../actions/ai-chat-model";
+} from "../../actions/ai/model-config";
 import { validateModelFileName } from "../../utils/generate-model-filename";
 
 // Get references to mocked functions
@@ -172,10 +194,15 @@ describe("ai-chat-model actions", () => {
 	describe("areCardsEqual", () => {
 		const card1 = {
 			name: "Test Model",
+			type: "gguf" as const,
 			sourceUrl: "https://example.com/model.gguf",
 			sizeGB: 0.5,
-			minRAM: 2,
-			parameters: "0.5B",
+			parametersB: 0.5,
+			ramGB: 2,
+			systemMessage: {
+				template: "You are a helpful assistant.",
+				defaultTemplateValues: {},
+			},
 		};
 
 		it("returns true for identical cards", () => {
@@ -202,10 +229,15 @@ describe("ai-chat-model actions", () => {
 		it("parses stored JSON correctly", () => {
 			const card = {
 				name: "Stored Model",
+				type: "gguf" as const,
 				sourceUrl: "https://example.com/stored.gguf",
 				sizeGB: 0.6,
-				minRAM: 2,
-				parameters: "0.6B",
+				parametersB: 0.6,
+				ramGB: 2,
+				systemMessage: {
+					template: "You are a helpful assistant.",
+					defaultTemplateValues: {},
+				},
 			};
 			seedMockMainStore({
 				ai_chat_model_card: JSON.stringify(card),
@@ -249,10 +281,15 @@ describe("ai-chat-model actions", () => {
 		it("updates card, cardId, and config_version", () => {
 			const card = {
 				name: "New Model",
+				type: "gguf" as const,
 				sourceUrl: "https://example.com/new.gguf",
 				sizeGB: 0.7,
-				minRAM: 3,
-				parameters: "0.7B",
+				parametersB: 0.7,
+				ramGB: 3,
+				systemMessage: {
+					template: "You are a helpful assistant.",
+					defaultTemplateValues: {},
+				},
 			};
 
 			updateModelCard(card, "new-card-id", "2.0.0");
@@ -280,10 +317,15 @@ describe("ai-chat-model actions", () => {
 				cards: {
 					"latest-card": {
 						name: "Latest Model",
+						type: "gguf" as const,
 						sourceUrl: "https://example.com/latest.gguf",
 						sizeGB: 0.8,
-						minRAM: 2,
-						parameters: "0.8B",
+						parametersB: 0.8,
+						ramGB: 2,
+						systemMessage: {
+							template: "You are a helpful assistant.",
+							defaultTemplateValues: {},
+						},
 					},
 				},
 			};
@@ -378,7 +420,7 @@ describe("ai-chat-model actions", () => {
 			// Card with same sourceUrl but different metadata
 			const oldCard = {
 				...mockWhisperLLMCardsJson.cards["default-card-id"],
-				parameters: "0.4B", // Different parameter count
+				parametersB: 0.4, // Different parameter count
 			};
 			seedMockMainStore({
 				ai_chat_model_config_version: "0.9.0",
@@ -444,10 +486,15 @@ describe("ai-chat-model actions", () => {
 	describe("startOrResumeDownloadOfAIChatModel", () => {
 		const testCard = {
 			name: "Test Model",
+			type: "gguf" as const,
 			sourceUrl: "https://example.com/test.gguf",
 			sizeGB: 0.5,
-			minRAM: 2,
-			parameters: "0.5B",
+			parametersB: 0.5,
+			ramGB: 2,
+			systemMessage: {
+				template: "You are a helpful assistant.",
+				defaultTemplateValues: {},
+			},
 		};
 
 		it("starts fresh download", async () => {

@@ -1,8 +1,65 @@
-import { mainStore } from "@/src/stores/main/main-store";
 import * as FileSystem from "expo-file-system/legacy";
+import * as ImageManipulator from "expo-image-manipulator";
 import * as ImagePicker from "expo-image-picker";
 
+import { mainStore } from "@/src/stores/main/main-store";
+
+// Max dimensions for background images to prevent memory issues
+const MAX_BACKGROUND_WIDTH = 1920;
+const MAX_BACKGROUND_HEIGHT = 1920;
+const TARGET_MAX_SIZE_BYTES = 1024 * 1024; // 1MB
+const INITIAL_COMPRESSION_QUALITY = 0.8;
+const MIN_COMPRESSION_QUALITY = 0.3;
+const QUALITY_STEP = 0.1;
+
 export type BackgroundType = "default" | "preset" | "custom";
+
+/**
+ * Compress and resize an image to reduce memory usage and improve loading performance.
+ * Dynamically adjusts compression to ensure the output is under 1MB.
+ * @param uri - The URI of the image to process
+ * @returns The processed image result with a new URI
+ */
+async function compressAndResizeImage(
+	uri: string,
+): Promise<ImageManipulator.ImageResult> {
+	const context = ImageManipulator.ImageManipulator.manipulate(uri);
+
+	// Resize to fit within max dimensions while maintaining aspect ratio
+	const resized = context.resize({
+		width: MAX_BACKGROUND_WIDTH,
+		height: MAX_BACKGROUND_HEIGHT,
+	});
+
+	const rendered = await resized.renderAsync();
+
+	// Try progressively lower quality until we're under the target size
+	let quality = INITIAL_COMPRESSION_QUALITY;
+	let result = await rendered.saveAsync({
+		format: ImageManipulator.SaveFormat.JPEG,
+		compress: quality,
+	});
+
+	let fileInfo = await FileSystem.getInfoAsync(result.uri);
+	let fileSize = fileInfo.exists && "size" in fileInfo ? fileInfo.size : 0;
+
+	while (fileSize > TARGET_MAX_SIZE_BYTES && quality > MIN_COMPRESSION_QUALITY) {
+		quality -= QUALITY_STEP;
+		console.log(
+			`[Background] File size ${(fileSize / 1024).toFixed(0)} KB exceeds 1MB, retrying with quality ${quality.toFixed(1)}`,
+		);
+
+		result = await rendered.saveAsync({
+			format: ImageManipulator.SaveFormat.JPEG,
+			compress: quality,
+		});
+
+		fileInfo = await FileSystem.getInfoAsync(result.uri);
+		fileSize = fileInfo.exists && "size" in fileInfo ? fileInfo.size : 0;
+	}
+
+	return result;
+}
 
 /**
  * Request photo library permission and pick an image for the chat background
@@ -42,13 +99,35 @@ export async function pickBackgroundFromLibrary(): Promise<{
 		// Remove old custom background if exists
 		await cleanupOldCustomBackground();
 
-		// Copy image to app's document directory for persistence
+		// Compress and resize the image before saving
 		const asset = result.assets[0];
+
+		// Log original file size
+		const originalInfo = await FileSystem.getInfoAsync(asset.uri);
+		const originalSizeKB =
+			originalInfo.exists && "size" in originalInfo
+				? (originalInfo.size / 1024).toFixed(2)
+				: "unknown";
+		console.log(`[Background] Original image size: ${originalSizeKB} KB`);
+
+		const processedImage = await compressAndResizeImage(asset.uri);
+
+		// Log compressed file size
+		const compressedInfo = await FileSystem.getInfoAsync(processedImage.uri);
+		const compressedSizeKB =
+			compressedInfo.exists && "size" in compressedInfo
+				? (compressedInfo.size / 1024).toFixed(2)
+				: "unknown";
+		console.log(`[Background] Compressed image size: ${compressedSizeKB} KB`);
+		console.log(
+			`[Background] Size reduction: ${originalSizeKB !== "unknown" && compressedSizeKB !== "unknown" ? (((Number(originalSizeKB) - Number(compressedSizeKB)) / Number(originalSizeKB)) * 100).toFixed(1) : "N/A"}%`,
+		);
+
 		const fileName = `chat-background-${Date.now()}.jpg`;
 		const destinationUri = `${FileSystem.documentDirectory}${fileName}`;
 
-		await FileSystem.copyAsync({
-			from: asset.uri,
+		await FileSystem.moveAsync({
+			from: processedImage.uri,
 			to: destinationUri,
 		});
 

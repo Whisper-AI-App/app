@@ -8,8 +8,8 @@ import { View } from "@/components/ui/view";
 import {
 	checkForModelUpdates,
 	getStoredModelCard,
-	type ModelUpdateInfo,
-} from "@/src/actions/ai-chat-model";
+} from "@/src/actions/ai/model-config";
+import type { ModelUpdateInfo } from "@/src/actions/ai/types";
 import { clearConversations, resetEverything } from "@/src/actions/reset";
 import {
 	authenticate,
@@ -21,7 +21,7 @@ import { BORDER_RADIUS } from "@/theme/globals";
 import * as Haptics from "expo-haptics";
 import { useRouter } from "expo-router";
 import { ChevronLeft, ChevronRight } from "lucide-react-native";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Switch, TouchableOpacity, useColorScheme } from "react-native";
 import { ScrollView } from "react-native-gesture-handler";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -61,6 +61,43 @@ export default function Settings() {
 		| string
 		| undefined;
 	const modelCard = getStoredModelCard();
+
+	// Easter egg state - tap logo 5 times to unlock game
+	const [logoTapCount, setLogoTapCount] = useState(0);
+	const tapTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+	const handleLogoTap = () => {
+		Haptics.selectionAsync();
+
+		// Clear previous timeout
+		if (tapTimeoutRef.current) {
+			clearTimeout(tapTimeoutRef.current);
+		}
+
+		const newCount = logoTapCount + 1;
+		setLogoTapCount(newCount);
+
+		if (newCount >= 5) {
+			// Easter egg activated!
+			Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+			setLogoTapCount(0);
+			router.push("/game");
+		} else {
+			// Reset tap count after 1 second of no taps
+			tapTimeoutRef.current = setTimeout(() => {
+				setLogoTapCount(0);
+			}, 1000);
+		}
+	};
+
+	// Cleanup timeout on unmount
+	useEffect(() => {
+		return () => {
+			if (tapTimeoutRef.current) {
+				clearTimeout(tapTimeoutRef.current);
+			}
+		};
+	}, []);
 
 	useEffect(() => {
 		setLocalAuthToggle(localAuthEnabled === true);
@@ -173,8 +210,10 @@ export default function Settings() {
 				style={{ flex: 1 }}
 				contentContainerStyle={{ paddingBottom: 32 }}
 			>
-				{/* Logo Section */}
-				<View
+				{/* Logo Section - Tap 5 times for easter egg */}
+				<TouchableOpacity
+					onPress={handleLogoTap}
+					activeOpacity={0.8}
 					style={{
 						justifyContent: "center",
 						alignItems: "center",
@@ -184,7 +223,7 @@ export default function Settings() {
 					}}
 				>
 					<Logo fontSize={56} />
-				</View>
+				</TouchableOpacity>
 
 				<View style={{ paddingHorizontal: 24 }}>
 					{/* Appearance Section */}
