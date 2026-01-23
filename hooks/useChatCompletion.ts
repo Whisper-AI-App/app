@@ -19,7 +19,7 @@ import { processSystemMessage, type WhisperLLMCard } from "whisper-llm-cards";
 export function useChatCompletion(
 	options: UseChatCompletionOptions,
 ): UseChatCompletionReturn {
-	const { chatId, messages, onChatCreated } = options;
+	const { chatId, messages, onChatCreated, folderId } = options;
 
 	const [isAiTyping, setIsAiTyping] = useState(false);
 	const [streamingText, setStreamingText] = useState("");
@@ -46,7 +46,7 @@ export function useChatCompletion(
 			if (!activeChatId) {
 				activeChatId = uuidv4();
 				const chatName = text.slice(0, 50); // Use first 50 chars as name
-				upsertChat(activeChatId, chatName);
+				upsertChat(activeChatId, chatName, folderId);
 				onChatCreated?.(activeChatId);
 			}
 
@@ -132,7 +132,7 @@ export function useChatCompletion(
 				}
 			}
 		},
-		[chatId, messages, aiChat, aiChatModelCard, onChatCreated],
+		[chatId, messages, aiChat, aiChatModelCard, onChatCreated, folderId],
 	);
 
 	return {

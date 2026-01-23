@@ -22,6 +22,7 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
 	onShare,
 	onRename,
 	onDelete,
+	onMoveToFolder,
 }) => {
 	const colorScheme = useColorScheme() ?? "light";
 	const theme = Colors[colorScheme];
@@ -96,6 +97,7 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
 									onShare={onShare}
 									onRename={onRename}
 									onDelete={onDelete}
+									onMoveToFolder={onMoveToFolder}
 									trigger={
 										<Button size="icon" variant="ghost">
 											<MoreHorizontal color={theme.text} width={20} />

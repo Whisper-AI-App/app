@@ -11,6 +11,7 @@ export interface ChatPreviewData {
 	name: string;
 	text: string;
 	date: Date;
+	folderId?: string;
 }
 
 interface DashboardChatListProps {
@@ -19,6 +20,7 @@ interface DashboardChatListProps {
 	scrollHandler: ReturnType<typeof useAnimatedScrollHandler>;
 	onChatPress: (chatId: string) => void;
 	onStartConversation: () => void;
+	onMoveToFolder?: (chatId: string) => void;
 }
 
 export function DashboardChatList({
@@ -27,6 +29,7 @@ export function DashboardChatList({
 	scrollHandler,
 	onChatPress,
 	onStartConversation,
+	onMoveToFolder,
 }: DashboardChatListProps) {
 	const colorScheme = useColorScheme() ?? "light";
 	const theme = Colors[colorScheme];
@@ -56,6 +59,7 @@ export function DashboardChatList({
 							name={preview.name}
 							text={preview.text}
 							onPress={() => onChatPress(preview.chatId)}
+							onMoveToFolder={onMoveToFolder ? () => onMoveToFolder(preview.chatId) : undefined}
 						/>
 					</View>
 				))

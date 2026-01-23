@@ -11,12 +11,14 @@ interface DashboardGreetingProps {
 	chatCount: number;
 	animatedStyle: AnimatedStyleProp<ViewStyle>;
 	showUpdateAlert: boolean;
+	folderSelectorOffset?: number;
 }
 
 export function DashboardGreeting({
 	chatCount,
 	animatedStyle,
 	showUpdateAlert,
+	folderSelectorOffset = 0,
 }: DashboardGreetingProps) {
 	const colorScheme = useColorScheme() ?? "light";
 	const theme = Colors[colorScheme];
@@ -34,7 +36,7 @@ export function DashboardGreeting({
 			style={[
 				{
 					position: "absolute",
-					top: 128 + 40 + (showUpdateAlert ? 72 : 0),
+					top: 128 + 40 + folderSelectorOffset + (showUpdateAlert ? 72 : 0),
 					left: 0,
 					width: "100%",
 					display: "flex",

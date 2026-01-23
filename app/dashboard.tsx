@@ -4,9 +4,12 @@ import {
 	DashboardGreeting,
 	UpdateBanner,
 } from "@/components/dashboard";
+import { FolderManagementSheet } from "@/components/folder-management-sheet";
+import { FolderSelector } from "@/components/folder-selector";
 import { GradientBackground } from "@/components/gradient-background";
 import { ModelLoadError } from "@/components/model-load-error";
 import { ModelUpdateNotification } from "@/components/model-update-notification";
+import { MoveToFolderSheet } from "@/components/move-to-folder-sheet";
 import { Button } from "@/components/ui/button";
 import { Icon } from "@/components/ui/icon";
 import { SearchBar } from "@/components/ui/searchbar";
@@ -53,6 +56,14 @@ export default function Dashboard() {
 	const [updateAvailable, setUpdateAvailable] = useState(false);
 	const [updateInfo, setUpdateInfo] = useState<ModelUpdateInfo | null>(null);
 
+	// Folder state
+	const [selectedFolderId, setSelectedFolderId] = useState<string | null>(null);
+	const [folderManagementSheetOpen, setFolderManagementSheetOpen] =
+		useState(false);
+	const [managedFolderId, setManagedFolderId] = useState<string>("");
+	const [moveToFolderSheetOpen, setMoveToFolderSheetOpen] = useState(false);
+	const [movingChatId, setMovingChatId] = useState<string>("");
+
 	const aiChat = useAIChat();
 
 	// Check for completed model using useValue
@@ -74,6 +85,30 @@ export default function Dashboard() {
 	// Subscribe to the entire chats and messages tables to trigger re-render when any data changes
 	const chatsTable = useTable("chats");
 	const messagesTable = useTable("messages");
+
+	// Get folder data
+	const folderIds = useSortedRowIds("folders", "createdAt", false); // oldest first
+	const foldersTable = useTable("folders");
+
+	// Process folders with chat counts, sorted by chat count (descending)
+	const foldersWithCounts = useMemo(() => {
+		const folders = folderIds.map((folderId) => {
+			const folder = foldersTable[folderId];
+			const chatCount = Object.values(chatsTable).filter(
+				(chat) => chat?.folderId === folderId,
+			).length;
+			return {
+				id: folderId,
+				name: String(folder?.name || "Untitled"),
+				chatCount,
+			};
+		});
+		// Sort by chat count (most chats first)
+		return folders.sort((a, b) => b.chatCount - a.chatCount);
+	}, [folderIds, foldersTable, chatsTable]);
+
+	// Total chat count
+	const totalChatCount = chatIds.length;
 
 	// Create a map of chatId -> latest message for preview
 	const chatPreviews = useMemo<ChatPreviewData[]>(() => {
@@ -97,21 +132,37 @@ export default function Dashboard() {
 				name: String(chat?.name || "Untitled Chat"),
 				text: String(latestMessage?.contents || "No messages yet"),
 				date: new Date(chat?.createdAt ? String(chat.createdAt) : Date.now()),
+				folderId: String(chat?.folderId || ""),
 			};
 		});
+
+		// Filter by selected folder
+		let filteredPreviews = allPreviews;
+		if (selectedFolderId !== null) {
+			filteredPreviews = allPreviews.filter(
+				(preview) => preview.folderId === selectedFolderId,
+			);
+		}
 
 		// Filter based on search query
 		const query = searchQuery.trim().toLowerCase();
 		if (!query) {
-			return allPreviews;
+			return filteredPreviews;
 		}
 
-		return allPreviews.filter((preview) => {
+		return filteredPreviews.filter((preview) => {
 			const nameMatch = String(preview.name).toLowerCase().includes(query);
 			const textMatch = String(preview.text).toLowerCase().includes(query);
 			return nameMatch || textMatch;
 		});
-	}, [chatIds, messageIds, searchQuery, chatsTable, messagesTable]);
+	}, [
+		chatIds,
+		messageIds,
+		searchQuery,
+		chatsTable,
+		messagesTable,
+		selectedFolderId,
+	]);
 
 	// Check for completed model on mount and load it if available
 	useEffect(() => {
@@ -220,6 +271,38 @@ export default function Dashboard() {
 		return updateAvailable && !updateNotificationVisible && updateInfo;
 	}, [updateAvailable, updateNotificationVisible, updateInfo]);
 
+	// Folder management handlers
+	const handleLongPressFolder = (folderId: string) => {
+		setManagedFolderId(folderId);
+		setFolderManagementSheetOpen(true);
+	};
+
+	const handleFolderDeleted = () => {
+		setSelectedFolderId(null);
+	};
+
+	const handleMoveToFolder = (chatId: string) => {
+		setMovingChatId(chatId);
+		setMoveToFolderSheetOpen(true);
+	};
+
+	// Get the managed folder's name for the sheet
+	const managedFolderName =
+		foldersTable[managedFolderId]?.name?.toString() || "";
+
+	// Get the current folder ID for the chat being moved
+	const movingChatFolderId =
+		chatsTable[movingChatId]?.folderId?.toString() || "";
+
+	// Navigate to chat with optional folder context
+	const navigateToNewChat = () => {
+		if (selectedFolderId) {
+			router.push(`/chat?folderId=${selectedFolderId}`);
+		} else {
+			router.push("/chat");
+		}
+	};
+
 	return (
 		<View style={{ flex: 1 }}>
 			<GradientBackground variant="animated" />
@@ -263,11 +346,21 @@ export default function Dashboard() {
 					/>
 				)}
 
+				{/* Folder Selector */}
+				<FolderSelector
+					folders={foldersWithCounts}
+					totalChatCount={totalChatCount}
+					selectedFolderId={selectedFolderId}
+					onSelectFolder={setSelectedFolderId}
+					onLongPressFolder={handleLongPressFolder}
+				/>
+
 				{chatPreviews.length > 0 && (
 					<DashboardGreeting
 						chatCount={chatPreviews.length}
 						animatedStyle={greetingAnimatedStyle}
 						showUpdateAlert={!!showUpdateAlert}
+						folderSelectorOffset={56}
 					/>
 				)}
 
@@ -276,7 +369,8 @@ export default function Dashboard() {
 					searchQuery={searchQuery}
 					scrollHandler={scrollHandler}
 					onChatPress={(chatId) => router.push(`/chat?id=${chatId}`)}
-					onStartConversation={() => router.push("/chat")}
+					onStartConversation={navigateToNewChat}
+					onMoveToFolder={handleMoveToFolder}
 				/>
 
 				<View
@@ -294,12 +388,30 @@ export default function Dashboard() {
 							label="Chat..."
 							leftIcon={<Icon name={MessageCircle} size={16} color={muted} />}
 							loading={false}
-							onPress={() => {
-								router.push("/chat");
-							}}
+							onPress={navigateToNewChat}
 						/>
 					</View>
 				</View>
+
+				{/* Folder Management Sheet */}
+				<FolderManagementSheet
+					open={folderManagementSheetOpen}
+					onOpenChange={setFolderManagementSheetOpen}
+					folderId={managedFolderId}
+					folderName={managedFolderName}
+					onFolderDeleted={handleFolderDeleted}
+				/>
+
+				{/* Move to Folder Sheet */}
+				<MoveToFolderSheet
+					open={moveToFolderSheetOpen}
+					onOpenChange={setMoveToFolderSheetOpen}
+					chatId={movingChatId}
+					currentFolderId={movingChatFolderId}
+					folders={foldersWithCounts}
+					onMoved={() => {}}
+					onSelectFolder={setSelectedFolderId}
+				/>
 
 				{/* Model Update Notification */}
 				{updateInfo && (

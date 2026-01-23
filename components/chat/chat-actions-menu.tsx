@@ -5,7 +5,7 @@ import { View } from "@/components/ui/view";
 import { useColorScheme } from "@/hooks/useColorScheme";
 import type { ChatActionsMenuProps } from "@/src/types/chat";
 import { Colors } from "@/theme/colors";
-import { Pencil, Share2, Trash2 } from "lucide-react-native";
+import { FolderInput, Pencil, Share2, Trash2 } from "lucide-react-native";
 import { TouchableOpacity } from "react-native";
 
 /**
@@ -17,6 +17,7 @@ export const ChatActionsMenu: React.FC<ChatActionsMenuProps> = ({
 	onShare,
 	onRename,
 	onDelete,
+	onMoveToFolder,
 	trigger,
 }) => {
 	const colorScheme = useColorScheme() ?? "light";
@@ -62,6 +63,26 @@ export const ChatActionsMenu: React.FC<ChatActionsMenuProps> = ({
 						/>
 						<Text>Rename</Text>
 					</TouchableOpacity>
+
+					{onMoveToFolder && (
+						<TouchableOpacity
+							onPress={onMoveToFolder}
+							style={{
+								flexDirection: "row",
+								alignItems: "center",
+								paddingVertical: 12,
+								paddingHorizontal: 16,
+							}}
+							activeOpacity={0.7}
+						>
+							<FolderInput
+								size={18}
+								color={theme.text}
+								style={{ marginRight: 12 }}
+							/>
+							<Text>Move to Folder</Text>
+						</TouchableOpacity>
+					)}
 
 					<Separator style={{ marginVertical: 8 }} />
 

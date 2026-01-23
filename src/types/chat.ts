@@ -44,12 +44,16 @@ export interface UseChatStateReturn {
 	handleRenameChat: () => void;
 	handleDeleteChat: () => void;
 	handleNewChat: () => void;
+	renamePromptVisible: boolean;
+	setRenamePromptVisible: (visible: boolean) => void;
+	handleConfirmRename: (newName: string) => void;
 }
 
 export interface UseChatCompletionOptions {
 	chatId: string | undefined;
 	messages: IMessage[];
 	onChatCreated?: (newChatId: string) => void;
+	folderId?: string | null;
 }
 
 export interface UseChatCompletionReturn {
@@ -68,6 +72,7 @@ export interface ChatHeaderProps {
 	onShare: () => void;
 	onRename: () => void;
 	onDelete: () => void;
+	onMoveToFolder?: () => void;
 }
 
 export interface ChatActionsMenuProps {
@@ -76,5 +81,6 @@ export interface ChatActionsMenuProps {
 	onShare: () => void;
 	onRename: () => void;
 	onDelete: () => void;
+	onMoveToFolder?: () => void;
 	trigger: React.ReactNode;
 }
