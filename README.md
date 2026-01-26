@@ -9,11 +9,11 @@
 <table border="0" cellspacing="0" cellpadding="0">
   <tr>
     <td align="center">
-      <a href="https://apps.apple.com/us/app/whisper-ai/id6754563737"><img src="./.github/assets/badge-download-on-app-store.png" width="149" height="50" alt="Download on the App Store"></a><br>
+      <a href="https://apps.apple.com/us/app/whisper-ai/id6754563737"><img src="./.github/assets/badge-download-on-app-store.png" alt="Download on the App Store"></a><br>
       <a href="https://apps.apple.com/us/app/whisper-ai/id6754563737">App Store</a>
     </td>
     <td align="center">
-      <a href="https://play.google.com/store/apps/details?id=org.avatechnologies.whisper"><img src="https://play.google.com/intl/en_us/badges/images/generic/en_badge_web_generic.png" width="168" height="50" alt="Get it on Google Play"></a><br>
+      <a href="https://play.google.com/store/apps/details?id=org.avatechnologies.whisper"><img src="https://play.google.com/intl/en_us/badges/images/generic/en_badge_web_generic.png" alt="Get it on Google Play"></a><br>
       <a href="https://play.google.com/store/apps/details?id=org.avatechnologies.whisper">Google Play</a>
     </td>
   </tr>
