@@ -6,8 +6,18 @@
 
 ## Download the App
 
-- iOS - [Download on the App Store](https://apps.apple.com/us/app/whisper-ai/id6754563737)
-- Android - _In review by Google, coming soon_
+<table>
+  <tr>
+    <td align="center">
+      <a href="https://apps.apple.com/us/app/whisper-ai/id6754563737"><img src="./.github/assets/badge-download-on-app-store.png" width="120" alt="Download on the App Store"></a><br>
+      <a href="https://apps.apple.com/us/app/whisper-ai/id6754563737">App Store</a>
+    </td>
+    <td align="center">
+      <a href="https://play.google.com/store/apps/details?id=org.avatechnologies.whisper"><img src="./.github/assets/badge-download-on-google-play.png" width="120" alt="Get it on Google Play"></a><br>
+      <a href="https://play.google.com/store/apps/details?id=org.avatechnologies.whisper">Google Play</a>
+    </td>
+  </tr>
+</table>
 
 ## Community
 
