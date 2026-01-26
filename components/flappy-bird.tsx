@@ -16,15 +16,15 @@ import {
 } from "@shopify/react-native-skia";
 import * as Haptics from "expo-haptics";
 import { useCallback, useRef, useState } from "react";
-import { useWindowDimensions } from "react-native";
-import { Gesture, GestureDetector } from "react-native-gesture-handler";
+import { Pressable, useWindowDimensions } from "react-native";
 import {
-	useSharedValue,
-	useDerivedValue,
 	runOnJS,
-	useFrameCallback,
 	type SharedValue,
+	useDerivedValue,
+	useFrameCallback,
+	useSharedValue,
 } from "react-native-reanimated";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useValue } from "tinybase/ui-react";
 
 // Game constants
@@ -92,30 +92,89 @@ function Pipe({
 	const topCapY = useDerivedValue(() => pipeGapY.value - 24);
 	const bottomY = useDerivedValue(() => pipeGapY.value + PIPE_GAP);
 	const bottomPipeY = useDerivedValue(() => pipeGapY.value + PIPE_GAP + 24);
-	const bottomHeight = useDerivedValue(() => gameHeight - GROUND_HEIGHT - pipeGapY.value - PIPE_GAP);
+	const bottomHeight = useDerivedValue(
+		() => gameHeight - GROUND_HEIGHT - pipeGapY.value - PIPE_GAP,
+	);
 	const opacity = useDerivedValue(() => (pipeActive.value ? 1 : 0));
 
 	return (
 		<Group transform={transform} opacity={opacity}>
 			{/* Top pipe */}
-			<RoundedRect x={0} y={-8} width={PIPE_WIDTH} height={topHeight} r={0} color={primaryColor} />
-			<RoundedRect x={-4} y={topCapY} width={PIPE_WIDTH + 8} height={24} r={4} color={primaryColor} />
+			<RoundedRect
+				x={0}
+				y={-8}
+				width={PIPE_WIDTH}
+				height={topHeight}
+				r={0}
+				color={primaryColor}
+			/>
+			<RoundedRect
+				x={-4}
+				y={topCapY}
+				width={PIPE_WIDTH + 8}
+				height={24}
+				r={4}
+				color={primaryColor}
+			/>
 			{/* Top pipe shading */}
-			<RoundedRect x={4} y={0} width={8} height={topHeight} r={0} color="rgba(255,255,255,0.25)" />
-			<RoundedRect x={PIPE_WIDTH - 12} y={0} width={8} height={topHeight} r={0} color="rgba(0,0,0,0.15)" />
+			<RoundedRect
+				x={4}
+				y={0}
+				width={8}
+				height={topHeight}
+				r={0}
+				color="rgba(255,255,255,0.25)"
+			/>
+			<RoundedRect
+				x={PIPE_WIDTH - 12}
+				y={0}
+				width={8}
+				height={topHeight}
+				r={0}
+				color="rgba(0,0,0,0.15)"
+			/>
 
 			{/* Bottom pipe */}
-			<RoundedRect x={0} y={bottomPipeY} width={PIPE_WIDTH} height={bottomHeight} r={0} color={primaryColor} />
-			<RoundedRect x={-4} y={bottomY} width={PIPE_WIDTH + 8} height={24} r={4} color={primaryColor} />
+			<RoundedRect
+				x={0}
+				y={bottomPipeY}
+				width={PIPE_WIDTH}
+				height={bottomHeight}
+				r={0}
+				color={primaryColor}
+			/>
+			<RoundedRect
+				x={-4}
+				y={bottomY}
+				width={PIPE_WIDTH + 8}
+				height={24}
+				r={4}
+				color={primaryColor}
+			/>
 			{/* Bottom pipe shading */}
-			<RoundedRect x={4} y={bottomY} width={8} height={bottomHeight} r={0} color="rgba(255,255,255,0.25)" />
-			<RoundedRect x={PIPE_WIDTH - 12} y={bottomY} width={8} height={bottomHeight} r={0} color="rgba(0,0,0,0.15)" />
+			<RoundedRect
+				x={4}
+				y={bottomY}
+				width={8}
+				height={bottomHeight}
+				r={0}
+				color="rgba(255,255,255,0.25)"
+			/>
+			<RoundedRect
+				x={PIPE_WIDTH - 12}
+				y={bottomY}
+				width={8}
+				height={bottomHeight}
+				r={0}
+				color="rgba(0,0,0,0.15)"
+			/>
 		</Group>
 	);
 }
 
 export function FlappyBird({ onClose, compact = false }: FlappyBirdProps) {
 	const { width: screenWidth, height: screenHeight } = useWindowDimensions();
+	const insets = useSafeAreaInsets();
 	const primaryColor = useColor("primary");
 	const backgroundColor = useColor("background");
 	const cardColor = useColor("card");
@@ -131,7 +190,9 @@ export function FlappyBird({ onClose, compact = false }: FlappyBirdProps) {
 	const BIRD_X = GAME_WIDTH * 0.2;
 
 	// React state - only for UI overlays (idle, game over, score display)
-	const [gameState, setGameState] = useState<"idle" | "playing" | "gameover">("idle");
+	const [gameState, setGameState] = useState<"idle" | "playing" | "gameover">(
+		"idle",
+	);
 	const [displayScore, setDisplayScore] = useState(0);
 
 	// Track game state in shared values for immediate UI thread detection
@@ -139,7 +200,9 @@ export function FlappyBird({ onClose, compact = false }: FlappyBirdProps) {
 	const isIdle = useSharedValue(true); // Start in idle state
 
 	// High score from TinyBase
-	const storedHighScore = useValue("flappy_bird_high_score") as number | undefined;
+	const storedHighScore = useValue("flappy_bird_high_score") as
+		| number
+		| undefined;
 	const highScore = storedHighScore ?? 0;
 	const highScoreRef = useRef(highScore);
 	highScoreRef.current = highScore;
@@ -195,24 +258,27 @@ export function FlappyBird({ onClose, compact = false }: FlappyBirdProps) {
 
 	// JS callbacks for sounds/haptics (called from worklet via runOnJS)
 	const onScore = useCallback(() => {
-		setDisplayScore(s => s + 1);
+		setDisplayScore((s) => s + 1);
 		playScore();
 		if (process.env.EXPO_OS === "ios") {
 			Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
 		}
 	}, [playScore]);
 
-	const onGameOver = useCallback((finalScore: number) => {
-		setGameState("gameover");
-		setDisplayScore(finalScore);
-		if (finalScore > highScoreRef.current) {
-			mainStore.setValue("flappy_bird_high_score", finalScore);
-		}
-		playHit();
-		if (process.env.EXPO_OS === "ios") {
-			Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
-		}
-	}, [playHit]);
+	const onGameOver = useCallback(
+		(finalScore: number) => {
+			setGameState("gameover");
+			setDisplayScore(finalScore);
+			if (finalScore > highScoreRef.current) {
+				mainStore.setValue("flappy_bird_high_score", finalScore);
+			}
+			playHit();
+			if (process.env.EXPO_OS === "ios") {
+				Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+			}
+		},
+		[playHit],
+	);
 
 	// Reset game state (called from JS thread)
 	const resetGameJS = useCallback(() => {
@@ -272,7 +338,10 @@ export function FlappyBird({ onClose, compact = false }: FlappyBirdProps) {
 		birdRotation.value = Math.min(Math.max(birdVelocity.value * 6, -30), 90);
 
 		// Ground/ceiling collision
-		if (birdY.value < 0 || birdY.value > GAME_HEIGHT - GROUND_HEIGHT - BIRD_SIZE) {
+		if (
+			birdY.value < 0 ||
+			birdY.value > GAME_HEIGHT - GROUND_HEIGHT - BIRD_SIZE
+		) {
 			isPlaying.value = false;
 			isGameOver.value = true;
 			runOnJS(onGameOver)(score.value);
@@ -357,29 +426,6 @@ export function FlappyBird({ onClose, compact = false }: FlappyBirdProps) {
 		}
 	}, []);
 
-	// Tap gesture runs entirely on UI thread for instant response
-	const tapGesture = Gesture.Tap()
-		.onStart(() => {
-			"worklet";
-			// Game over - ignore taps (must use restart button)
-			if (isGameOver.value) return;
-
-			// Idle state - start the game
-			if (isIdle.value) {
-				resetGameUI();
-				runOnJS(resetGameJS)();
-				birdVelocity.value = JUMP_FORCE;
-				runOnJS(onJumpJS)();
-				return;
-			}
-
-			// Playing - jump immediately on UI thread
-			if (isPlaying.value) {
-				birdVelocity.value = JUMP_FORCE;
-				runOnJS(onJumpJS)();
-			}
-		});
-
 	const restartGame = useCallback(() => {
 		// Reset UI thread state
 		resetGameUI();
@@ -388,17 +434,52 @@ export function FlappyBird({ onClose, compact = false }: FlappyBirdProps) {
 		onRestartJS();
 	}, [resetGameJS, onRestartJS]);
 
+	// JS-based tap handler for Pressable (more reliable on Android)
+	const handleTap = useCallback(() => {
+		// Game over - ignore taps (must use restart button)
+		if (isGameOver.value) return;
+
+		// Idle state - start the game
+		if (isIdle.value) {
+			resetGameUI();
+			resetGameJS();
+			birdVelocity.value = JUMP_FORCE;
+			onJumpJS();
+			return;
+		}
+
+		// Playing - jump
+		if (isPlaying.value) {
+			birdVelocity.value = JUMP_FORCE;
+			onJumpJS();
+		}
+	}, [resetGameJS, onJumpJS]);
+
 	const skyColors =
 		scheme === "dark"
-			? ["rgba(255,158,55,0.15)", "rgba(255,91,145,0.12)", "rgba(105,183,255,0.1)", "transparent"]
-			: ["rgba(255,158,55,0.12)", "rgba(255,91,145,0.1)", "rgba(105,183,255,0.08)", "transparent"];
+			? [
+					"rgba(255,158,55,0.15)",
+					"rgba(255,91,145,0.12)",
+					"rgba(105,183,255,0.1)",
+					"transparent",
+				]
+			: [
+					"rgba(255,158,55,0.12)",
+					"rgba(255,91,145,0.1)",
+					"rgba(105,183,255,0.08)",
+					"transparent",
+				];
 
 	return (
 		<View
 			style={{
 				flex: compact ? undefined : 1,
 				backgroundColor: compact ? "transparent" : backgroundColor,
-				padding: compact ? 0 : 16,
+				paddingTop: compact
+					? 0
+					: 16 + (process.env.EXPO_OS === "android" ? insets.top : 0),
+				paddingHorizontal: compact ? 0 : 16,
+				paddingBottom: compact ? 0 : 16,
 			}}
 		>
 			{/* Header */}
@@ -413,10 +494,16 @@ export function FlappyBird({ onClose, compact = false }: FlappyBirdProps) {
 			>
 				<View style={{ flexDirection: "row", gap: 16 }}>
 					<Text style={{ fontSize: compact ? 14 : 16, color: mutedColor }}>
-						Score: <Text style={{ fontWeight: "700", color: tealColor }}>{displayScore}</Text>
+						Score:{" "}
+						<Text style={{ fontWeight: "700", color: tealColor }}>
+							{displayScore}
+						</Text>
 					</Text>
 					<Text style={{ fontSize: compact ? 14 : 16, color: mutedColor }}>
-						Best: <Text style={{ fontWeight: "700", color: primaryColor }}>{highScore}</Text>
+						Best:{" "}
+						<Text style={{ fontWeight: "700", color: primaryColor }}>
+							{highScore}
+						</Text>
 					</Text>
 				</View>
 				{onClose && (
@@ -427,126 +514,225 @@ export function FlappyBird({ onClose, compact = false }: FlappyBirdProps) {
 			</View>
 
 			{/* Game Area */}
-			<GestureDetector gesture={tapGesture}>
-				<View
-					style={{
-						width: GAME_WIDTH,
-						height: GAME_HEIGHT,
-						borderRadius: 16,
-						overflow: "hidden",
-					}}
-				>
-					<Canvas style={{ width: GAME_WIDTH, height: GAME_HEIGHT }}>
-						{/* Background */}
-						<RoundedRect x={0} y={0} width={GAME_WIDTH} height={GAME_HEIGHT} r={16} color={cardColor} />
+			<View
+				style={{
+					width: GAME_WIDTH,
+					height: GAME_HEIGHT,
+					borderRadius: 16,
+					overflow: "hidden",
+				}}
+			>
+				<Canvas style={{ width: GAME_WIDTH, height: GAME_HEIGHT }}>
+					{/* Background */}
+					<RoundedRect
+						x={0}
+						y={0}
+						width={GAME_WIDTH}
+						height={GAME_HEIGHT}
+						r={16}
+						color={cardColor}
+					/>
 
-						{/* Sky gradient */}
-						<RoundedRect x={0} y={0} width={GAME_WIDTH} height={GAME_HEIGHT - GROUND_HEIGHT} r={16}>
-							<LinearGradient
-								start={vec(0, 0)}
-								end={vec(GAME_WIDTH * 0.3, GAME_HEIGHT - GROUND_HEIGHT)}
-								colors={skyColors}
-							/>
-						</RoundedRect>
-
-						{/* Pipes - each reads directly from shared values */}
-						<Pipe pipeX={pipe0X} pipeGapY={pipe0GapY} pipeActive={pipe0Active} gameHeight={GAME_HEIGHT} primaryColor={primaryColor} />
-						<Pipe pipeX={pipe1X} pipeGapY={pipe1GapY} pipeActive={pipe1Active} gameHeight={GAME_HEIGHT} primaryColor={primaryColor} />
-						<Pipe pipeX={pipe2X} pipeGapY={pipe2GapY} pipeActive={pipe2Active} gameHeight={GAME_HEIGHT} primaryColor={primaryColor} />
-						<Pipe pipeX={pipe3X} pipeGapY={pipe3GapY} pipeActive={pipe3Active} gameHeight={GAME_HEIGHT} primaryColor={primaryColor} />
-
-						{/* Bird */}
-						<Group transform={birdTransform}>
-							<Path
-								path={BIRD_PATH}
-								color={primaryColor}
-								style="stroke"
-								strokeWidth={2 * (BIRD_SIZE / 24)}
-								strokeCap="round"
-								strokeJoin="round"
-							/>
-						</Group>
-
-						{/* Ground */}
-						<RoundedRect
-							x={0}
-							y={GAME_HEIGHT - GROUND_HEIGHT}
-							width={GAME_WIDTH}
-							height={GROUND_HEIGHT}
-							r={0}
-							color={secondaryColor}
+					{/* Sky gradient */}
+					<RoundedRect
+						x={0}
+						y={0}
+						width={GAME_WIDTH}
+						height={GAME_HEIGHT - GROUND_HEIGHT}
+						r={16}
+					>
+						<LinearGradient
+							start={vec(0, 0)}
+							end={vec(GAME_WIDTH * 0.3, GAME_HEIGHT - GROUND_HEIGHT)}
+							colors={skyColors}
 						/>
-						<RoundedRect
-							x={0}
-							y={GAME_HEIGHT - GROUND_HEIGHT}
-							width={GAME_WIDTH}
-							height={4}
-							r={0}
-							color={`${mutedColor}4D`}
-						/>
-					</Canvas>
+					</RoundedRect>
 
-					{/* Idle overlay */}
-					{gameState === "idle" && (
-						<View
+					{/* Pipes - each reads directly from shared values */}
+					<Pipe
+						pipeX={pipe0X}
+						pipeGapY={pipe0GapY}
+						pipeActive={pipe0Active}
+						gameHeight={GAME_HEIGHT}
+						primaryColor={primaryColor}
+					/>
+					<Pipe
+						pipeX={pipe1X}
+						pipeGapY={pipe1GapY}
+						pipeActive={pipe1Active}
+						gameHeight={GAME_HEIGHT}
+						primaryColor={primaryColor}
+					/>
+					<Pipe
+						pipeX={pipe2X}
+						pipeGapY={pipe2GapY}
+						pipeActive={pipe2Active}
+						gameHeight={GAME_HEIGHT}
+						primaryColor={primaryColor}
+					/>
+					<Pipe
+						pipeX={pipe3X}
+						pipeGapY={pipe3GapY}
+						pipeActive={pipe3Active}
+						gameHeight={GAME_HEIGHT}
+						primaryColor={primaryColor}
+					/>
+
+					{/* Bird */}
+					<Group transform={birdTransform}>
+						<Path
+							path={BIRD_PATH}
+							color={primaryColor}
+							style="stroke"
+							strokeWidth={2 * (BIRD_SIZE / 24)}
+							strokeCap="round"
+							strokeJoin="round"
+						/>
+					</Group>
+
+					{/* Ground */}
+					<RoundedRect
+						x={0}
+						y={GAME_HEIGHT - GROUND_HEIGHT}
+						width={GAME_WIDTH}
+						height={GROUND_HEIGHT}
+						r={0}
+						color={secondaryColor}
+					/>
+					<RoundedRect
+						x={0}
+						y={GAME_HEIGHT - GROUND_HEIGHT}
+						width={GAME_WIDTH}
+						height={4}
+						r={0}
+						color={`${mutedColor}4D`}
+					/>
+				</Canvas>
+
+				{/* Idle overlay */}
+				{gameState === "idle" && (
+					<View
+						pointerEvents="none"
+						style={{
+							position: "absolute",
+							top: 0,
+							left: 0,
+							right: 0,
+							bottom: GROUND_HEIGHT,
+							justifyContent: "center",
+							alignItems: "center",
+							backgroundColor: "rgba(0,0,0,0.4)",
+							borderTopLeftRadius: 16,
+							borderTopRightRadius: 16,
+						}}
+					>
+						<Text
 							style={{
-								position: "absolute",
-								top: 0,
-								left: 0,
-								right: 0,
-								bottom: GROUND_HEIGHT,
-								justifyContent: "center",
-								alignItems: "center",
-								backgroundColor: "rgba(0,0,0,0.4)",
-								borderTopLeftRadius: 16,
-								borderTopRightRadius: 16,
+								fontSize: compact ? 24 : 32,
+								fontWeight: "800",
+								color: "#fff",
+								marginBottom: 8,
 							}}
 						>
-							<Text style={{ fontSize: compact ? 24 : 32, fontWeight: "800", color: "#fff", marginBottom: 8 }}>
-								Flappy Bird
-							</Text>
-							<Text style={{ fontSize: compact ? 14 : 18, color: "#fff", opacity: 0.9 }}>Tap to start</Text>
-						</View>
-					)}
-
-					{/* Game over overlay */}
-					{gameState === "gameover" && (
-						<View
+							Flappy Bird
+						</Text>
+						<Text
 							style={{
-								position: "absolute",
-								top: 0,
-								left: 0,
-								right: 0,
-								bottom: GROUND_HEIGHT,
-								justifyContent: "center",
-								alignItems: "center",
-								backgroundColor: "rgba(0,0,0,0.8)",
-								borderTopLeftRadius: 16,
-								borderTopRightRadius: 16,
+								fontSize: compact ? 14 : 18,
+								color: "#fff",
+								opacity: 0.9,
 							}}
 						>
-							<Text style={{ fontSize: compact ? 24 : 32, fontWeight: "800", color: "#fff", marginBottom: 8 }}>
-								Game Over
+							Tap to start
+						</Text>
+					</View>
+				)}
+
+				{/* Game over overlay */}
+				{gameState === "gameover" && (
+					<View
+						pointerEvents="box-none"
+						style={{
+							position: "absolute",
+							top: 0,
+							left: 0,
+							right: 0,
+							bottom: GROUND_HEIGHT,
+							justifyContent: "center",
+							alignItems: "center",
+							backgroundColor: "rgba(0,0,0,0.8)",
+							borderTopLeftRadius: 16,
+							borderTopRightRadius: 16,
+						}}
+					>
+						<Text
+							style={{
+								fontSize: compact ? 24 : 32,
+								fontWeight: "800",
+								color: "#fff",
+								marginBottom: 8,
+							}}
+						>
+							Game Over
+						</Text>
+						<Text
+							style={{
+								fontSize: compact ? 18 : 24,
+								fontWeight: "600",
+								color: "#fff",
+								marginBottom: 4,
+							}}
+						>
+							Score: {displayScore}
+						</Text>
+						{displayScore === highScore && displayScore > 0 && (
+							<Text
+								style={{
+									fontSize: compact ? 14 : 16,
+									color: tealColor,
+									fontWeight: "600",
+									marginBottom: 8,
+								}}
+							>
+								New High Score!
 							</Text>
-							<Text style={{ fontSize: compact ? 18 : 24, fontWeight: "600", color: "#fff", marginBottom: 4 }}>
-								Score: {displayScore}
-							</Text>
-							{displayScore === highScore && displayScore > 0 && (
-								<Text style={{ fontSize: compact ? 14 : 16, color: tealColor, fontWeight: "600", marginBottom: 8 }}>
-									New High Score!
-								</Text>
-							)}
-							<Button onPress={restartGame} variant="default" size={compact ? "sm" : "default"} style={{ marginTop: 16 }}>
-								Try Again
-							</Button>
-						</View>
-					)}
-				</View>
-			</GestureDetector>
+						)}
+						<Button
+							onPress={restartGame}
+							variant="default"
+							size={compact ? "sm" : "default"}
+							style={{ marginTop: 16 }}
+						>
+							Try Again
+						</Button>
+					</View>
+				)}
+
+				{/* Touch layer - handles taps for starting game and jumping */}
+				{gameState !== "gameover" && (
+					<Pressable
+						onPress={handleTap}
+						style={{
+							position: "absolute",
+							top: 0,
+							left: 0,
+							right: 0,
+							bottom: 0,
+						}}
+					/>
+				)}
+			</View>
 
 			{/* Instructions */}
 			{!compact && (
-				<Text style={{ fontSize: 14, color: mutedColor, textAlign: "center", marginTop: 12 }}>
+				<Text
+					style={{
+						fontSize: 14,
+						color: mutedColor,
+						textAlign: "center",
+						marginTop: 12,
+					}}
+				>
 					Tap anywhere to flap!
 				</Text>
 			)}
