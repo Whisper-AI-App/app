@@ -6,18 +6,11 @@
 
 ## Download the App
 
-<table border="0" cellspacing="0" cellpadding="0">
-  <tr>
-    <td align="center">
-      <a href="https://apps.apple.com/us/app/whisper-ai/id6754563737"><img src="./.github/assets/badge-download-on-app-store.svg" alt="Download on the App Store" height="40"></a><br>
-      <a href="https://apps.apple.com/us/app/whisper-ai/id6754563737">App Store</a>
-    </td>
-    <td align="center">
-      <a href="https://play.google.com/store/apps/details?id=org.avatechnologies.whisper"><img src="./.github/assets/badge-download-on-google-play.svg" alt="Get it on Google Play" height="40"></a><br>
-      <a href="https://play.google.com/store/apps/details?id=org.avatechnologies.whisper">Google Play</a>
-    </td>
-  </tr>
-</table>
+<a href="https://apps.apple.com/us/app/whisper-ai/id6754563737"><img src="./.github/assets/badge-download-on-app-store.svg" alt="Download on the App Store" height="40"></a>&nbsp;&nbsp;<a href="https://play.google.com/store/apps/details?id=org.avatechnologies.whisper"><img src="./.github/assets/badge-download-on-google-play.svg" alt="Get it on Google Play" height="40"></a>
+
+- iOS / Apple - download on the [App Store](https://apps.apple.com/us/app/whisper-ai/id6754563737)
+
+- Android - get it on [Google Play](https://play.google.com/store/apps/details?id=org.avatechnologies.whisper)
 
 ## Community
 
