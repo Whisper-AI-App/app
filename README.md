@@ -13,7 +13,7 @@
       <a href="https://apps.apple.com/us/app/whisper-ai/id6754563737">App Store</a>
     </td>
     <td align="center">
-      <a href="https://play.google.com/store/apps/details?id=org.avatechnologies.whisper"><img src="https://play.google.com/intl/en_us/badges/images/generic/en_badge_web_generic.png" alt="Get it on Google Play"></a><br>
+      <a href="https://play.google.com/store/apps/details?id=org.avatechnologies.whisper"><img src="./.github/assets/badge-download-on-google-play.png" alt="Get it on Google Play"></a><br>
       <a href="https://play.google.com/store/apps/details?id=org.avatechnologies.whisper">Google Play</a>
     </td>
   </tr>
