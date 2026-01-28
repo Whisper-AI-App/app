@@ -79,7 +79,7 @@ interface ErrorFallbackProps {
  * Default fallback UI displayed when an error is caught.
  * Can be used standalone or as part of ErrorBoundary.
  */
-export function ErrorFallback({
+function ErrorFallback({
 	error,
 	onReset,
 	title = "Something went wrong",
@@ -190,7 +190,7 @@ export function ErrorFallback({
 /**
  * Compact error fallback for use in smaller UI areas (e.g., within a screen section).
  */
-export function CompactErrorFallback({
+function CompactErrorFallback({
 	error: _error,
 	onReset,
 	message = "Something went wrong",

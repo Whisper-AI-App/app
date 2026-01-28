@@ -115,7 +115,7 @@ const AnimatedBar = React.memo(
 );
 
 // Main Spinner Component
-export function Spinner({
+function Spinner({
 	size = "default",
 	variant = "default",
 	label,
@@ -340,7 +340,7 @@ export function Spinner({
 }
 
 // Loading Overlay Component
-export function LoadingOverlay({
+function LoadingOverlay({
 	visible,
 	backdrop = true,
 	backdropColor,
@@ -386,7 +386,7 @@ export function LoadingOverlay({
 }
 
 // Inline Loader Component (for buttons, etc.)
-export function InlineLoader({
+function InlineLoader({
 	size = "sm",
 	variant = "default",
 	color,

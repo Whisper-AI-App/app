@@ -41,7 +41,7 @@ export function generateModelFileName(
  * Parses a model filename to extract version and hash
  * Returns null if filename doesn't match expected format
  */
-export function parseModelFileName(
+function parseModelFileName(
 	filename: string,
 ): { name: string; version: string; hash: string } | null {
 	// Match pattern: anything-vX.Y.Z-hash.gguf

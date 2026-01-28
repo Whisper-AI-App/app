@@ -346,7 +346,7 @@ export function BottomSheet({
 }
 
 // Hook for managing bottom sheet state
-export function useBottomSheet() {
+function useBottomSheet() {
 	const [isVisible, setIsVisible] = React.useState(false);
 
 	const open = React.useCallback(() => {

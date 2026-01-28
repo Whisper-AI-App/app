@@ -344,7 +344,7 @@ interface PopoverHeaderProps {
 	style?: ViewStyle;
 }
 
-export function PopoverHeader({ children, style }: PopoverHeaderProps) {
+function PopoverHeader({ children, style }: PopoverHeaderProps) {
 	const borderColor = useColor("border");
 
 	return (
@@ -360,7 +360,7 @@ interface PopoverBodyProps {
 	style?: ViewStyle;
 }
 
-export function PopoverBody({ children, style }: PopoverBodyProps) {
+function PopoverBody({ children, style }: PopoverBodyProps) {
 	return <View style={[styles.body, style]}>{children}</View>;
 }
 
@@ -370,7 +370,7 @@ interface PopoverFooterProps {
 	style?: ViewStyle;
 }
 
-export function PopoverFooter({ children, style }: PopoverFooterProps) {
+function PopoverFooter({ children, style }: PopoverFooterProps) {
 	const borderColor = useColor("border");
 
 	return (
@@ -387,7 +387,7 @@ interface PopoverCloseProps {
 	style?: ViewStyle;
 }
 
-export function PopoverClose({
+function PopoverClose({
 	children,
 	asChild = false,
 	style,

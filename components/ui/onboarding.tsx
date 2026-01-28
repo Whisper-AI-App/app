@@ -328,7 +328,7 @@ const styles = StyleSheet.create({
 });
 
 // Onboarding Hook for managing state
-export function useOnboarding() {
+function useOnboarding() {
 	const [hasCompletedOnboarding, setHasCompletedOnboarding] = useState(false);
 	const [currentOnboardingStep, setCurrentOnboardingStep] = useState(0);
 

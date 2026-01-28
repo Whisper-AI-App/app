@@ -174,7 +174,7 @@ interface SearchBarWithSuggestionsProps extends SearchBarProps {
 	showSuggestions?: boolean;
 }
 
-export function SearchBarWithSuggestions({
+function SearchBarWithSuggestions({
 	suggestions = [],
 	onSuggestionPress,
 	maxSuggestions = 5,

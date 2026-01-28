@@ -15,7 +15,7 @@ import {
 	type ViewStyle,
 } from "react-native";
 
-export interface InputProps extends Omit<TextInputProps, "style"> {
+interface InputProps extends Omit<TextInputProps, "style"> {
 	label?: string;
 	error?: string;
 	icon?: React.ComponentType<LucideProps>;
@@ -315,14 +315,14 @@ export const Input = forwardRef<TextInput, InputProps>(
 	},
 );
 
-export interface GroupedInputProps {
+interface GroupedInputProps {
 	children: React.ReactNode;
 	containerStyle?: ViewStyle;
 	title?: string;
 	titleStyle?: TextStyle;
 }
 
-export const GroupedInput = ({
+const GroupedInput = ({
 	children,
 	containerStyle,
 	title,
@@ -401,7 +401,7 @@ export const GroupedInput = ({
 	return renderGroupedContent();
 };
 
-export interface GroupedInputItemProps extends Omit<TextInputProps, "style"> {
+interface GroupedInputItemProps extends Omit<TextInputProps, "style"> {
 	label?: string;
 	error?: string;
 	icon?: React.ComponentType<LucideProps>;
@@ -414,7 +414,7 @@ export interface GroupedInputItemProps extends Omit<TextInputProps, "style"> {
 	rows?: number; // Only used when type="textarea"
 }
 
-export const GroupedInputItem = forwardRef<TextInput, GroupedInputItemProps>(
+const GroupedInputItem = forwardRef<TextInput, GroupedInputItemProps>(
 	(
 		{
 			label,
