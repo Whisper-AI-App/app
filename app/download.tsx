@@ -93,6 +93,9 @@ export default function Download() {
 			if (!onboardedAt) {
 				completeOnboarding();
 			}
+
+			// Navigate to dashboard now that download is complete
+			router.replace("/dashboard");
 		}
 	}, [downloadedAt, onboardedAt, fileRemoved, router]);
 
@@ -127,8 +130,7 @@ export default function Download() {
 				restart,
 			);
 			// Download will continue in background, progress tracked via tinybase
-
-			router.replace("/dashboard");
+			// Navigation happens when downloadedAt is set (see useEffect above)
 		} catch (err) {
 			console.error(err);
 			setError("Failed to download, try again");
