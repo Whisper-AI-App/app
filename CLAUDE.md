@@ -20,14 +20,14 @@ Whisper is a 100% private AI chat application built with React Native and Expo. 
 
 ```bash
 # Install dependencies
-pnpm install
+npm install
 
 # Run on specific platforms
-pnpm android
-pnpm ios
+npm run android
+npm run ios
 
 # Lint
-pnpm lint
+npm run lint
 ```
 
 ## Architecture
