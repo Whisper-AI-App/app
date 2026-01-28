@@ -266,7 +266,6 @@ function generateCredits() {
 
 	// Write to output file
 	const output = {
-		generatedAt: new Date().toISOString(),
 		credits,
 		creditsBySection,
 	};
