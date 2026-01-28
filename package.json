@@ -20,7 +20,9 @@
 		"node:version": "node --version",
 		"generate-credits": "node ./scripts/generate-credits.js",
 		"postinstall": "node ./scripts/generate-credits.js",
-		"knip": "knip"
+		"knip": "knip",
+		"semgrep": "semgrep scan --config auto",
+		"audit": "pnpm audit --audit-level=high"
 	},
 	"dependencies": {
 		"@expo-google-fonts/inter": "^0.4.2",
@@ -82,6 +84,13 @@
 		"jest-expo": "^54.0.16",
 		"typescript": "~5.9.2",
 		"knip": "^5"
+	},
+	"pnpm": {
+		"overrides": {
+			"glob@>=10.2.0 <10.5.0": ">=10.5.0",
+			"node-forge@<1.3.2": ">=1.3.2",
+			"tar@<=7.5.3": ">=7.5.4"
+		}
 	},
 	"private": true
 }
