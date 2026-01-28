@@ -61,7 +61,7 @@
 		"react-native": "0.81.5",
 		"react-native-gesture-handler": "~2.28.0",
 		"react-native-get-random-values": "^2.0.0",
-		"react-native-gifted-chat": "^2.6.5",
+		"react-native-gifted-chat": "^3.3.2",
 		"react-native-keyboard-controller": "1.18.5",
 		"react-native-marked": "^7.0.2",
 		"react-native-reanimated": "~4.1.1",
