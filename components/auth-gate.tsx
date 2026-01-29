@@ -56,7 +56,7 @@ export function AuthGate({ children }: AuthGateProps) {
 	// Show lock screen
 	return (
 		<View style={{ flex: 1, backgroundColor: theme.background }}>
-			<GradientBackground variant="animated" />
+			<GradientBackground variant="simple" />
 
 			<SafeAreaView style={{ flex: 1 }}>
 				<View
