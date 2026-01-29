@@ -104,7 +104,7 @@
       "packages": [
         "react-native-safe-area-context"
       ],
-      "url": "https://github.com/th3rdwave/react-native-safe-area-context#readme",
+      "url": "https://github.com/AppAndFlow/react-native-safe-area-context#readme",
       "priority": 50,
       "section": "libraries"
     },
@@ -272,7 +272,7 @@
         "packages": [
           "react-native-safe-area-context"
         ],
-        "url": "https://github.com/th3rdwave/react-native-safe-area-context#readme",
+        "url": "https://github.com/AppAndFlow/react-native-safe-area-context#readme",
         "priority": 50,
         "section": "libraries"
       },
