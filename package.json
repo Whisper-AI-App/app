@@ -21,7 +21,8 @@
 		"generate-credits": "node ./scripts/generate-credits.js",
 		"postinstall": "node ./scripts/generate-credits.js",
 		"semgrep": "semgrep scan --config auto",
-		"audit": "npm audit"
+		"audit": "npm audit",
+		"knip": "knip"
 	},
 	"dependencies": {
 		"@expo-google-fonts/inter": "^0.4.2",
