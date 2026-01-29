@@ -38,6 +38,9 @@ importers:
       expo:
         specifier: ~54.0.22
         version: 54.0.22(@babel/core@7.28.4)(@expo/metro-runtime@6.1.2)(expo-router@6.0.14)(react-native@0.81.5(@babel/core@7.28.4)(@types/react@19.1.16)(react@19.1.0))(react@19.1.0)
+      expo-alternate-app-icons:
+        specifier: ^7.0.0
+        version: 7.0.0(expo@54.0.22)(react-native@0.81.5(@babel/core@7.28.4)(@types/react@19.1.16)(react@19.1.0))(react@19.1.0)
       expo-av:
         specifier: ^16.0.8
         version: 16.0.8(expo@54.0.22)(react-native-web@0.21.1(react-dom@19.1.0(react@19.1.0))(react@19.1.0))(react-native@0.81.5(@babel/core@7.28.4)(@types/react@19.1.16)(react@19.1.0))(react@19.1.0)
@@ -2813,6 +2816,13 @@ packages:
   expect@29.7.0:
     resolution: {integrity: sha512-2Zks0hf1VLFYI1kbh0I5jP3KHHyCHpkfyHBzsSXRFgl/Bg9mWYfMW8oD+PdMPlEwy5HNsR9JutYy6pMeOh61nw==}
     engines: {node: ^14.15.0 || ^16.10.0 || >=18.0.0}
+
+  expo-alternate-app-icons@7.0.0:
+    resolution: {integrity: sha512-1yZfYI0DOWzk15hpGY1GF88axVJyX5RNprXBh/UUl4Pd68IBBPNXGKMcBAGlAxIVy70C8APaKLvf76VWeWapqQ==}
+    peerDependencies:
+      expo: '>=53'
+      react: '*'
+      react-native: '*'
 
   expo-asset@12.0.9:
     resolution: {integrity: sha512-vrdRoyhGhBmd0nJcssTSk1Ypx3Mbn/eXaaBCQVkL0MJ8IOZpAObAjfD5CTy8+8RofcHEQdh3wwZVCs7crvfOeg==}
@@ -8808,6 +8818,12 @@ snapshots:
       jest-matcher-utils: 29.7.0
       jest-message-util: 29.7.0
       jest-util: 29.7.0
+
+  expo-alternate-app-icons@7.0.0(expo@54.0.22)(react-native@0.81.5(@babel/core@7.28.4)(@types/react@19.1.16)(react@19.1.0))(react@19.1.0):
+    dependencies:
+      expo: 54.0.22(@babel/core@7.28.4)(@expo/metro-runtime@6.1.2)(expo-router@6.0.14)(react-native@0.81.5(@babel/core@7.28.4)(@types/react@19.1.16)(react@19.1.0))(react@19.1.0)
+      react: 19.1.0
+      react-native: 0.81.5(@babel/core@7.28.4)(@types/react@19.1.16)(react@19.1.0)
 
   expo-asset@12.0.9(expo@54.0.22)(react-native@0.81.5(@babel/core@7.28.4)(@types/react@19.1.16)(react@19.1.0))(react@19.1.0):
     dependencies:

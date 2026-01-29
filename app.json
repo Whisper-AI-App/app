@@ -62,7 +62,60 @@
 					"enableOpenCLAndHexagon": true
 				}
 			],
-			"expo-web-browser"
+			"expo-web-browser",
+			[
+				"expo-alternate-app-icons",
+				[
+					{
+						"name": "BlackAndWhite",
+						"ios": "./assets/images/icon-variants/black-and-white-iOS-Default-1024x1024@1x.png",
+						"android": {
+							"foregroundImage": "./assets/images/icon-variants/black-and-white-adaptive.png",
+							"backgroundColor": "#111111"
+						}
+					},
+					{
+						"name": "DarkBlueAndPurple",
+						"ios": "./assets/images/icon-variants/dark-blue-and-purple-iOS-Default-1024x1024@1x.png",
+						"android": {
+							"foregroundImage": "./assets/images/icon-variants/dark-blue-and-purple-adaptive.png",
+							"backgroundColor": "#111111"
+						}
+					},
+					{
+						"name": "DarkBlue",
+						"ios": "./assets/images/icon-variants/dark-blue-iOS-Default-1024x1024@1x.png",
+						"android": {
+							"foregroundImage": "./assets/images/icon-variants/dark-blue-adaptive.png",
+							"backgroundColor": "#111111"
+						}
+					},
+					{
+						"name": "Green",
+						"ios": "./assets/images/icon-variants/green-iOS-Default-1024x1024@1x.png",
+						"android": {
+							"foregroundImage": "./assets/images/icon-variants/green-adaptive.png",
+							"backgroundColor": "#111111"
+						}
+					},
+					{
+						"name": "LightBlueAndPink",
+						"ios": "./assets/images/icon-variants/light-blue-and-pink-iOS-Default-1024x1024@1x.png",
+						"android": {
+							"foregroundImage": "./assets/images/icon-variants/light-blue-and-pink-adaptive.png",
+							"backgroundColor": "#111111"
+						}
+					},
+					{
+						"name": "OrangeAndPink",
+						"ios": "./assets/images/icon-variants/orange-and-pink-iOS-Default-1024x1024@1x.png",
+						"android": {
+							"foregroundImage": "./assets/images/icon-variants/orange-and-pink-adaptive.png",
+							"backgroundColor": "#111111"
+						}
+					}
+				]
+			]
 		],
 		"experiments": {
 			"typedRoutes": true,
