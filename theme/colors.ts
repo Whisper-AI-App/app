@@ -155,4 +155,8 @@ export const Colors = {
 	dark: darkColors,
 };
 
+// Export individual color schemes for easier access
+export { darkColors, lightColors };
 
+// Utility type for color keys
+export type ColorKeys = keyof typeof lightColors;

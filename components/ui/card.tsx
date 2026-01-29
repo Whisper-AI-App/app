@@ -40,7 +40,7 @@ interface CardHeaderProps {
 	style?: ViewStyle;
 }
 
-function CardHeader({ children, style }: CardHeaderProps) {
+export function CardHeader({ children, style }: CardHeaderProps) {
 	return <View style={[{ marginBottom: 8 }, style]}>{children}</View>;
 }
 
@@ -49,7 +49,7 @@ interface CardTitleProps {
 	style?: TextStyle;
 }
 
-function CardTitle({ children, style }: CardTitleProps) {
+export function CardTitle({ children, style }: CardTitleProps) {
 	return (
 		<Text
 			variant="title"
@@ -70,7 +70,7 @@ interface CardDescriptionProps {
 	style?: TextStyle;
 }
 
-function CardDescription({ children, style }: CardDescriptionProps) {
+export function CardDescription({ children, style }: CardDescriptionProps) {
 	return (
 		<Text variant="caption" style={[style]}>
 			{children}
@@ -92,7 +92,7 @@ interface CardFooterProps {
 	style?: ViewStyle;
 }
 
-function CardFooter({ children, style }: CardFooterProps) {
+export function CardFooter({ children, style }: CardFooterProps) {
 	return (
 		<View
 			style={[
