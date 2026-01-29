@@ -33,7 +33,7 @@ export type ButtonVariant =
 
 export type ButtonSize = "default" | "sm" | "lg" | "icon";
 
-interface ButtonProps extends Omit<TouchableOpacityProps, "style"> {
+export interface ButtonProps extends Omit<TouchableOpacityProps, "style"> {
 	label?: string;
 	children?: React.ReactNode;
 	animation?: boolean;

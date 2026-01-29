@@ -86,7 +86,7 @@ export function Sheet({
 	);
 }
 
-function SheetTrigger({ children, asChild }: SheetTriggerProps) {
+export function SheetTrigger({ children, asChild }: SheetTriggerProps) {
 	const context = React.useContext(SheetContext);
 
 	const handlePress = () => {
