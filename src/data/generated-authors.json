@@ -48,12 +48,12 @@
     },
     {
       "author": "650 Industries, Inc.",
-      "description": "Contributing 22 open source libraries",
+      "description": "Contributing 20 open source libraries",
       "packages": [
         "expo-av",
-        "expo-blur",
         "expo-clipboard",
-        "+ 19 more"
+        "expo-constants",
+        "+ 17 more"
       ],
       "priority": 50,
       "section": "libraries"
@@ -70,11 +70,11 @@
     },
     {
       "author": "Expo Team",
-      "description": "Contributing 2 open source libraries",
+      "description": "Creator of @expo-google-fonts/inter",
       "packages": [
-        "@expo-google-fonts/inter",
-        "@expo-google-fonts/lexend"
+        "@expo-google-fonts/inter"
       ],
+      "url": "https://github.com/expo/google-fonts/tree/master/font-packages/inter#readme",
       "priority": 50,
       "section": "libraries"
     },
@@ -104,7 +104,7 @@
       "packages": [
         "react-native-safe-area-context"
       ],
-      "url": "https://github.com/th3rdwave/react-native-safe-area-context#readme",
+      "url": "https://github.com/AppAndFlow/react-native-safe-area-context#readme",
       "priority": 50,
       "section": "libraries"
     },
@@ -151,12 +151,12 @@
     },
     {
       "author": "Other Libraries",
-      "description": "Contributing 9 open source libraries",
+      "description": "Contributing 7 open source libraries",
       "packages": [
         "@mote-software/tinybase-persister-expo-file-system",
-        "@react-navigation/bottom-tabs",
-        "@react-navigation/elements",
-        "+ 6 more"
+        "@react-navigation/native",
+        "react-native-get-random-values",
+        "+ 4 more"
       ],
       "priority": 99,
       "section": "libraries"
@@ -216,12 +216,12 @@
     "libraries": [
       {
         "author": "650 Industries, Inc.",
-        "description": "Contributing 22 open source libraries",
+        "description": "Contributing 20 open source libraries",
         "packages": [
           "expo-av",
-          "expo-blur",
           "expo-clipboard",
-          "+ 19 more"
+          "expo-constants",
+          "+ 17 more"
         ],
         "priority": 50,
         "section": "libraries"
@@ -238,11 +238,11 @@
       },
       {
         "author": "Expo Team",
-        "description": "Contributing 2 open source libraries",
+        "description": "Creator of @expo-google-fonts/inter",
         "packages": [
-          "@expo-google-fonts/inter",
-          "@expo-google-fonts/lexend"
+          "@expo-google-fonts/inter"
         ],
+        "url": "https://github.com/expo/google-fonts/tree/master/font-packages/inter#readme",
         "priority": 50,
         "section": "libraries"
       },
@@ -272,7 +272,7 @@
         "packages": [
           "react-native-safe-area-context"
         ],
-        "url": "https://github.com/th3rdwave/react-native-safe-area-context#readme",
+        "url": "https://github.com/AppAndFlow/react-native-safe-area-context#readme",
         "priority": 50,
         "section": "libraries"
       },
@@ -319,12 +319,12 @@
       },
       {
         "author": "Other Libraries",
-        "description": "Contributing 9 open source libraries",
+        "description": "Contributing 7 open source libraries",
         "packages": [
           "@mote-software/tinybase-persister-expo-file-system",
-          "@react-navigation/bottom-tabs",
-          "@react-navigation/elements",
-          "+ 6 more"
+          "@react-navigation/native",
+          "react-native-get-random-values",
+          "+ 4 more"
         ],
         "priority": 99,
         "section": "libraries"

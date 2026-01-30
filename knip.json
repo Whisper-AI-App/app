@@ -1,0 +1,13 @@
+{
+	"$schema": "https://unpkg.com/knip@5/schema.json",
+	"project": ["**/*.{ts,tsx}"],
+	"ignore": ["**/*.test.{ts,tsx}", "**/__tests__/**"],
+	"ignoreDependencies": ["@types/uuid", "expo-updates"],
+	"rules": {
+		"exports": "off",
+		"types": "off"
+	},
+	"expo": {
+		"entry": ["app/**/*.{ts,tsx}"]
+	}
+}

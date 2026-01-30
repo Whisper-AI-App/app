@@ -4,25 +4,6 @@ import type { IMessage } from "react-native-gifted-chat";
  * Shared type definitions for chat feature
  */
 
-export interface ChatMessage {
-	_id: string;
-	text: string;
-	createdAt: Date;
-	user: {
-		_id: number;
-		name: string;
-	};
-}
-
-export interface ChatState {
-	currentChatId: string | undefined;
-	isAiTyping: boolean;
-	streamingText: string;
-	inputText: string;
-	isMenuOpen: boolean;
-	isInputFocused: boolean;
-}
-
 export interface ChatRenderersProps {
 	setIsInputFocused: (focused: boolean) => void;
 	isTyping?: boolean;
