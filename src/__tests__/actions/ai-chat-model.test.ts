@@ -128,6 +128,22 @@ const mockWhisperLLMCardsJson = {
 	},
 };
 
+// Mock the constants module to avoid circular dependency issues
+jest.mock("../../actions/ai/constants", () => ({
+	DEFAULT_AI_CHAT_MODEL: {
+		name: "Default Test Model",
+		type: "gguf" as const,
+		sourceUrl: "https://example.com/default-model.gguf",
+		sizeGB: 0.5,
+		parametersB: 0.5,
+		ramGB: 2,
+		systemMessage: {
+			template: "You are a helpful assistant.",
+			defaultTemplateValues: {},
+		},
+	},
+}));
+
 // Mock utility functions
 jest.mock("../../utils/bytes", () => ({
 	bytesToGB: jest.fn((bytes: number) => bytes / (1024 * 1024 * 1024)),

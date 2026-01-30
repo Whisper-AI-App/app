@@ -38,13 +38,14 @@ describe("store schema sync validation", () => {
 	});
 
 	describe("cell schema completeness", () => {
-		it("chats table should have id, name, createdAt cells", () => {
+		it("chats table should have id, name, createdAt, folderId cells", () => {
 			const chatCells = Object.keys(tablesSchemaMainStore.chats);
 
 			expect(chatCells).toContain("id");
 			expect(chatCells).toContain("name");
 			expect(chatCells).toContain("createdAt");
-			expect(chatCells).toHaveLength(3);
+			expect(chatCells).toContain("folderId");
+			expect(chatCells).toHaveLength(4);
 		});
 
 		it("messages table should have id, chatId, contents, role, createdAt cells", () => {
