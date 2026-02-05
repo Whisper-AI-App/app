@@ -55,7 +55,7 @@
 		"llama.rn": "^0.11.0-rc.3",
 		"lucide-react-native": "^0.544.0",
 		"react": "19.1.0",
-		"react-dom": "19.1.0",
+		"react-dom": "19.2.4",
 		"react-native": "0.81.5",
 		"react-native-gesture-handler": "~2.28.0",
 		"react-native-get-random-values": "^2.0.0",
