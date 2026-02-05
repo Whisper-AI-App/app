@@ -8,6 +8,7 @@ import {
 const mockGetInfoAsync = jest.fn();
 const mockDeleteAsync = jest.fn();
 const mockCopyAsync = jest.fn();
+const mockMoveAsync = jest.fn();
 
 jest.mock("expo-file-system/legacy", () => {
 	return {
@@ -16,6 +17,7 @@ jest.mock("expo-file-system/legacy", () => {
 		getInfoAsync: (...args: unknown[]) => mockGetInfoAsync(...args),
 		deleteAsync: (...args: unknown[]) => mockDeleteAsync(...args),
 		copyAsync: (...args: unknown[]) => mockCopyAsync(...args),
+		moveAsync: (...args: unknown[]) => mockMoveAsync(...args),
 	};
 });
 
@@ -33,6 +35,21 @@ jest.mock("expo-image-picker", () => ({
 		mockRequestMediaLibraryPermissionsAsync(...args),
 	launchImageLibraryAsync: (...args: unknown[]) =>
 		mockLaunchImageLibraryAsync(...args),
+}));
+
+// Mock expo-image-manipulator
+const mockSaveAsync = jest.fn();
+const mockRenderAsync = jest.fn();
+const mockResize = jest.fn();
+const mockManipulate = jest.fn();
+
+jest.mock("expo-image-manipulator", () => ({
+	ImageManipulator: {
+		manipulate: (...args: unknown[]) => mockManipulate(...args),
+	},
+	SaveFormat: {
+		JPEG: "jpeg",
+	},
 }));
 
 // Import the functions under test AFTER mocks
@@ -53,12 +70,24 @@ describe("chat-background actions", () => {
 		mockGetInfoAsync.mockReset();
 		mockDeleteAsync.mockReset();
 		mockCopyAsync.mockReset();
+		mockMoveAsync.mockReset();
 		mockRequestMediaLibraryPermissionsAsync.mockReset();
 		mockLaunchImageLibraryAsync.mockReset();
+		mockManipulate.mockReset();
+		mockResize.mockReset();
+		mockRenderAsync.mockReset();
+		mockSaveAsync.mockReset();
 
 		// Default: file doesn't exist (to avoid cleanup issues)
 		mockGetInfoAsync.mockResolvedValue({ exists: false });
 		mockDeleteAsync.mockResolvedValue(undefined);
+		mockMoveAsync.mockResolvedValue(undefined);
+
+		// Setup default image manipulator mock chain
+		mockSaveAsync.mockResolvedValue({ uri: "file:///processed/image.jpg" });
+		mockRenderAsync.mockResolvedValue({ saveAsync: mockSaveAsync });
+		mockResize.mockReturnValue({ renderAsync: mockRenderAsync });
+		mockManipulate.mockReturnValue({ resize: mockResize });
 
 		jest.useFakeTimers();
 		jest.setSystemTime(new Date("2024-01-15T10:30:00.000Z"));
@@ -268,12 +297,11 @@ describe("chat-background actions", () => {
 				canceled: false,
 				assets: [{ uri: "file:///picked/image.jpg" }],
 			});
-			mockCopyAsync.mockResolvedValue(undefined);
 
 			const result = await pickBackgroundFromLibrary();
 
 			expect(result.success).toBe(true);
-			expect(mockCopyAsync).toHaveBeenCalled();
+			expect(mockMoveAsync).toHaveBeenCalled();
 			expect(mockMainStore.setValue).toHaveBeenCalledWith(
 				"chat_background_type",
 				"custom",

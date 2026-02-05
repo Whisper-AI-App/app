@@ -3,6 +3,7 @@
 	"project": ["**/*.{ts,tsx}"],
 	"ignore": ["**/*.test.{ts,tsx}", "**/__tests__/**"],
 	"ignoreDependencies": ["@types/uuid", "expo-updates"],
+	"ignoreBinaries": ["semgrep"],
 	"rules": {
 		"exports": "off",
 		"types": "off"
