@@ -22,11 +22,20 @@ jobs:
 
               > As the author of these code changes, you agree to our [Contributor License Agreement](https://github.com/Whisper-AI-App/app/blob/main/CLA.md).
 
-            Please confirm the following for this PR to be approved:
+              ### Author Confirmation
+              Please confirm the following before requesting review:
+              - [ ] Tested on Android
+              - [ ] Tested on iOS
 
-            - [ ] Tested on Android
-            - [ ] Tested on iOS
+              ### Reviewer Confirmation
+              Please confirm the following before approving:
+              <!-- REVIEWER_CHECKLIST_START -->
+              - [ ] Tested on Android
+              - [ ] Tested on iOS
+              <!-- REVIEWER_CHECKLIST_END -->
 
-            Make sure to test both again should changes to this PR be made.
-            `
+              **Reviewer must test iOS and Android for PR to be merged.**
+
+              Make sure to test again should changes to this PR be made.
+              `
             })
