@@ -70,7 +70,7 @@
 		"react-native-worklets": "0.5.1",
 		"tinybase": "^6.6.1",
 		"uuid": "^13.0.0",
-		"whisper-llm-cards": "github:Whisper-AI-App/marketplace#semver:^5.0.1"
+		"whisper-llm-cards": "github:Whisper-AI-App/marketplace#semver:^4.0.5"
 	},
 	"devDependencies": {
 		"@biomejs/biome": "2.3.4",
