@@ -52,7 +52,7 @@
 		"expo-status-bar": "~3.0.8",
 		"expo-system-ui": "~6.0.8",
 		"expo-web-browser": "~15.0.9",
-		"llama.rn": "^0.10.0-rc.6",
+		"llama.rn": "^0.11.0-rc.3",
 		"lucide-react-native": "^0.544.0",
 		"react": "19.1.0",
 		"react-dom": "19.1.0",
