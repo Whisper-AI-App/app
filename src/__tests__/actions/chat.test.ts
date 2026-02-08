@@ -41,17 +41,18 @@ describe("chat actions", () => {
 	});
 
 	describe("upsertChat", () => {
-		it("creates new chat with id, name, and createdAt", () => {
+		it("creates new chat with id, name, createdAt, and folderId", () => {
 			upsertChat("chat-1", "My First Chat");
 
 			expect(mockMainStore.setRow).toHaveBeenCalledWith("chats", "chat-1", {
 				id: "chat-1",
 				name: "My First Chat",
 				createdAt: "2024-01-15T10:30:00.000Z",
+				folderId: "",
 			});
 		});
 
-		it("updates existing chat and preserves createdAt", () => {
+		it("updates existing chat and preserves createdAt and folderId", () => {
 			const originalCreatedAt = "2024-01-01T00:00:00.000Z";
 			seedMockMainStore(
 				{},
@@ -61,6 +62,7 @@ describe("chat actions", () => {
 							id: "chat-1",
 							name: "Original Name",
 							createdAt: originalCreatedAt,
+							folderId: "",
 						},
 					},
 				},
@@ -72,6 +74,7 @@ describe("chat actions", () => {
 				id: "chat-1",
 				name: "Updated Name",
 				createdAt: originalCreatedAt, // Should preserve original createdAt
+				folderId: "",
 			});
 		});
 	});
@@ -168,6 +171,7 @@ describe("chat actions", () => {
 							id: "chat-1",
 							name: "Original Name",
 							createdAt: "2024-01-01T00:00:00.000Z",
+							folderId: "",
 						},
 					},
 				},
@@ -179,6 +183,7 @@ describe("chat actions", () => {
 				id: "chat-1",
 				name: "New Name",
 				createdAt: "2024-01-01T00:00:00.000Z",
+				folderId: "",
 			});
 		});
 

@@ -16,7 +16,7 @@ Thanks for your interest in contributing to Whisper! We welcome contributions fr
 ## Requirements
 
 - [Node.js](https://nodejs.org/) (LTS recommended)
-- [pnpm](https://pnpm.io/)
+- npm (comes with Node.js)
 - [Expo CLI](https://docs.expo.dev/get-started/installation/)
 - For iOS: macOS with Xcode
 - For Android: Android Studio with an emulator or physical device
@@ -25,8 +25,8 @@ Thanks for your interest in contributing to Whisper! We welcome contributions fr
 
 1. Fork the repository
 2. Clone your fork locally
-3. Install dependencies with `pnpm install`
-4. Run the app with `pnpm ios` or `pnpm android`
+3. Install dependencies with `npm install`
+4. Run the app with `npm run ios` or `npm run android`
 
 ## How to Contribute
 
@@ -46,7 +46,7 @@ Browse our open issues. If you find an unassigned issue you'd like to work on, c
 
 - Keep PRs focused on a single issue
 - Follow existing code patterns and conventions
-- Run `pnpm lint` before submitting
+- Run `npm run lint` before submitting
 
 ## Community & Questions
 

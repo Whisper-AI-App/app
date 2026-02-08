@@ -37,6 +37,10 @@ export default function Download() {
 	);
 	const [configVersion, setConfigVersion] = useState<string>("1.0.0");
 	const [showGame, setShowGame] = useState(false);
+	// Track the downloadedAt value when the screen mounted to detect new completions
+	const [initialDownloadedAt] = useState<string | undefined>(() =>
+		mainStore.getValue("ai_chat_model_downloadedAt") as string | undefined,
+	);
 
 	// Subscribe to download state from tinybase
 	// Use filename instead of full path (path changes between app updates)
@@ -81,7 +85,9 @@ export default function Download() {
 
 	// When download completes, mark onboarding as complete and navigate to dashboard
 	useEffect(() => {
-		if (downloadedAt) {
+		// Only act on NEW download completions, not pre-existing ones from before this screen mounted
+		// This prevents immediate navigation when arriving from update flow with existing downloadedAt
+		if (downloadedAt && downloadedAt !== initialDownloadedAt) {
 			setIsDownloading(false);
 
 			// Clear the file removed flag since we have a new download
@@ -93,8 +99,11 @@ export default function Download() {
 			if (!onboardedAt) {
 				completeOnboarding();
 			}
+
+			// Navigate to dashboard now that download is complete
+			router.replace("/dashboard");
 		}
-	}, [downloadedAt, onboardedAt, fileRemoved, router]);
+	}, [downloadedAt, initialDownloadedAt, onboardedAt, fileRemoved, router]);
 
 	// Update error state
 	useEffect(() => {
@@ -127,8 +136,7 @@ export default function Download() {
 				restart,
 			);
 			// Download will continue in background, progress tracked via tinybase
-
-			router.replace("/dashboard");
+			// Navigation happens when downloadedAt is set (see useEffect above)
 		} catch (err) {
 			console.error(err);
 			setError("Failed to download, try again");
@@ -146,7 +154,11 @@ export default function Download() {
 		}
 	};
 
-	const hasPartialDownload = filename && !downloadedAt;
+	// Check if there's a download in progress or paused
+	// For update flow: downloadedAt exists but equals initialDownloadedAt (no new completion yet)
+	// For fresh download: no downloadedAt at all
+	const hasPartialDownload =
+		filename && (!downloadedAt || downloadedAt === initialDownloadedAt);
 	const totalSizeGB = modelCard.sizeGB;
 	const progressValue =
 		totalSizeGB && progressSizeGB ? progressSizeGB / totalSizeGB : 0;

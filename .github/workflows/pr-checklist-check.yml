@@ -1,0 +1,78 @@
+name: PR Checklist Check
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+  issue_comment:
+    types: [edited]
+
+jobs:
+  verify-checklist:
+    name: Verify Reviewer Checklist
+    runs-on: ubuntu-latest
+    # For issue_comment events, only run on PR comments (not issue comments)
+    if: github.event_name == 'pull_request' || (github.event_name == 'issue_comment' && github.event.issue.pull_request)
+    permissions:
+      pull-requests: read
+    steps:
+      - name: Check reviewer checklist
+        uses: actions/github-script@v7
+        with:
+          script: |
+            // Get the PR number
+            const prNumber = context.issue.number;
+
+            // Fetch all comments on the PR
+            const comments = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: prNumber
+            });
+
+            // Find the checklist comment (posted by github-actions bot, contains "Contribution Checklist")
+            const checklistComment = comments.data.find(comment =>
+              comment.user.login === 'github-actions[bot]' &&
+              comment.body.includes('## Contribution Checklist')
+            );
+
+            if (!checklistComment) {
+              console.log('No checklist comment found yet. This is expected for new PRs.');
+              // Don't fail if the comment doesn't exist yet - it might not have been created
+              return;
+            }
+
+            // For issue_comment events, only proceed if the edited comment is the checklist
+            if (context.eventName === 'issue_comment') {
+              if (context.payload.comment.id !== checklistComment.id) {
+                console.log('Edited comment is not the checklist comment. Skipping.');
+                return;
+              }
+            }
+
+            const body = checklistComment.body;
+
+            // Extract the reviewer section between the HTML comment markers
+            const reviewerSectionMatch = body.match(/<!-- REVIEWER_CHECKLIST_START -->([\s\S]*?)<!-- REVIEWER_CHECKLIST_END -->/);
+
+            if (!reviewerSectionMatch) {
+              core.setFailed('Could not find reviewer checklist section with markers.');
+              return;
+            }
+
+            const reviewerSection = reviewerSectionMatch[1];
+
+            // Count unchecked boxes in the reviewer section
+            const uncheckedBoxes = (reviewerSection.match(/- \[ \]/g) || []).length;
+            const checkedBoxes = (reviewerSection.match(/- \[x\]/gi) || []).length;
+
+            console.log(`Reviewer checklist status:`);
+            console.log(`  Checked: ${checkedBoxes}`);
+            console.log(`  Unchecked: ${uncheckedBoxes}`);
+
+            if (uncheckedBoxes > 0) {
+              core.setFailed(`Reviewer checklist has ${uncheckedBoxes} unchecked item(s). All reviewer checkboxes must be checked before merging.`);
+            } else if (checkedBoxes === 0) {
+              core.setFailed('No checkboxes found in reviewer section.');
+            } else {
+              console.log('All reviewer checkboxes are checked!');
+            }
