@@ -140,6 +140,16 @@
       "section": "libraries"
     },
     {
+      "author": "pchalupa",
+      "description": "Creator of expo-alternate-app-icons",
+      "packages": [
+        "expo-alternate-app-icons"
+      ],
+      "url": "https://github.com/pchalupa/expo-alternate-app-icons#readme",
+      "priority": 50,
+      "section": "libraries"
+    },
+    {
       "author": "Shopify Inc.",
       "description": "Creator of @shopify/react-native-skia",
       "packages": [
@@ -304,6 +314,16 @@
           "react-native-web"
         ],
         "url": "https://github.com/necolas/react-native-web",
+        "priority": 50,
+        "section": "libraries"
+      },
+      {
+        "author": "pchalupa",
+        "description": "Creator of expo-alternate-app-icons",
+        "packages": [
+          "expo-alternate-app-icons"
+        ],
+        "url": "https://github.com/pchalupa/expo-alternate-app-icons#readme",
         "priority": 50,
         "section": "libraries"
       },

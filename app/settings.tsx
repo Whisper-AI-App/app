@@ -263,6 +263,29 @@ export default function Settings() {
 							</Text>
 							<ChevronRight color={theme.textMuted} strokeWidth={2} size={20} />
 						</TouchableOpacity>
+
+						{/* App Icon */}
+						<TouchableOpacity
+							style={{
+								marginTop: 16,
+								backgroundColor: theme.card,
+								borderRadius: BORDER_RADIUS / 2,
+								padding: 14,
+								flexDirection: "row",
+								alignItems: "center",
+								justifyContent: "space-between",
+							}}
+							onPress={() => {
+								Haptics.selectionAsync();
+								router.push("/settings/app-icon");
+							}}
+							activeOpacity={0.7}
+						>
+							<Text style={{ fontSize: 16, fontWeight: "500" }}>
+								App Icon
+							</Text>
+							<ChevronRight color={theme.textMuted} strokeWidth={2} size={20} />
+						</TouchableOpacity>
 					</View>
 
 					<Separator />
