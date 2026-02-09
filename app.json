@@ -62,7 +62,60 @@
 					"enableOpenCLAndHexagon": true
 				}
 			],
-			"expo-web-browser"
+			"expo-web-browser",
+			[
+				"expo-alternate-app-icons",
+				[
+					{
+						"name": "BlackAndWhite",
+						"ios": "./assets/images/icon-variants/generated/black-and-white-ios.png",
+						"android": {
+							"foregroundImage": "./assets/images/icon-variants/generated/black-and-white-adaptive.png",
+							"backgroundColor": "#ffffff"
+						}
+					},
+					{
+						"name": "DarkBlueAndPurple",
+						"ios": "./assets/images/icon-variants/generated/dark-blue-and-purple-ios.png",
+						"android": {
+							"foregroundImage": "./assets/images/icon-variants/generated/dark-blue-and-purple-adaptive.png",
+							"backgroundColor": "#0b1243"
+						}
+					},
+					{
+						"name": "DarkBlue",
+						"ios": "./assets/images/icon-variants/generated/dark-blue-ios.png",
+						"android": {
+							"foregroundImage": "./assets/images/icon-variants/generated/dark-blue-adaptive.png",
+							"backgroundColor": "#1e3050"
+						}
+					},
+					{
+						"name": "Green",
+						"ios": "./assets/images/icon-variants/generated/green-ios.png",
+						"android": {
+							"foregroundImage": "./assets/images/icon-variants/generated/green-adaptive.png",
+							"backgroundColor": "#0b120c"
+						}
+					},
+					{
+						"name": "LightBlueAndPink",
+						"ios": "./assets/images/icon-variants/generated/light-blue-and-pink-ios.png",
+						"android": {
+							"foregroundImage": "./assets/images/icon-variants/generated/light-blue-and-pink-adaptive.png",
+							"backgroundColor": "#5a91de"
+						}
+					},
+					{
+						"name": "OrangeAndPink",
+						"ios": "./assets/images/icon-variants/generated/orange-and-pink-ios.png",
+						"android": {
+							"foregroundImage": "./assets/images/icon-variants/generated/orange-and-pink-adaptive.png",
+							"backgroundColor": "#dd8d45"
+						}
+					}
+				]
+			]
 		],
 		"experiments": {
 			"typedRoutes": true,

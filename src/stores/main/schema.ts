@@ -33,6 +33,8 @@ export const valuesSchemaMainStore = {
 	chat_background_opacity: { type: "number" as const }, // Background opacity (0-100)
 	// Game high scores
 	flappy_bird_high_score: { type: "number" as const },
+	// App icon customization
+	app_icon_variant: { type: "string" as const },
 };
 
 export const tablesSchemaMainStore = {
