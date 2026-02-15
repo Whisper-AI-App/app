@@ -83,6 +83,9 @@ export default function Dashboard() {
 	const storedConfigVersion = useValue("ai_chat_model_config_version") as
 		| string
 		| undefined;
+	const aiChatModelCardJson = useValue("ai_chat_model_card") as
+		| string
+		| undefined;
 
 	// Get all chat IDs sorted by creation date (newest first)
 	const chatIds = useSortedRowIds("chats", "createdAt", true);
@@ -179,10 +182,21 @@ export default function Dashboard() {
 			const fileUri = getModelFileUri();
 			if (!fileUri) return;
 
+			// Parse the model card to get runtime config
+			let runtime: import("whisper-llm-cards").RuntimeConfig | undefined;
+			if (aiChatModelCardJson) {
+				try {
+					const aiChatModelCard = JSON.parse(aiChatModelCardJson);
+					runtime = aiChatModelCard.runtime;
+				} catch {
+					console.warn("[Dashboard] Failed to parse ai_chat_model_card");
+				}
+			}
+
 			// Model is downloaded but not loaded yet, load it
 			console.log("[Dashboard] Loading model from:", fileUri);
 			aiChat
-				.loadModel({ ggufPath: fileUri })
+				.loadModel({ ggufPath: fileUri, runtime })
 				.then(() => {
 					console.log("[Dashboard] Model loaded successfully");
 					setModelLoadError(false);
@@ -192,7 +206,7 @@ export default function Dashboard() {
 					setModelLoadError(true);
 				});
 		}
-	}, [downloadedAt, filename, aiChat, modelLoadError]);
+	}, [downloadedAt, filename, aiChat, modelLoadError, aiChatModelCardJson]);
 
 	// Function to retry loading the model
 	const retryLoadModel = () => {
