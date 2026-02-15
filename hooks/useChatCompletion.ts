@@ -5,6 +5,7 @@ import type {
 	UseChatCompletionOptions,
 	UseChatCompletionReturn,
 } from "@/src/types/chat";
+import { truncateMessages } from "@/src/utils/context-window";
 import * as Haptics from "expo-haptics";
 import { useCallback, useMemo, useState } from "react";
 import { useValue } from "tinybase/ui-react";
@@ -95,6 +96,13 @@ export function useChatCompletion(
 						? processSystemMessage(aiChatModelCard, conversationMessages)
 						: `You are a 100% private on-device AI chat called Whisper. Conversations stay on the device. Help the user concisly. Be useful, creative, and accurate. Today's date is ${new Date().toLocaleString()}.`;
 
+					// Apply sliding context window to prevent overflow
+					const truncatedMessages = truncateMessages(
+						systemMessage,
+						conversationMessages,
+						2048,
+					);
+
 					const response = await aiChat.completion(
 						[
 							// System Message from card
@@ -102,7 +110,7 @@ export function useChatCompletion(
 								role: "system",
 								content: systemMessage,
 							},
-							...conversationMessages,
+							...truncatedMessages,
 						],
 						(token) => {
 							aiResponseText += token;
