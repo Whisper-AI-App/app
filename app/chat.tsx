@@ -78,7 +78,14 @@ export default function ChatPage() {
 	const messages = useChatMessages(currentChatId);
 
 	// AI completion orchestration
-	const { isAiTyping, streamingText, sendMessage } = useChatCompletion({
+	const {
+		isAiTyping,
+		streamingText,
+		sendMessage,
+		isCutOff,
+		continueMessage,
+		chatNotice,
+	} = useChatCompletion({
 		chatId: currentChatId,
 		messages,
 		onChatCreated: setCurrentChatId,
@@ -96,6 +103,9 @@ export default function ChatPage() {
 		isTyping: isAiTyping,
 		isNewChat: !currentChatId,
 		isFullPage: true,
+		isCutOff,
+		onContinue: continueMessage ?? undefined,
+		chatNotice,
 	});
 
 	const handleSuggestionPress = useCallback((text: string) => {
@@ -177,6 +187,32 @@ export default function ChatPage() {
 											{
 												_id: "streaming",
 												text: streamingText,
+												user: {
+													_id: 2,
+													name: "AI",
+												},
+											} as IMessage,
+										]
+									: []),
+								// Cutoff notice with continue button
+								...(isCutOff && !isAiTyping
+									? [
+											{
+												_id: "cutoff-notice",
+												text: "",
+												user: {
+													_id: 2,
+													name: "AI",
+												},
+											} as IMessage,
+										]
+									: []),
+								// Chat notice (error or warning)
+								...(chatNotice && !isAiTyping
+									? [
+											{
+												_id: "chat-notice",
+												text: chatNotice.message,
 												user: {
 													_id: 2,
 													name: "AI",

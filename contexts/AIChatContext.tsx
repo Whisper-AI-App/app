@@ -1,4 +1,5 @@
 import { getModelFileUri, mainStore } from "@/src/stores/main/main-store";
+import type { CompletionResult } from "@/src/types/chat";
 import * as FileSystem from "expo-file-system";
 import { initLlama, type LlamaContext, releaseAllLlama } from "llama.rn";
 import {
@@ -14,7 +15,7 @@ import {
 export type AIChatConfig = { ggufPath: string; stopWords?: string[] };
 
 export type AIChatMessage = {
-	role: "user" | "system";
+	role: "user" | "system" | "assistant";
 	content: string;
 };
 
@@ -24,7 +25,7 @@ type AIChatContextType = {
 	completion: (
 		messages: AIChatMessage[],
 		partialCallback: (token: string) => void,
-	) => Promise<string | null>;
+	) => Promise<CompletionResult | null>;
 };
 
 const AIChatContext = createContext<AIChatContextType | undefined>(undefined);
@@ -120,7 +121,7 @@ export function AIChatProvider({ children }: { children: ReactNode }) {
 			const result = await context.completion(
 				{
 					messages,
-					n_predict: 300,
+					n_predict: 500,
 					stop: stopWordsRef.current,
 				},
 				(data) => {
@@ -128,7 +129,15 @@ export function AIChatProvider({ children }: { children: ReactNode }) {
 				},
 			);
 
-			return result.content;
+			return {
+				content: result.content,
+				stopped_eos: result.stopped_eos,
+				stopped_limit: result.stopped_limit,
+				context_full: result.context_full,
+				truncated: result.truncated,
+				tokens_predicted: result.tokens_predicted,
+				tokens_evaluated: result.tokens_evaluated,
+			};
 		},
 		[context],
 	);
