@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Markdown } from "@/components/ui/markdown";
 import { TypingIndicator } from "@/components/ui/typing-indicator";
+import { Text } from "@/components/ui/text";
 import { View } from "@/components/ui/view";
 import { useColorScheme } from "@/hooks/useColorScheme";
 import { useKeyboardHeight } from "@/hooks/useKeyboardHeight";
@@ -85,8 +86,9 @@ export function useChatRenderers({
 
 			// Check if this is a system message (AI response) - user._id === 2
 			const isSystemMessage = message?.user?._id === 2;
+			const isUserMessage = message?.user?._id === 1;
 			const isStreaming = message._id === "streaming";
-			const showCopyButton = isSystemMessage && !isStreaming;
+			const showCopyButton = (isSystemMessage || isUserMessage) && !isStreaming;
 
 			return (
 				<View>
@@ -134,7 +136,14 @@ export function useChatRenderers({
 											)}
 										</View>
 									)
-								: undefined
+								: isUserMessage && showCopyButton
+									? (messageTextProps: { currentMessage?: { text?: string } }) => (
+											<View style={{ flexShrink: 1, maxWidth: "100%", paddingHorizontal: 12, paddingVertical: 4, alignItems: "flex-end" }}>
+												<Text style={{ color: theme.background }}>{messageTextProps.currentMessage?.text}</Text>
+												<CopyMessageButton text={message.text} variant="user" />
+											</View>
+										)
+									: undefined
 						}
 					/>
 				</View>
