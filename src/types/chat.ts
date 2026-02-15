@@ -57,6 +57,7 @@ export interface UseChatCompletionOptions {
 
 export interface UseChatCompletionReturn {
 	isAiTyping: boolean;
+	isContinuing: boolean;
 	streamingText: string;
 	sendMessage: (text: string) => Promise<void>;
 	isCutOff: boolean;

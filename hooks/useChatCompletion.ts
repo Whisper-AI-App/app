@@ -26,6 +26,7 @@ export function useChatCompletion(
 	const { chatId, messages, onChatCreated, folderId } = options;
 
 	const [isAiTyping, setIsAiTyping] = useState(false);
+	const [isContinuing, setIsContinuing] = useState(false);
 	const [streamingText, setStreamingText] = useState("");
 	const [isCutOff, setIsCutOff] = useState(false);
 	const [lastAiMessageId, setLastAiMessageId] = useState<string | null>(null);
@@ -83,6 +84,7 @@ export function useChatCompletion(
 
 			// Reset cutoff and notice state for new message
 			setIsCutOff(false);
+			setIsContinuing(false);
 			setChatNotice(null);
 			setLastAiMessageId(null);
 			continueStateRef.current = null;
@@ -243,6 +245,7 @@ export function useChatCompletion(
 
 		setIsCutOff(false);
 		setChatNotice(null);
+		setIsContinuing(true);
 		setIsAiTyping(true);
 		setStreamingText("");
 
@@ -303,6 +306,7 @@ export function useChatCompletion(
 				clearInterval(hapticInterval);
 			}
 			setIsAiTyping(false);
+			setIsContinuing(false);
 			if (process.env.EXPO_OS === "ios") {
 				Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Rigid);
 			}
@@ -311,6 +315,7 @@ export function useChatCompletion(
 
 	return {
 		isAiTyping,
+		isContinuing,
 		streamingText,
 		sendMessage,
 		isCutOff,

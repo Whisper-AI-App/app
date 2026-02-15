@@ -80,6 +80,7 @@ export default function ChatPage() {
 	// AI completion orchestration
 	const {
 		isAiTyping,
+		isContinuing,
 		streamingText,
 		sendMessage,
 		isCutOff,
@@ -181,8 +182,8 @@ export default function ChatPage() {
 											} as IMessage,
 										]
 									: []),
-								// Streaming message (when AI has started responding)
-								...(isAiTyping && streamingText
+								// Streaming message (when AI has started responding, but NOT continuing)
+								...(isAiTyping && streamingText && !isContinuing
 									? [
 											{
 												_id: "streaming",
@@ -220,12 +221,15 @@ export default function ChatPage() {
 											} as IMessage,
 										]
 									: []),
-								// Regular messages
+								// Regular messages (during continuation, append streaming text to first AI message)
 								...messages.map(
-									(message) =>
+									(message, index) =>
 										({
 											_id: message._id,
-											text: message.text,
+											text:
+												isContinuing && streamingText && index === 0 && message.user._id === 2
+													? `${message.text}\n\n${streamingText}`
+													: message.text,
 											user: message.user,
 										}) as IMessage,
 								),
