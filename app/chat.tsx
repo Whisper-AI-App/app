@@ -89,6 +89,7 @@ export default function ChatPage() {
 	const {
 		defaultContainerStyle,
 		renderBubble,
+		renderAvatar,
 		renderInputToolbar,
 		InputToolbar,
 	} = useChatRenderers({
@@ -198,7 +199,8 @@ export default function ChatPage() {
 							user={{
 								_id: 1,
 							}}
-							renderAvatar={null}
+							renderAvatar={renderAvatar}
+							renderAvatarOnTop
 							alwaysShowSend
 							isTyping={false}
 							bottomOffset={0}
