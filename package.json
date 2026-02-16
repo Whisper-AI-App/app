@@ -20,7 +20,7 @@
 		"node:version": "node --version",
 		"generate-credits": "node ./scripts/generate-credits.js",
 		"postinstall": "node ./scripts/generate-credits.js",
-"process-icons": "npx tsx scripts/process-icons.ts",
+		"process-icons": "npx tsx scripts/process-icons.ts",
 		"semgrep": "semgrep scan --config auto",
 		"audit": "npm audit",
 		"knip": "knip --no-config-hints"
@@ -72,7 +72,7 @@
 		"react-native-worklets": "0.5.1",
 		"tinybase": "^6.6.1",
 		"uuid": "^13.0.0",
-		"whisper-llm-cards": "github:Whisper-AI-App/marketplace#semver:^5.0.1"
+		"whisper-llm-cards": "github:Whisper-AI-App/marketplace#semver:^6.0.1"
 	},
 	"devDependencies": {
 		"@biomejs/biome": "2.3.4",
@@ -85,7 +85,7 @@
 		"eslint-config-expo": "~10.0.0",
 		"jest": "^29.7.0",
 		"jest-expo": "^54.0.17",
-"tsx": "^4.21.0",
+		"tsx": "^4.21.0",
 		"knip": "^5.83.1",
 		"typescript": "~5.9.2"
 	},
