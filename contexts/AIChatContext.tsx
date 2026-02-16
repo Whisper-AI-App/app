@@ -105,7 +105,10 @@ export function AIChatProvider({ children }: { children: ReactNode }) {
 					cache_type_v: runtime?.cache_type_v,
 				});
 
-				console.log("🔥 context meta:", llamaContext.model.metadata);
+				console.log(
+					"[AIChatProvider] Model Meta:",
+					llamaContext.model.metadata,
+				);
 
 				setContext(llamaContext);
 				setIsLoaded(true);
