@@ -84,13 +84,21 @@ export default function ChatPage() {
 	}, [messages, contextSize]);
 
 	// AI completion orchestration
-	const { isAiTyping, streamingText, sendMessage, clearInferenceCache } =
-		useChatCompletion({
-			chatId: currentChatId,
-			messages,
-			onChatCreated: setCurrentChatId,
-			folderId: folderIdParam || null,
-		});
+	const {
+		isAiTyping,
+		isContinuing,
+		streamingText,
+		sendMessage,
+		isCutOff,
+		continueMessage,
+		chatNotice,
+		clearInferenceCache,
+	} = useChatCompletion({
+		chatId: currentChatId,
+		messages,
+		onChatCreated: setCurrentChatId,
+		folderId: folderIdParam || null,
+	});
 
 	// Handle new chat - reset state without navigation animation, and clear caches
 	const handleNewChat = useCallback(() => {
@@ -111,6 +119,9 @@ export default function ChatPage() {
 		isTyping: isAiTyping,
 		isNewChat: !currentChatId,
 		isFullPage: true,
+		isCutOff,
+		onContinue: continueMessage ?? undefined,
+		chatNotice,
 	});
 
 	const handleSuggestionPress = useCallback((text: string) => {
@@ -204,8 +215,8 @@ export default function ChatPage() {
 											} as IMessage,
 										]
 									: []),
-								// Streaming message (when AI has started responding)
-								...(isAiTyping && streamingText
+								// Streaming message (when AI has started responding, but NOT continuing)
+								...(isAiTyping && streamingText && !isContinuing
 									? [
 											{
 												_id: "streaming",
@@ -217,12 +228,41 @@ export default function ChatPage() {
 											} as IMessage,
 										]
 									: []),
-								// Regular messages
+								// Cutoff notice with continue button
+								...(isCutOff && !isAiTyping
+									? [
+											{
+												_id: "cutoff-notice",
+												text: "",
+												user: {
+													_id: 2,
+													name: "AI",
+												},
+											} as IMessage,
+										]
+									: []),
+								// Chat notice (error or warning)
+								...(chatNotice && !isAiTyping
+									? [
+											{
+												_id: "chat-notice",
+												text: chatNotice.message,
+												user: {
+													_id: 2,
+													name: "AI",
+												},
+											} as IMessage,
+										]
+									: []),
+								// Regular messages (during continuation, append streaming text to first AI message)
 								...messages.map(
-									(message) =>
+									(message, index) =>
 										({
 											_id: message._id,
-											text: message.text,
+											text:
+												isContinuing && streamingText && index === 0 && message.user._id === 2
+													? `${message.text}\n\n${streamingText}`
+													: message.text,
 											user: message.user,
 										}) as IMessage,
 								),

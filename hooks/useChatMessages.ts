@@ -34,10 +34,22 @@ export function useChatMessages(chatId: string | undefined): IMessage[] {
 			.filter(Boolean) as IMessage[];
 
 		// Sort by date descending (GiftedChat expects newest first)
-		return chatMessages.sort(
+		chatMessages.sort(
 			(a, b) =>
 				new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
 		);
+
+		// Merge consecutive AI messages into a single bubble for display
+		return chatMessages.reduce<IMessage[]>((acc, msg) => {
+			const prev = acc[acc.length - 1];
+			if (prev && prev.user._id === 2 && msg.user._id === 2) {
+				// msg is older (array is newest-first), prepend its text before prev's
+				prev.text = `${msg.text}\n\n${prev.text}`;
+				return acc;
+			}
+			acc.push({ ...msg });
+			return acc;
+		}, []);
 	}, [chatId, allMessageIds]);
 
 	return messages;

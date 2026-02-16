@@ -4,10 +4,28 @@ import type { IMessage } from "react-native-gifted-chat";
  * Shared type definitions for chat feature
  */
 
+export interface ChatNotice {
+	type: "error" | "warning";
+	message: string;
+}
+
+export interface CompletionResult {
+	content: string;
+	stopped_eos: boolean;
+	stopped_limit: number;
+	context_full: boolean;
+	truncated: boolean;
+	tokens_predicted: number;
+	tokens_evaluated: number;
+}
+
 export interface ChatRenderersProps {
 	setIsInputFocused: (focused: boolean) => void;
 	isTyping?: boolean;
 	isNewChat?: boolean;
+	isCutOff?: boolean;
+	onContinue?: () => void;
+	chatNotice?: ChatNotice | null;
 }
 
 export interface UseChatStateOptions {
@@ -39,8 +57,15 @@ export interface UseChatCompletionOptions {
 
 export interface UseChatCompletionReturn {
 	isAiTyping: boolean;
+	isContinuing: boolean;
 	streamingText: string;
 	sendMessage: (text: string) => Promise<void>;
+	// PR features
+	isCutOff: boolean;
+	lastAiMessageId: string | null;
+	continueMessage: (() => Promise<void>) | null;
+	chatNotice: ChatNotice | null;
+	// Main feature
 	clearInferenceCache: () => Promise<void>;
 }
 
