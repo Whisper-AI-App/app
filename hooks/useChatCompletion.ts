@@ -334,11 +334,16 @@ export function useChatCompletion(
 		}
 	}, [aiChat]);
 
+	const stopGeneration = useCallback(() => {
+		aiChat.stopCompletion();
+	}, [aiChat]);
+
 	return {
 		isAiTyping,
 		isContinuing,
 		streamingText,
 		sendMessage,
+		stopGeneration,
 		// PR features
 		isCutOff,
 		lastAiMessageId,

@@ -33,6 +33,7 @@ type AIChatContextType = {
 		messages: AIChatMessage[],
 		partialCallback: (token: string) => void,
 	) => Promise<CompletionResult | null>;
+	stopCompletion: () => void;
 	clearCache: () => Promise<void>;
 };
 
@@ -191,9 +192,14 @@ export function AIChatProvider({ children }: { children: ReactNode }) {
 		}
 	}, [context]);
 
+	const stopCompletion = useCallback(() => {
+		if (!context) return;
+		context.stopCompletion();
+	}, [context]);
+
 	return (
 		<AIChatContext.Provider
-			value={{ isLoaded, contextSize, loadModel, completion, clearCache }}
+			value={{ isLoaded, contextSize, loadModel, completion, stopCompletion, clearCache }}
 		>
 			{children}
 		</AIChatContext.Provider>
