@@ -8,10 +8,12 @@ import { TouchableOpacity } from "react-native";
 
 interface CopyMessageButtonProps {
 	text: string;
+	variant?: "assistant" | "user";
 }
 
 export const CopyMessageButton: React.FC<CopyMessageButtonProps> = ({
 	text,
+	variant = "assistant",
 }) => {
 	const colorScheme = useColorScheme() ?? "light";
 	const theme = Colors[colorScheme];
@@ -44,7 +46,7 @@ export const CopyMessageButton: React.FC<CopyMessageButtonProps> = ({
 			{isCopied ? (
 				<Check size={14} color="#22c55e" strokeWidth={2.5} />
 			) : (
-				<Copy size={14} color={theme.textMuted} strokeWidth={2} />
+				<Copy size={14} color={variant === "user" ? `${theme.background}99` : theme.textMuted} strokeWidth={2} />
 			)}
 		</TouchableOpacity>
 	);
