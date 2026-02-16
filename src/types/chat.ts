@@ -60,10 +60,13 @@ export interface UseChatCompletionReturn {
 	isContinuing: boolean;
 	streamingText: string;
 	sendMessage: (text: string) => Promise<void>;
+	// PR features
 	isCutOff: boolean;
 	lastAiMessageId: string | null;
 	continueMessage: (() => Promise<void>) | null;
 	chatNotice: ChatNotice | null;
+	// Main feature
+	clearInferenceCache: () => Promise<void>;
 }
 
 export interface ChatHeaderProps {

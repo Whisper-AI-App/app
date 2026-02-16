@@ -3,12 +3,16 @@ import { CopyMessageButton } from "@/components/chat/copy-message-button";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Markdown } from "@/components/ui/markdown";
+import { Text } from "@/components/ui/text";
 import { TypingIndicator } from "@/components/ui/typing-indicator";
 import { View } from "@/components/ui/view";
 import { useColorScheme } from "@/hooks/useColorScheme";
 import { useKeyboardHeight } from "@/hooks/useKeyboardHeight";
+import type { AppIconVariant } from "@/src/data/app-icon-presets";
+import { getAppIconPresetById } from "@/src/data/app-icon-presets";
 import type { ChatRenderersProps } from "@/src/types/chat";
 import { Colors } from "@/theme/colors";
+import { Image } from "expo-image";
 import { SendHorizonal } from "lucide-react-native";
 import { useCallback, useEffect } from "react";
 import { Dimensions } from "react-native";
@@ -18,9 +22,9 @@ import Animated, {
 	useSharedValue,
 	withTiming,
 } from "react-native-reanimated";
+import { useValue } from "tinybase/ui-react";
 
-const { height: SCREEN_HEIGHT, width: SCREEN_WIDTH } =
-	Dimensions.get("window");
+const { height: SCREEN_HEIGHT, width: SCREEN_WIDTH } = Dimensions.get("window");
 const SHEET_BASE_BOTTOM = 32 + SCREEN_HEIGHT * 0.1;
 const PAGE_BASE_BOTTOM = 32;
 
@@ -39,6 +43,10 @@ export function useChatRenderers({
 }: ChatRenderersProps & { isFullPage?: boolean }) {
 	const colorScheme = useColorScheme() ?? "light";
 	const theme = Colors[colorScheme];
+	const appIconVariant = useValue("app_icon_variant") as
+		| AppIconVariant
+		| undefined;
+	const appIconPreset = getAppIconPresetById(appIconVariant || "Default");
 	const { keyboardHeight, keyboardAnimationDuration } = useKeyboardHeight();
 
 	const BASE_BOTTOM = isFullPage ? PAGE_BASE_BOTTOM : SHEET_BASE_BOTTOM;
@@ -73,7 +81,7 @@ export function useChatRenderers({
 				return (
 					<View
 						style={{
-							width: SCREEN_WIDTH - 32,
+							width: SCREEN_WIDTH - 96,
 							marginBottom: isLastMessage ? lastMessageMarginBottom : 4,
 						}}
 					>
@@ -93,7 +101,7 @@ export function useChatRenderers({
 				return (
 					<View
 						style={{
-							width: SCREEN_WIDTH - 32,
+							width: SCREEN_WIDTH - 96,
 							marginBottom: isLastMessage ? lastMessageMarginBottom : 4,
 						}}
 					>
@@ -125,8 +133,9 @@ export function useChatRenderers({
 
 			// Check if this is a system message (AI response) - user._id === 2
 			const isSystemMessage = message?.user?._id === 2;
+			const isUserMessage = message?.user?._id === 1;
 			const isStreaming = message._id === "streaming";
-			const showCopyButton = isSystemMessage && !isStreaming;
+			const showCopyButton = (isSystemMessage || isUserMessage) && !isStreaming;
 
 			return (
 				<View>
@@ -174,7 +183,28 @@ export function useChatRenderers({
 											)}
 										</View>
 									)
-								: undefined
+								: isUserMessage && showCopyButton
+									? (messageTextProps: {
+											currentMessage?: { text?: string };
+										}) => (
+											<View style={{ flexShrink: 1, maxWidth: "100%" }}>
+												<Text
+													style={{
+														color: theme.background,
+														marginLeft: 8,
+														marginRight: 8,
+														marginTop: 5,
+														marginBottom: 5,
+														fontSize: 16,
+														lineHeight: 22,
+													}}
+												>
+													{messageTextProps.currentMessage?.text}
+												</Text>
+												<CopyMessageButton text={message.text} variant="user" />
+											</View>
+										)
+									: undefined
 						}
 					/>
 				</View>
@@ -253,12 +283,30 @@ export function useChatRenderers({
 		[isTyping, setIsInputFocused, isNewChat, animatedToolbarStyle],
 	);
 
+	const renderAvatar = useCallback(
+		(props: { position: "left" | "right" }) => {
+			if (props.position === "right") return null;
+			return (
+				<Image
+					source={appIconPreset?.image}
+					style={{
+						width: 28,
+						height: 28,
+						borderRadius: 14,
+					}}
+				/>
+			);
+		},
+		[appIconPreset],
+	);
+
 	const defaultContainerStyle = {
 		paddingHorizontal: 8,
 	};
 
 	return {
 		renderBubble,
+		renderAvatar,
 		renderInputToolbar,
 		renderFooter,
 		defaultContainerStyle,

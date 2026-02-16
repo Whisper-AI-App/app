@@ -3,13 +3,16 @@ import { ChatPageHeader } from "@/components/chat/chat-page-header";
 import { MoveToFolderSheet } from "@/components/move-to-folder-sheet";
 import { SuggestionCards } from "@/components/suggestion-cards";
 import { PromptDialog } from "@/components/ui/prompt-dialog";
+import { Text } from "@/components/ui/text";
 import { View } from "@/components/ui/view";
+import { useAIChat } from "@/contexts/AIChatContext";
 import { useChatCompletion } from "@/hooks/useChatCompletion";
 import { useChatMessages } from "@/hooks/useChatMessages";
 import { useChatRenderers } from "@/hooks/useChatRenderers";
 import { useChatState } from "@/hooks/useChatState";
+import { wouldTruncate } from "@/src/utils/context-window";
 import { useLocalSearchParams, useRouter } from "expo-router";
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { View as RNView } from "react-native";
 import { GiftedChat, type IMessage } from "react-native-gifted-chat";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -68,14 +71,17 @@ export default function ChatPage() {
 		onClose: handleClose,
 	});
 
-	// Handle new chat - reset state without navigation animation
-	const handleNewChat = useCallback(() => {
-		handleNewChatState();
-		router.setParams({ id: undefined });
-	}, [handleNewChatState, router]);
-
 	// Messages from TinyBase
 	const messages = useChatMessages(currentChatId);
+
+	// Get contextSize from AI context for truncation warning
+	const { contextSize } = useAIChat();
+
+	// Show warning when conversation will be truncated
+	const showTruncationWarning = useMemo(() => {
+		const totalChars = messages.reduce((sum, m) => sum + m.text.length, 0);
+		return wouldTruncate(totalChars, contextSize);
+	}, [messages, contextSize]);
 
 	// AI completion orchestration
 	const {
@@ -86,6 +92,7 @@ export default function ChatPage() {
 		isCutOff,
 		continueMessage,
 		chatNotice,
+		clearInferenceCache,
 	} = useChatCompletion({
 		chatId: currentChatId,
 		messages,
@@ -93,10 +100,18 @@ export default function ChatPage() {
 		folderId: folderIdParam || null,
 	});
 
+	// Handle new chat - reset state without navigation animation, and clear caches
+	const handleNewChat = useCallback(() => {
+		clearInferenceCache();
+		handleNewChatState();
+		router.setParams({ id: undefined });
+	}, [handleNewChatState, clearInferenceCache, router]);
+
 	// GiftedChat render functions - with isFullPage=true
 	const {
 		defaultContainerStyle,
 		renderBubble,
+		renderAvatar,
 		renderInputToolbar,
 		InputToolbar,
 	} = useChatRenderers({
@@ -133,6 +148,11 @@ export default function ChatPage() {
 		[sendMessage],
 	);
 
+	useEffect(() => {
+		// Clear inference cache on chat load (i.e. switching conversations)
+		clearInferenceCache();
+	}, [clearInferenceCache, currentChatId]);
+
 	return (
 		<RNView style={{ flex: 1 }}>
 			<ChatBackground asBackgroundLayer />
@@ -150,6 +170,19 @@ export default function ChatPage() {
 						onDelete={handleDeleteChat}
 						onMoveToFolder={currentChatId ? handleMoveToFolder : undefined}
 					/>
+
+					{showTruncationWarning && (
+						<View
+							style={{
+								padding: 8,
+								backgroundColor: "rgba(255,200,0,0.2)",
+							}}
+						>
+							<Text style={{ fontSize: 12, textAlign: "center" }}>
+								Long chat - start a new one for best results.
+							</Text>
+						</View>
+					)}
 
 					<View style={{ flex: 1 }}>
 						{messages.length === 0 && !currentChatId && (
@@ -238,7 +271,8 @@ export default function ChatPage() {
 							user={{
 								_id: 1,
 							}}
-							renderAvatar={null}
+							renderAvatar={renderAvatar}
+							renderAvatarOnTop
 							alwaysShowSend
 							isTyping={false}
 							bottomOffset={0}

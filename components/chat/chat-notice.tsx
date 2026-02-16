@@ -57,7 +57,7 @@ export function ChatNotice({
 			<View
 				style={{
 					flexDirection: "row",
-					alignItems: "center",
+					alignItems: "flex-start",
 					gap: 8,
 				}}
 			>
@@ -95,11 +95,7 @@ export function ChatNotice({
 					>
 						{actionLabel}
 					</Text>
-					<ChevronRight
-						size={16}
-						color={theme.background}
-						strokeWidth={2.5}
-					/>
+					<ChevronRight size={16} color={theme.background} strokeWidth={2.5} />
 				</TouchableOpacity>
 			)}
 		</View>

@@ -7,6 +7,7 @@ import type {
 	UseChatCompletionOptions,
 	UseChatCompletionReturn,
 } from "@/src/types/chat";
+import { truncateMessages } from "@/src/utils/context-window";
 import * as Haptics from "expo-haptics";
 import { useCallback, useMemo, useRef, useState } from "react";
 import { useValue } from "tinybase/ui-react";
@@ -97,6 +98,7 @@ export function useChatCompletion(
 				const chatName = text.slice(0, 50); // Use first 50 chars as name
 				upsertChat(activeChatId, chatName, folderId);
 				onChatCreated?.(activeChatId);
+				await aiChat.clearCache();
 			}
 
 			// Save user message
@@ -122,8 +124,11 @@ export function useChatCompletion(
 
 				try {
 					// Prepare conversation history
+					// user._id === 1 is user, 2 is AI (GiftedChat convention)
+					// Map both "system" (old data) and "assistant" (new data) to "assistant"
 					const conversationMessages: AIChatMessage[] = messages.map((msg) => ({
-						role: msg.user._id === 1 ? ("user" as const) : ("system" as const),
+						role:
+							msg.user._id === 1 ? ("user" as const) : ("assistant" as const),
 						content: msg.text,
 					}));
 
@@ -141,11 +146,18 @@ export function useChatCompletion(
 					// Get system message from the current model card in store
 					const systemMessage = aiChatModelCard
 						? processSystemMessage(aiChatModelCard, conversationMessages)
-						: `You are a 100% private on-device AI chat called Whisper. Conversations stay on the device. Help the user concisly. Be useful, creative, and accurate. Today's date is ${new Date().toLocaleString()}.`;
+						: `You are a 100% private on-device AI chat called Whisper. Conversations stay on the device. Help the user concisely. Be useful, creative, and accurate. Today's date is ${new Date().toLocaleString()}.`;
+
+					// Apply sliding context window to prevent overflow
+					const truncatedMessages = truncateMessages(
+						systemMessage,
+						conversationMessages,
+						aiChat.contextSize,
+					);
 
 					const completionMessages: AIChatMessage[] = [
 						{ role: "system", content: systemMessage },
-						...conversationMessages,
+						...truncatedMessages,
 					];
 
 					// Initial completion
@@ -162,7 +174,12 @@ export function useChatCompletion(
 					let lastResult = result;
 					if (aiResponseText) {
 						const aiMessageId = uuidv4();
-						upsertMessage(aiMessageId, activeChatId, aiResponseText, "system");
+						upsertMessage(
+							aiMessageId,
+							activeChatId,
+							aiResponseText,
+							"assistant",
+						);
 						setStreamingText("");
 						setLastAiMessageId(aiMessageId);
 
@@ -180,9 +197,13 @@ export function useChatCompletion(
 
 							const autoContinueMessages: AIChatMessage[] = [
 								{ role: "system", content: systemMessage },
-								...conversationMessages,
+								...truncatedMessages,
 								{ role: "assistant", content: accumulatedText },
-								{ role: "user", content: "Continue from where you left off." },
+								{
+									role: "system",
+									content:
+										"Your last response was cut off. Output ONLY the remaining text from the exact cutoff point. Do not restart or add preamble.",
+								},
 							];
 
 							let newText = "";
@@ -196,7 +217,7 @@ export function useChatCompletion(
 
 							if (newText) {
 								const newMsgId = uuidv4();
-								upsertMessage(newMsgId, activeChatId, newText, "system");
+								upsertMessage(newMsgId, activeChatId, newText, "assistant");
 								setStreamingText("");
 								setLastAiMessageId(newMsgId);
 								accumulatedText = accumulatedText + newText;
@@ -208,7 +229,7 @@ export function useChatCompletion(
 							setIsCutOff(true);
 							continueStateRef.current = {
 								activeChatId,
-								conversationMessages,
+								conversationMessages: truncatedMessages,
 								systemMessage,
 								accumulatedText,
 							};
@@ -279,7 +300,7 @@ export function useChatCompletion(
 					newAiMessageId,
 					state.activeChatId,
 					newResponseText,
-					"system",
+					"assistant",
 				);
 				setStreamingText("");
 
@@ -318,9 +339,12 @@ export function useChatCompletion(
 		isContinuing,
 		streamingText,
 		sendMessage,
+		// PR features
 		isCutOff,
 		lastAiMessageId,
 		continueMessage: isCutOff ? continueMessage : null,
 		chatNotice,
+		// Main feature
+		clearInferenceCache: aiChat.clearCache,
 	};
 }
