@@ -49,6 +49,7 @@ export function useChatCompletion(
 				const chatName = text.slice(0, 50); // Use first 50 chars as name
 				upsertChat(activeChatId, chatName, folderId);
 				onChatCreated?.(activeChatId);
+				await aiChat.clearCache();
 			}
 
 			// Save user message
@@ -74,8 +75,11 @@ export function useChatCompletion(
 
 				try {
 					// Prepare conversation history
+					// user._id === 1 is user, 2 is AI (GiftedChat convention)
+					// Map both "system" (old data) and "assistant" (new data) to "assistant"
 					const conversationMessages = messages.map((msg) => ({
-						role: msg.user._id === 1 ? ("user" as const) : ("system" as const),
+						role:
+							msg.user._id === 1 ? ("user" as const) : ("assistant" as const),
 						content: msg.text,
 					}));
 
@@ -94,7 +98,7 @@ export function useChatCompletion(
 					// Get system message from the current model card in store
 					const systemMessage = aiChatModelCard
 						? processSystemMessage(aiChatModelCard, conversationMessages)
-						: `You are a 100% private on-device AI chat called Whisper. Conversations stay on the device. Help the user concisly. Be useful, creative, and accurate. Today's date is ${new Date().toLocaleString()}.`;
+						: `You are a 100% private on-device AI chat called Whisper. Conversations stay on the device. Help the user concisely. Be useful, creative, and accurate. Today's date is ${new Date().toLocaleString()}.`;
 
 					// Apply sliding context window to prevent overflow
 					const truncatedMessages = truncateMessages(
@@ -121,7 +125,12 @@ export function useChatCompletion(
 					// Save AI response
 					if (response) {
 						const aiMessageId = uuidv4();
-						upsertMessage(aiMessageId, activeChatId, aiResponseText, "system");
+						upsertMessage(
+							aiMessageId,
+							activeChatId,
+							aiResponseText,
+							"assistant",
+						);
 						setStreamingText(""); // Clear streaming text after saving
 					}
 				} catch (error) {
@@ -147,5 +156,6 @@ export function useChatCompletion(
 		isAiTyping,
 		streamingText,
 		sendMessage,
+		clearInferenceCache: aiChat.clearCache,
 	};
 }

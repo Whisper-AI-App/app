@@ -11,7 +11,7 @@ import { useChatRenderers } from "@/hooks/useChatRenderers";
 import { useChatState } from "@/hooks/useChatState";
 import { wouldTruncate } from "@/src/utils/context-window";
 import { useLocalSearchParams, useRouter } from "expo-router";
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { View as RNView } from "react-native";
 import { GiftedChat, type IMessage } from "react-native-gifted-chat";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -70,12 +70,6 @@ export default function ChatPage() {
 		onClose: handleClose,
 	});
 
-	// Handle new chat - reset state without navigation animation
-	const handleNewChat = useCallback(() => {
-		handleNewChatState();
-		router.setParams({ id: undefined });
-	}, [handleNewChatState, router]);
-
 	// Messages from TinyBase
 	const messages = useChatMessages(currentChatId);
 
@@ -88,12 +82,20 @@ export default function ChatPage() {
 	}, [messages]);
 
 	// AI completion orchestration
-	const { isAiTyping, streamingText, sendMessage } = useChatCompletion({
-		chatId: currentChatId,
-		messages,
-		onChatCreated: setCurrentChatId,
-		folderId: folderIdParam || null,
-	});
+	const { isAiTyping, streamingText, sendMessage, clearInferenceCache } =
+		useChatCompletion({
+			chatId: currentChatId,
+			messages,
+			onChatCreated: setCurrentChatId,
+			folderId: folderIdParam || null,
+		});
+
+	// Handle new chat - reset state without navigation animation, and clear caches
+	const handleNewChat = useCallback(() => {
+		clearInferenceCache();
+		handleNewChatState();
+		router.setParams({ id: undefined });
+	}, [handleNewChatState, clearInferenceCache, router]);
 
 	// GiftedChat render functions - with isFullPage=true
 	const {
@@ -132,6 +134,11 @@ export default function ChatPage() {
 		},
 		[sendMessage],
 	);
+
+	useEffect(() => {
+		// Clear inference cache on chat load (i.e. switching conversations)
+		clearInferenceCache();
+	}, [clearInferenceCache, currentChatId]);
 
 	return (
 		<RNView style={{ flex: 1 }}>

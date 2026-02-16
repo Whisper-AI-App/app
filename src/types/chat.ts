@@ -41,6 +41,7 @@ export interface UseChatCompletionReturn {
 	isAiTyping: boolean;
 	streamingText: string;
 	sendMessage: (text: string) => Promise<void>;
+	clearInferenceCache: () => Promise<void>;
 }
 
 export interface ChatHeaderProps {
