@@ -6,12 +6,16 @@ import { TypingIndicator } from "@/components/ui/typing-indicator";
 import { View } from "@/components/ui/view";
 import { useColorScheme } from "@/hooks/useColorScheme";
 import { useKeyboardHeight } from "@/hooks/useKeyboardHeight";
+import { getAppIconPresetById } from "@/src/data/app-icon-presets";
+import type { AppIconVariant } from "@/src/data/app-icon-presets";
 import type { ChatRenderersProps } from "@/src/types/chat";
 import { Colors } from "@/theme/colors";
+import { Image } from "expo-image";
 import { SendHorizonal } from "lucide-react-native";
 import { useCallback, useEffect } from "react";
 import { Dimensions } from "react-native";
 import { Bubble } from "react-native-gifted-chat";
+import { useValue } from "tinybase/ui-react";
 import Animated, {
 	useAnimatedStyle,
 	useSharedValue,
@@ -34,6 +38,10 @@ export function useChatRenderers({
 }: ChatRenderersProps & { isFullPage?: boolean }) {
 	const colorScheme = useColorScheme() ?? "light";
 	const theme = Colors[colorScheme];
+	const appIconVariant = useValue("app_icon_variant") as
+		| AppIconVariant
+		| undefined;
+	const appIconPreset = getAppIconPresetById(appIconVariant || "Default");
 	const { keyboardHeight, keyboardAnimationDuration } = useKeyboardHeight();
 
 	const BASE_BOTTOM = isFullPage ? PAGE_BASE_BOTTOM : SHEET_BASE_BOTTOM;
@@ -213,12 +221,30 @@ export function useChatRenderers({
 		[isTyping, setIsInputFocused, isNewChat, animatedToolbarStyle],
 	);
 
+	const renderAvatar = useCallback(
+		(props: { position: "left" | "right" }) => {
+			if (props.position === "right") return null;
+			return (
+				<Image
+					source={appIconPreset?.image}
+					style={{
+						width: 28,
+						height: 28,
+						borderRadius: 14,
+					}}
+				/>
+			);
+		},
+		[appIconPreset],
+	);
+
 	const defaultContainerStyle = {
 		paddingHorizontal: 8,
 	};
 
 	return {
 		renderBubble,
+		renderAvatar,
 		renderInputToolbar,
 		renderFooter,
 		defaultContainerStyle,
