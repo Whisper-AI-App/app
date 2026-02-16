@@ -138,8 +138,8 @@ export function useChatRenderers({
 									)
 								: isUserMessage && showCopyButton
 									? (messageTextProps: { currentMessage?: { text?: string } }) => (
-											<View style={{ flexShrink: 1, maxWidth: "100%", paddingHorizontal: 12, paddingVertical: 4, alignItems: "flex-end" }}>
-												<Text style={{ color: theme.background }}>{messageTextProps.currentMessage?.text}</Text>
+											<View style={{ flexShrink: 1, maxWidth: "100%" }}>
+												<Text style={{ color: theme.background, marginLeft: 8, marginRight: 8, marginTop: 5, marginBottom: 5, fontSize: 16, lineHeight: 22 }}>{messageTextProps.currentMessage?.text}</Text>
 												<CopyMessageButton text={message.text} variant="user" />
 											</View>
 										)
