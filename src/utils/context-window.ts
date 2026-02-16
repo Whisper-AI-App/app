@@ -1,6 +1,6 @@
 // Simple character heuristic: ~4 chars per token
 const CHARS_PER_TOKEN = 4;
-const CONTEXT_SIZE = 2048;
+export const DEFAULT_CONTEXT_SIZE = 2048;
 const RESPONSE_RESERVE = 300;
 // Approximate system message size for warning calculation
 const SYSTEM_MESSAGE_ESTIMATE = 200;
@@ -9,17 +9,20 @@ export function estimateTokens(text: string): number {
 	return Math.ceil(text.length / CHARS_PER_TOKEN);
 }
 
-export function wouldTruncate(totalMessageChars: number): boolean {
+export function wouldTruncate(
+	totalMessageChars: number,
+	contextSize: number = DEFAULT_CONTEXT_SIZE,
+): boolean {
 	const messageTokens = Math.ceil(totalMessageChars / CHARS_PER_TOKEN);
-	const available = CONTEXT_SIZE - SYSTEM_MESSAGE_ESTIMATE - RESPONSE_RESERVE;
+	const available = contextSize - SYSTEM_MESSAGE_ESTIMATE - RESPONSE_RESERVE;
 	return messageTokens > available;
 }
 
 export function truncateMessages(
 	systemMessage: string,
-	messages: { role: string; content: string }[],
-	maxTokens = CONTEXT_SIZE,
-): { role: string; content: string }[] {
+	messages: { role: "user" | "assistant" | "system"; content: string }[],
+	maxTokens = DEFAULT_CONTEXT_SIZE,
+): { role: "user" | "assistant" | "system"; content: string }[] {
 	const available =
 		maxTokens - estimateTokens(systemMessage) - RESPONSE_RESERVE;
 

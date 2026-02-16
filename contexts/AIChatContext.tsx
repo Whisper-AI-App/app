@@ -12,6 +12,8 @@ import {
 } from "react";
 import type { RuntimeConfig } from "whisper-llm-cards";
 
+const DEFAULT_CONTEXT_SIZE = 2048;
+
 export type AIChatConfig = {
 	ggufPath: string;
 	runtime?: RuntimeConfig;
@@ -24,6 +26,7 @@ export type AIChatMessage = {
 
 type AIChatContextType = {
 	isLoaded: boolean;
+	contextSize: number;
 	loadModel: (config: AIChatConfig) => Promise<void>;
 	completion: (
 		messages: AIChatMessage[],
@@ -37,6 +40,7 @@ const AIChatContext = createContext<AIChatContextType | undefined>(undefined);
 export function AIChatProvider({ children }: { children: ReactNode }) {
 	const [context, setContext] = useState<LlamaContext | undefined>();
 	const [isLoaded, setIsLoaded] = useState(false);
+	const [contextSize, setContextSize] = useState(DEFAULT_CONTEXT_SIZE);
 	const stopWordsRef = useRef<string[]>([]);
 	const runtimeConfigRef = useRef<RuntimeConfig | undefined>(undefined);
 
@@ -112,6 +116,7 @@ export function AIChatProvider({ children }: { children: ReactNode }) {
 
 				setContext(llamaContext);
 				setIsLoaded(true);
+				setContextSize(runtime?.n_ctx ?? DEFAULT_CONTEXT_SIZE);
 				runtimeConfigRef.current = runtime;
 				stopWordsRef.current = runtime?.stop ?? [];
 
@@ -178,7 +183,7 @@ export function AIChatProvider({ children }: { children: ReactNode }) {
 
 	return (
 		<AIChatContext.Provider
-			value={{ isLoaded, loadModel, completion, clearCache }}
+			value={{ isLoaded, contextSize, loadModel, completion, clearCache }}
 		>
 			{children}
 		</AIChatContext.Provider>

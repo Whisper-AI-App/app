@@ -104,7 +104,7 @@ export function useChatCompletion(
 					const truncatedMessages = truncateMessages(
 						systemMessage,
 						conversationMessages,
-						2048,
+						aiChat.contextSize,
 					);
 
 					const response = await aiChat.completion(

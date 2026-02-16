@@ -5,6 +5,7 @@ import { SuggestionCards } from "@/components/suggestion-cards";
 import { PromptDialog } from "@/components/ui/prompt-dialog";
 import { Text } from "@/components/ui/text";
 import { View } from "@/components/ui/view";
+import { useAIChat } from "@/contexts/AIChatContext";
 import { useChatCompletion } from "@/hooks/useChatCompletion";
 import { useChatMessages } from "@/hooks/useChatMessages";
 import { useChatRenderers } from "@/hooks/useChatRenderers";
@@ -73,13 +74,14 @@ export default function ChatPage() {
 	// Messages from TinyBase
 	const messages = useChatMessages(currentChatId);
 
-	const totalChars = messages.reduce((sum, m) => sum + m.text.length, 0);
+	// Get contextSize from AI context for truncation warning
+	const { contextSize } = useAIChat();
 
 	// Show warning when conversation will be truncated
 	const showTruncationWarning = useMemo(() => {
 		const totalChars = messages.reduce((sum, m) => sum + m.text.length, 0);
-		return wouldTruncate(totalChars);
-	}, [messages]);
+		return wouldTruncate(totalChars, contextSize);
+	}, [messages, contextSize]);
 
 	// AI completion orchestration
 	const { isAiTyping, streamingText, sendMessage, clearInferenceCache } =
