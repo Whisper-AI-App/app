@@ -85,7 +85,7 @@ export default function ChatPage() {
 		clearInferenceCache();
 		handleNewChatState();
 		router.setParams({ id: undefined });
-	}, [handleNewChatState, router]);
+	}, [handleNewChatState, clearInferenceCache, router]);
 
 	// GiftedChat render functions - with isFullPage=true
 	const {
@@ -128,7 +128,7 @@ export default function ChatPage() {
 	useEffect(() => {
 		// Clear inference cache on chat load (i.e. switching conversations)
 		clearInferenceCache();
-	}, [clearInferenceCache]);
+	}, [clearInferenceCache, currentChatId]);
 
 	return (
 		<RNView style={{ flex: 1 }}>
