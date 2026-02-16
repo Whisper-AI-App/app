@@ -89,6 +89,7 @@ export default function ChatPage() {
 		isContinuing,
 		streamingText,
 		sendMessage,
+		stopGeneration,
 		isCutOff,
 		continueMessage,
 		chatNotice,
@@ -121,6 +122,7 @@ export default function ChatPage() {
 		isFullPage: true,
 		isCutOff,
 		onContinue: continueMessage ?? undefined,
+		onStop: stopGeneration,
 		chatNotice,
 	});
 

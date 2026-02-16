@@ -25,6 +25,7 @@ export interface ChatRenderersProps {
 	isNewChat?: boolean;
 	isCutOff?: boolean;
 	onContinue?: () => void;
+	onStop?: () => void;
 	chatNotice?: ChatNotice | null;
 }
 
@@ -60,6 +61,7 @@ export interface UseChatCompletionReturn {
 	isContinuing: boolean;
 	streamingText: string;
 	sendMessage: (text: string) => Promise<void>;
+	stopGeneration: () => void;
 	// PR features
 	isCutOff: boolean;
 	lastAiMessageId: string | null;

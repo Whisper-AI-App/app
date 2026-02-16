@@ -13,7 +13,7 @@ import { getAppIconPresetById } from "@/src/data/app-icon-presets";
 import type { ChatRenderersProps } from "@/src/types/chat";
 import { Colors } from "@/theme/colors";
 import { Image } from "expo-image";
-import { SendHorizonal } from "lucide-react-native";
+import { SendHorizonal, Square } from "lucide-react-native";
 import { useCallback, useEffect } from "react";
 import { Dimensions } from "react-native";
 import { Bubble } from "react-native-gifted-chat";
@@ -39,6 +39,7 @@ export function useChatRenderers({
 	isFullPage = false,
 	isCutOff = false,
 	onContinue,
+	onStop,
 	chatNotice,
 }: ChatRenderersProps & { isFullPage?: boolean }) {
 	const colorScheme = useColorScheme() ?? "light";
@@ -269,18 +270,27 @@ export function useChatRenderers({
 					</View>
 
 					<View>
-						<Button
-							variant="default"
-							icon={SendHorizonal}
-							disabled={!text || isTyping}
-							onPress={onSend}
-							size="icon"
-						/>
+						{isTyping && onStop ? (
+							<Button
+								variant="default"
+								icon={Square}
+								onPress={onStop}
+								size="icon"
+							/>
+						) : (
+							<Button
+								variant="default"
+								icon={SendHorizonal}
+								disabled={!text || isTyping}
+								onPress={onSend}
+								size="icon"
+							/>
+						)}
 					</View>
 				</Animated.View>
 			);
 		},
-		[isTyping, setIsInputFocused, isNewChat, animatedToolbarStyle],
+		[isTyping, setIsInputFocused, isNewChat, animatedToolbarStyle, onStop],
 	);
 
 	const renderAvatar = useCallback(
