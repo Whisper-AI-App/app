@@ -4,10 +4,12 @@ import type { CompletionResult } from "../../types/chat";
 // --- Mocks ---
 
 const mockCompletion = jest.fn();
+const mockClearCache = jest.fn().mockResolvedValue(undefined);
 const mockUseAIChat = jest.fn(() => ({
 	isLoaded: true,
 	completion: mockCompletion,
 	loadModel: jest.fn(),
+	clearCache: mockClearCache,
 }));
 
 jest.mock("@/contexts/AIChatContext", () => ({
@@ -93,6 +95,7 @@ describe("useChatCompletion", () => {
 			isLoaded: true,
 			completion: mockCompletion,
 			loadModel: jest.fn(),
+			clearCache: mockClearCache,
 		});
 	});
 
@@ -147,7 +150,7 @@ describe("useChatCompletion", () => {
 				"uuid-2",
 				"chat-1",
 				"Hello!",
-				"system",
+				"assistant",
 			);
 		});
 
@@ -308,7 +311,7 @@ describe("useChatCompletion", () => {
 				"uuid-11",
 				"chat-1",
 				"...continued text",
-				"system",
+				"assistant",
 			);
 		});
 
