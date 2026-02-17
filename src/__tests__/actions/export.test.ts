@@ -1,5 +1,4 @@
 import {
-	mockMainStore,
 	resetMockMainStore,
 	seedMockMainStore,
 } from "../../__mocks__/main-store-mock";
