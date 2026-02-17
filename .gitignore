@@ -59,3 +59,5 @@ app-example
 
 # test coverage
 coverage/
+
+modules/*/**/build

@@ -1,5 +1,6 @@
 import { getModelFileUri, mainStore } from "@/src/stores/main/main-store";
 import type { CompletionResult } from "@/src/types/chat";
+import { getDeviceCapabilities } from "@/src/utils/device-capabilities";
 import * as FileSystem from "expo-file-system";
 import { initLlama, type LlamaContext, releaseAllLlama } from "llama.rn";
 import {
@@ -11,7 +12,11 @@ import {
 	useRef,
 	useState,
 } from "react";
-import type { RuntimeConfig } from "whisper-llm-cards";
+import {
+	type ResolvedRuntime,
+	resolveRuntimeConfig,
+	type RuntimeConfig,
+} from "whisper-llm-cards";
 
 const DEFAULT_CONTEXT_SIZE = 2048;
 
@@ -28,6 +33,7 @@ export type AIChatMessage = {
 type AIChatContextType = {
 	isLoaded: boolean;
 	contextSize: number;
+	runtimeConfig: ResolvedRuntime | undefined;
 	loadModel: (config: AIChatConfig) => Promise<void>;
 	completion: (
 		messages: AIChatMessage[],
@@ -43,7 +49,7 @@ export function AIChatProvider({ children }: { children: ReactNode }) {
 	const [isLoaded, setIsLoaded] = useState(false);
 	const [contextSize, setContextSize] = useState(DEFAULT_CONTEXT_SIZE);
 	const stopWordsRef = useRef<string[]>([]);
-	const runtimeConfigRef = useRef<RuntimeConfig | undefined>(undefined);
+	const runtimeConfigRef = useRef<ResolvedRuntime | undefined>(undefined);
 
 	// Validate GGUF file existence on mount
 	useEffect(() => {
@@ -97,17 +103,31 @@ export function AIChatProvider({ children }: { children: ReactNode }) {
 			}
 
 			try {
-				const runtime = config.runtime;
 				const isAndroid = process.env.EXPO_OS === "android";
+
+				// Resolve dynamic runtime config based on device capabilities
+				const device = getDeviceCapabilities();
+				console.log("[AIChatProvider] Device capabilities:", device);
+
+				const resolvedRuntime = await resolveRuntimeConfig(
+					config.runtime,
+					device,
+				);
+				console.log(
+					"[AIChatProvider] Resolved runtime config:",
+					resolvedRuntime,
+				);
 
 				const llamaContext = await initLlama({
 					model: config.ggufPath,
 					use_mlock: !isAndroid, // mlock can fail on Android without permissions
-					n_ctx: runtime?.n_ctx ?? 4096,
-					n_gpu_layers: isAndroid ? 0 : 99, // GPU layers can cause issues on some Android devices
-					flash_attn: runtime?.flash_attn,
-					cache_type_k: runtime?.cache_type_k,
-					cache_type_v: runtime?.cache_type_v,
+
+					n_ctx: resolvedRuntime.n_ctx,
+					n_gpu_layers: resolvedRuntime.n_gpu_layers ?? (isAndroid ? 0 : 99),
+					n_threads: resolvedRuntime.n_threads,
+					flash_attn: resolvedRuntime.flash_attn,
+					cache_type_k: resolvedRuntime.cache_type_k,
+					cache_type_v: resolvedRuntime.cache_type_v,
 				});
 
 				console.log(
@@ -117,9 +137,9 @@ export function AIChatProvider({ children }: { children: ReactNode }) {
 
 				setContext(llamaContext);
 				setIsLoaded(true);
-				setContextSize(runtime?.n_ctx ?? DEFAULT_CONTEXT_SIZE);
-				runtimeConfigRef.current = runtime;
-				stopWordsRef.current = runtime?.stop ?? [];
+				setContextSize(resolvedRuntime.n_ctx);
+				runtimeConfigRef.current = resolvedRuntime;
+				stopWordsRef.current = resolvedRuntime.stop;
 
 				console.log("[AIChatProvider] Model loaded successfully");
 			} catch (error) {
@@ -141,7 +161,7 @@ export function AIChatProvider({ children }: { children: ReactNode }) {
 			}
 
 			const runtime = runtimeConfigRef.current;
-			const sampling = runtime?.sampling ?? {};
+			const sampling = runtime?.sampling;
 
 			const result = await context.completion(
 				{
@@ -151,13 +171,13 @@ export function AIChatProvider({ children }: { children: ReactNode }) {
 					stop: stopWordsRef.current,
 
 					// Sampling params - llama.rn uses these exact names
-					temperature: sampling.temperature,
-					top_k: sampling.top_k,
-					top_p: sampling.top_p,
-					min_p: sampling.min_p,
-					penalty_repeat: sampling.penalty_repeat,
-					penalty_last_n: sampling.penalty_last_n,
-					seed: sampling.seed,
+					temperature: sampling?.temperature,
+					top_k: sampling?.top_k,
+					top_p: sampling?.top_p,
+					min_p: sampling?.min_p,
+					penalty_repeat: sampling?.penalty_repeat,
+					penalty_last_n: sampling?.penalty_last_n,
+					seed: sampling?.seed,
 				},
 				(data) => {
 					partialCallback(data.token);
@@ -193,7 +213,14 @@ export function AIChatProvider({ children }: { children: ReactNode }) {
 
 	return (
 		<AIChatContext.Provider
-			value={{ isLoaded, contextSize, loadModel, completion, clearCache }}
+			value={{
+				isLoaded,
+				contextSize,
+				runtimeConfig: runtimeConfigRef.current,
+				loadModel,
+				completion,
+				clearCache,
+			}}
 		>
 			{children}
 		</AIChatContext.Provider>

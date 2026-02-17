@@ -1,0 +1,9 @@
+{
+  "platforms": ["apple", "android", "web"],
+  "apple": {
+    "modules": ["DeviceCpuCoresModule"]
+  },
+  "android": {
+    "modules": ["org.avatechnologies.whisper.devicecpucores.DeviceCpuCoresModule"]
+  }
+}

@@ -1,10 +1,12 @@
 import { Logo } from "@/components/logo";
 import { ModelUpdateNotification } from "@/components/model-update-notification";
+import { BottomSheet } from "@/components/ui/bottom-sheet";
 import { Button } from "@/components/ui/button";
 import { ModeToggle } from "@/components/ui/mode-toggle";
 import { Separator } from "@/components/ui/separator";
 import { Text } from "@/components/ui/text";
 import { View } from "@/components/ui/view";
+import { useAIChat } from "@/contexts/AIChatContext";
 import {
 	checkForModelUpdates,
 	getStoredModelCard,
@@ -16,16 +18,52 @@ import {
 	checkLocalAuthAvailable,
 	setLocalAuth,
 } from "@/src/actions/settings";
+import { getDeviceCapabilities } from "@/src/utils/device-capabilities";
 import { Colors } from "@/theme/colors";
 import { BORDER_RADIUS } from "@/theme/globals";
 import * as Haptics from "expo-haptics";
 import { useRouter } from "expo-router";
 import { ChevronLeft, ChevronRight } from "lucide-react-native";
-import { useEffect, useRef, useState } from "react";
-import { Switch, TouchableOpacity, useColorScheme } from "react-native";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { Share, Switch, TouchableOpacity, useColorScheme } from "react-native";
 import { ScrollView } from "react-native-gesture-handler";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useValue } from "tinybase/ui-react";
+
+// Helper component for table-style info rows
+const InfoRow = ({
+	label,
+	value,
+	isLast = false,
+}: {
+	label: string;
+	value: string | number | undefined;
+	isLast?: boolean;
+}) => (
+	<View
+		style={{
+			flexDirection: "row",
+			justifyContent: "space-between",
+			alignItems: "center",
+			paddingVertical: 10,
+			borderBottomWidth: isLast ? 0 : 1,
+			borderBottomColor: "rgba(125,125,125,0.1)",
+		}}
+	>
+		<Text style={{ opacity: 0.7, fontSize: 14 }}>{label}</Text>
+		<Text
+			style={{
+				fontFamily: "monospace",
+				fontSize: 13,
+				maxWidth: "60%",
+				textAlign: "right",
+			}}
+			numberOfLines={1}
+		>
+			{value ?? "N/A"}
+		</Text>
+	</View>
+);
 
 export default function Settings() {
 	const colorScheme = useColorScheme() ?? "light";
@@ -66,6 +104,18 @@ export default function Settings() {
 	const [logoTapCount, setLogoTapCount] = useState(0);
 	const tapTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
+	// Developer info modal state - tap hardware info 7 times
+	const [hardwareInfoTapCount, setHardwareInfoTapCount] = useState(0);
+	const hardwareInfoTapTimeoutRef = useRef<ReturnType<
+		typeof setTimeout
+	> | null>(null);
+	const [showDevInfoModal, setShowDevInfoModal] = useState(false);
+	const [devTapMessage, setDevTapMessage] = useState<string | null>(null);
+
+	// Get device capabilities and runtime config
+	const deviceCapabilities = useMemo(() => getDeviceCapabilities(), []);
+	const { runtimeConfig } = useAIChat();
+
 	const handleLogoTap = () => {
 		Haptics.selectionAsync();
 
@@ -90,11 +140,89 @@ export default function Settings() {
 		}
 	};
 
-	// Cleanup timeout on unmount
+	const handleHardwareInfoTap = () => {
+		Haptics.selectionAsync();
+
+		// Clear previous timeout
+		if (hardwareInfoTapTimeoutRef.current) {
+			clearTimeout(hardwareInfoTapTimeoutRef.current);
+		}
+
+		const newCount = hardwareInfoTapCount + 1;
+		setHardwareInfoTapCount(newCount);
+
+		if (newCount >= 7) {
+			// Developer modal activated!
+			Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+			setHardwareInfoTapCount(0);
+			setDevTapMessage(null);
+			setShowDevInfoModal(true);
+		} else if (newCount >= 3) {
+			// Show remaining taps message after 3rd tap
+			const remaining = 7 - newCount;
+			setDevTapMessage(
+				`Developer info - ${remaining} tap${remaining === 1 ? "" : "s"} remaining`,
+			);
+			// Reset tap count and message after 1 second of no taps
+			hardwareInfoTapTimeoutRef.current = setTimeout(() => {
+				setHardwareInfoTapCount(0);
+				setDevTapMessage(null);
+			}, 1000);
+		} else {
+			// Reset tap count after 1 second of no taps
+			hardwareInfoTapTimeoutRef.current = setTimeout(() => {
+				setHardwareInfoTapCount(0);
+			}, 1000);
+		}
+	};
+
+	const handleShareDevInfo = async () => {
+		const sampling = runtimeConfig?.sampling;
+		const message = `*Whisper Developer Info*
+
+*Hardware*
+Device: ${deviceCapabilities.modelName ?? "N/A"}
+Platform: ${deviceCapabilities.platform}
+Device Type: ${deviceCapabilities.deviceType}
+RAM: ${deviceCapabilities.ramGB.toFixed(2)} GB
+CPU Architecture: ${deviceCapabilities.cpuArch ?? "N/A"}
+CPU Cores: ${deviceCapabilities.cpuCoreCount ?? "N/A"}
+
+*Model Configuration*
+Name: ${modelCard?.name ?? "N/A"}
+Size: ${modelCard ? `${modelCard.sizeGB.toFixed(2)} GB` : "N/A"}
+Config Version: ${configVersion ?? "N/A"}
+Context Size: ${runtimeConfig?.n_ctx ?? "N/A"}
+GPU Layers: ${runtimeConfig?.n_gpu_layers ?? "N/A"}
+Threads: ${runtimeConfig?.n_threads ?? "N/A"}
+Flash Attention: ${runtimeConfig?.flash_attn ? "Yes" : "No"}
+KV Cache: ${runtimeConfig ? `${runtimeConfig.cache_type_k} / ${runtimeConfig.cache_type_v}` : "N/A"}
+${
+	sampling
+		? `
+*Sampling*
+Temperature: ${sampling.temperature ?? "N/A"}
+Top K: ${sampling.top_k ?? "N/A"}
+Top P: ${sampling.top_p ?? "N/A"}
+Min P: ${sampling.min_p ?? "N/A"}`
+		: ""
+}`;
+
+		try {
+			await Share.share({ message });
+		} catch (error) {
+			console.error("[Settings] Failed to share:", error);
+		}
+	};
+
+	// Cleanup timeouts on unmount
 	useEffect(() => {
 		return () => {
 			if (tapTimeoutRef.current) {
 				clearTimeout(tapTimeoutRef.current);
+			}
+			if (hardwareInfoTapTimeoutRef.current) {
+				clearTimeout(hardwareInfoTapTimeoutRef.current);
 			}
 		};
 	}, []);
@@ -281,9 +409,7 @@ export default function Settings() {
 							}}
 							activeOpacity={0.7}
 						>
-							<Text style={{ fontSize: 16, fontWeight: "500" }}>
-								App Icon
-							</Text>
+							<Text style={{ fontSize: 16, fontWeight: "500" }}>App Icon</Text>
 							<ChevronRight color={theme.textMuted} strokeWidth={2} size={20} />
 						</TouchableOpacity>
 					</View>
@@ -343,6 +469,25 @@ export default function Settings() {
 										? "Up to date!"
 										: "Check for Updates"}
 							</Button>
+
+							{/* Hardware Info - tap 7 times for developer modal */}
+							<TouchableOpacity
+								onPress={handleHardwareInfoTap}
+								activeOpacity={0.7}
+								style={{ marginTop: 16 }}
+							>
+								<Text
+									style={{
+										fontSize: 12,
+										opacity: 0.5,
+										lineHeight: 18,
+									}}
+								>
+									{deviceCapabilities.modelName ?? "Unknown Device"} •{" "}
+									{deviceCapabilities.ramGB.toFixed(1)} GB RAM •{" "}
+									{deviceCapabilities.cpuCoreCount ?? "?"} cores
+								</Text>
+							</TouchableOpacity>
 						</View>
 					</View>
 
@@ -644,6 +789,208 @@ export default function Settings() {
 					</View>
 				</View>
 			</ScrollView>
+
+			{/* Developer Info Toast */}
+			{devTapMessage && (
+				<View
+					style={{
+						position: "absolute",
+						bottom: 64,
+						left: 0,
+						right: 0,
+						alignItems: "center",
+						pointerEvents: "none",
+					}}
+				>
+					<View
+						style={{
+							backgroundColor: theme.foreground,
+							paddingHorizontal: 20,
+							paddingVertical: 12,
+							borderRadius: 24,
+							shadowColor: "#000",
+							shadowOffset: { width: 0, height: 2 },
+							shadowOpacity: 0.25,
+							shadowRadius: 4,
+							elevation: 5,
+						}}
+					>
+						<Text
+							style={{
+								fontSize: 14,
+								fontWeight: "500",
+								color: theme.background,
+							}}
+						>
+							{devTapMessage}
+						</Text>
+					</View>
+				</View>
+			)}
+
+			{/* Developer Info Modal */}
+			<BottomSheet
+				isVisible={showDevInfoModal}
+				onClose={() => setShowDevInfoModal(false)}
+				title="Developer Info"
+				snapPoints={[0.95]}
+			>
+				<ScrollView
+					style={{ flex: 1 }}
+					contentContainerStyle={{
+						padding: 16,
+						paddingTop: 32,
+						paddingBottom: 100,
+					}}
+					showsVerticalScrollIndicator={false}
+				>
+					{/* Hardware Section */}
+					<Text
+						variant="label"
+						style={{
+							fontSize: 13,
+							fontWeight: "600",
+							opacity: 0.7,
+							marginBottom: 8,
+						}}
+					>
+						HARDWARE
+					</Text>
+					<View
+						style={{
+							backgroundColor: theme.background,
+							borderRadius: BORDER_RADIUS / 2,
+							paddingHorizontal: 12,
+							marginBottom: 24,
+						}}
+					>
+						<InfoRow label="Device" value={deviceCapabilities.modelName} />
+						<InfoRow label="Platform" value={deviceCapabilities.platform} />
+						<InfoRow
+							label="Device Type"
+							value={deviceCapabilities.deviceType}
+						/>
+						<InfoRow
+							label="RAM"
+							value={`${deviceCapabilities.ramGB.toFixed(2)} GB`}
+						/>
+						<InfoRow
+							label="CPU Architecture"
+							value={deviceCapabilities.cpuArch}
+						/>
+						<InfoRow
+							label="CPU Cores"
+							value={deviceCapabilities.cpuCoreCount}
+							isLast
+						/>
+					</View>
+
+					{/* Model Configuration Section */}
+					<Text
+						variant="label"
+						style={{
+							fontSize: 13,
+							fontWeight: "600",
+							opacity: 0.7,
+							marginBottom: 8,
+						}}
+					>
+						MODEL CONFIGURATION
+					</Text>
+					<View
+						style={{
+							backgroundColor: theme.background,
+							borderRadius: BORDER_RADIUS / 2,
+							paddingHorizontal: 12,
+							marginBottom: 24,
+						}}
+					>
+						<InfoRow label="Name" value={modelCard?.name} />
+						<InfoRow
+							label="Size"
+							value={
+								modelCard ? `${modelCard.sizeGB.toFixed(2)} GB` : undefined
+							}
+						/>
+						<InfoRow label="Config Version" value={configVersion} />
+						<InfoRow label="Context Size" value={runtimeConfig?.n_ctx} />
+						<InfoRow label="GPU Layers" value={runtimeConfig?.n_gpu_layers} />
+						<InfoRow label="Threads" value={runtimeConfig?.n_threads} />
+						<InfoRow
+							label="Flash Attention"
+							value={runtimeConfig?.flash_attn ? "Yes" : "No"}
+						/>
+						<InfoRow
+							label="KV Cache Type"
+							value={
+								runtimeConfig
+									? `${runtimeConfig.cache_type_k} / ${runtimeConfig.cache_type_v}`
+									: undefined
+							}
+						/>
+						<InfoRow
+							label="Stop Words"
+							value={runtimeConfig?.stop?.join(", ") || "None"}
+							isLast
+						/>
+					</View>
+
+					{/* Sampling Parameters Section */}
+					{runtimeConfig?.sampling && (
+						<>
+							<Text
+								variant="label"
+								style={{
+									fontSize: 13,
+									fontWeight: "600",
+									opacity: 0.7,
+									marginBottom: 8,
+								}}
+							>
+								SAMPLING PARAMETERS
+							</Text>
+							<View
+								style={{
+									backgroundColor: theme.background,
+									borderRadius: BORDER_RADIUS / 2,
+									paddingHorizontal: 12,
+								}}
+							>
+								<InfoRow
+									label="Temperature"
+									value={runtimeConfig.sampling.temperature}
+								/>
+								<InfoRow label="Top K" value={runtimeConfig.sampling.top_k} />
+								<InfoRow label="Top P" value={runtimeConfig.sampling.top_p} />
+								<InfoRow label="Min P" value={runtimeConfig.sampling.min_p} />
+								<InfoRow
+									label="Repeat Penalty"
+									value={runtimeConfig.sampling.penalty_repeat}
+								/>
+								<InfoRow
+									label="Penalty Last N"
+									value={runtimeConfig.sampling.penalty_last_n}
+								/>
+								<InfoRow
+									label="Seed"
+									value={runtimeConfig.sampling.seed}
+									isLast
+								/>
+							</View>
+						</>
+					)}
+
+					{/* Share Button */}
+					<Button
+						variant="link"
+						size="sm"
+						onPress={handleShareDevInfo}
+						style={{ marginTop: 24 }}
+					>
+						Share
+					</Button>
+				</ScrollView>
+			</BottomSheet>
 
 			{/* Model Update Notification */}
 			{updateInfo && (
