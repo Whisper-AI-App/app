@@ -1,28 +1,30 @@
+import { ChatNotice } from "@/components/chat/chat-notice";
 import { CopyMessageButton } from "@/components/chat/copy-message-button";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Markdown } from "@/components/ui/markdown";
+import { Text } from "@/components/ui/text";
 import { TypingIndicator } from "@/components/ui/typing-indicator";
 import { View } from "@/components/ui/view";
 import { useColorScheme } from "@/hooks/useColorScheme";
 import { useKeyboardHeight } from "@/hooks/useKeyboardHeight";
-import { getAppIconPresetById } from "@/src/data/app-icon-presets";
 import type { AppIconVariant } from "@/src/data/app-icon-presets";
+import { getAppIconPresetById } from "@/src/data/app-icon-presets";
 import type { ChatRenderersProps } from "@/src/types/chat";
 import { Colors } from "@/theme/colors";
 import { Image } from "expo-image";
-import { SendHorizonal } from "lucide-react-native";
+import { SendHorizonal, Square } from "lucide-react-native";
 import { useCallback, useEffect } from "react";
 import { Dimensions } from "react-native";
 import { Bubble } from "react-native-gifted-chat";
-import { useValue } from "tinybase/ui-react";
 import Animated, {
 	useAnimatedStyle,
 	useSharedValue,
 	withTiming,
 } from "react-native-reanimated";
+import { useValue } from "tinybase/ui-react";
 
-const { height: SCREEN_HEIGHT } = Dimensions.get("window");
+const { height: SCREEN_HEIGHT, width: SCREEN_WIDTH } = Dimensions.get("window");
 const SHEET_BASE_BOTTOM = 32 + SCREEN_HEIGHT * 0.1;
 const PAGE_BASE_BOTTOM = 32;
 
@@ -35,6 +37,10 @@ export function useChatRenderers({
 	isTyping = false,
 	isNewChat = false,
 	isFullPage = false,
+	isCutOff = false,
+	onContinue,
+	onStop,
+	chatNotice,
 }: ChatRenderersProps & { isFullPage?: boolean }) {
 	const colorScheme = useColorScheme() ?? "light";
 	const theme = Colors[colorScheme];
@@ -70,6 +76,41 @@ export function useChatRenderers({
 			const firstMessageMarginTop = isFullPage ? 16 : 92;
 			const lastMessageMarginBottom = isFullPage ? 124 : 300;
 
+			// Render cutoff notice with continue action
+			if (message._id === "cutoff-notice" && onContinue) {
+				const isLastMessage = JSON.stringify(props.nextMessage) === "{}";
+				return (
+					<View
+						style={{
+							width: SCREEN_WIDTH - 96,
+							marginBottom: isLastMessage ? lastMessageMarginBottom : 4,
+						}}
+					>
+						<ChatNotice
+							type="info"
+							message="Response was cut short."
+							actionLabel="Continue"
+							onAction={onContinue}
+						/>
+					</View>
+				);
+			}
+
+			// Render chat notice for special message
+			if (message._id === "chat-notice" && chatNotice) {
+				const isLastMessage = JSON.stringify(props.nextMessage) === "{}";
+				return (
+					<View
+						style={{
+							width: SCREEN_WIDTH - 96,
+							marginBottom: isLastMessage ? lastMessageMarginBottom : 4,
+						}}
+					>
+						<ChatNotice type={chatNotice.type} message={chatNotice.message} />
+					</View>
+				);
+			}
+
 			// Render typing indicator for special message
 			if (message._id === "typing-indicator") {
 				const isLastMessage = JSON.stringify(props.nextMessage) === "{}";
@@ -93,8 +134,9 @@ export function useChatRenderers({
 
 			// Check if this is a system message (AI response) - user._id === 2
 			const isSystemMessage = message?.user?._id === 2;
+			const isUserMessage = message?.user?._id === 1;
 			const isStreaming = message._id === "streaming";
-			const showCopyButton = isSystemMessage && !isStreaming;
+			const showCopyButton = (isSystemMessage || isUserMessage) && !isStreaming;
 
 			return (
 				<View>
@@ -142,13 +184,34 @@ export function useChatRenderers({
 											)}
 										</View>
 									)
-								: undefined
+								: isUserMessage && showCopyButton
+									? (messageTextProps: {
+											currentMessage?: { text?: string };
+										}) => (
+											<View style={{ flexShrink: 1, maxWidth: "100%" }}>
+												<Text
+													style={{
+														color: theme.background,
+														marginLeft: 8,
+														marginRight: 8,
+														marginTop: 5,
+														marginBottom: 5,
+														fontSize: 16,
+														lineHeight: 22,
+													}}
+												>
+													{messageTextProps.currentMessage?.text}
+												</Text>
+												<CopyMessageButton text={message.text} variant="user" />
+											</View>
+										)
+									: undefined
 						}
 					/>
 				</View>
 			);
 		},
-		[theme, colorScheme, isFullPage],
+		[theme, colorScheme, isFullPage, isCutOff, onContinue, chatNotice],
 	);
 
 	// Return null for GiftedChat's input toolbar - we render our own externally
@@ -207,18 +270,27 @@ export function useChatRenderers({
 					</View>
 
 					<View>
-						<Button
-							variant="default"
-							icon={SendHorizonal}
-							disabled={!text || isTyping}
-							onPress={onSend}
-							size="icon"
-						/>
+						{isTyping && onStop ? (
+							<Button
+								variant="default"
+								icon={Square}
+								onPress={onStop}
+								size="icon"
+							/>
+						) : (
+							<Button
+								variant="default"
+								icon={SendHorizonal}
+								disabled={!text || isTyping}
+								onPress={onSend}
+								size="icon"
+							/>
+						)}
 					</View>
 				</Animated.View>
 			);
 		},
-		[isTyping, setIsInputFocused, isNewChat, animatedToolbarStyle],
+		[isTyping, setIsInputFocused, isNewChat, animatedToolbarStyle, onStop],
 	);
 
 	const renderAvatar = useCallback(
