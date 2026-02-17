@@ -27,7 +27,7 @@ export default function AppIconSettings() {
 	const theme = Colors[colorScheme];
 	const router = useRouter();
 
-	const [isChanging, setIsChanging] = useState(false);
+	const [_isChanging, setIsChanging] = useState(false);
 
 	const storedVariant =
 		(useValue("app_icon_variant") as AppIconVariant) ?? "Default";
@@ -54,7 +54,7 @@ export default function AppIconSettings() {
 		}
 	};
 
-	const handleResetToDefault = async () => {
+	const _handleResetToDefault = async () => {
 		if (storedVariant === "Default") return;
 
 		Haptics.selectionAsync();

@@ -50,6 +50,7 @@
 		"expo-linking": "~8.0.8",
 		"expo-local-authentication": "^17.0.8",
 		"expo-router": "~6.0.14",
+		"expo-sharing": "^14.0.8",
 		"expo-splash-screen": "~31.0.10",
 		"expo-status-bar": "~3.0.8",
 		"expo-system-ui": "~6.0.8",
@@ -85,8 +86,8 @@
 		"eslint-config-expo": "~10.0.0",
 		"jest": "^29.7.0",
 		"jest-expo": "^54.0.17",
-		"tsx": "^4.21.0",
 		"knip": "^5.83.1",
+		"tsx": "^4.21.0",
 		"typescript": "~5.9.2"
 	},
 	"overrides": {

@@ -10,6 +10,11 @@ import {
 	getStoredModelCard,
 } from "@/src/actions/ai/model-config";
 import type { ModelUpdateInfo } from "@/src/actions/ai/types";
+import {
+	type ExportFormat,
+	exportAllChats,
+	getChatsSummary,
+} from "@/src/actions/export";
 import { clearConversations, resetEverything } from "@/src/actions/reset";
 import {
 	authenticate,
@@ -40,6 +45,15 @@ export default function Settings() {
 	const [showUpToDate, setShowUpToDate] = useState(false);
 	const [updateInfo, setUpdateInfo] = useState<ModelUpdateInfo | null>(null);
 	const [showUpdateNotification, setShowUpdateNotification] = useState(false);
+
+	// Export state
+	const [isExporting, setIsExporting] = useState(false);
+	const [exportMessage, setExportMessage] = useState<string | null>(null);
+	const [chatsSummary, setChatsSummary] = useState({
+		chatCount: 0,
+		messageCount: 0,
+	});
+	const [exportFormat, setExportFormat] = useState<ExportFormat>("markdown");
 
 	// Local auth state
 	const localAuthEnabled = useValue("localAuthEnabled") as boolean | undefined;
@@ -172,6 +186,38 @@ export default function Settings() {
 		}
 	};
 
+	// Load chats summary on mount
+	useEffect(() => {
+		setChatsSummary(getChatsSummary());
+	}, []);
+
+	const handleExportChats = async () => {
+		if (chatsSummary.chatCount === 0) {
+			setExportMessage("No chats to export");
+			setTimeout(() => setExportMessage(null), 2000);
+			return;
+		}
+
+		setIsExporting(true);
+		setExportMessage(null);
+		Haptics.selectionAsync();
+
+		try {
+			const result = await exportAllChats(exportFormat);
+			if (result) {
+				setExportMessage("Export complete!");
+			} else {
+				setExportMessage("No chats to export");
+			}
+		} catch (error) {
+			console.error("[Settings] Export failed:", error);
+			setExportMessage("Export failed. Please try again.");
+		} finally {
+			setIsExporting(false);
+			setTimeout(() => setExportMessage(null), 3000);
+		}
+	};
+
 	return (
 		<SafeAreaView
 			style={{ flex: 1, backgroundColor: theme.background }}
@@ -281,9 +327,7 @@ export default function Settings() {
 							}}
 							activeOpacity={0.7}
 						>
-							<Text style={{ fontSize: 16, fontWeight: "500" }}>
-								App Icon
-							</Text>
+							<Text style={{ fontSize: 16, fontWeight: "500" }}>App Icon</Text>
 							<ChevronRight color={theme.textMuted} strokeWidth={2} size={20} />
 						</TouchableOpacity>
 					</View>
@@ -419,6 +463,154 @@ export default function Settings() {
 								Verifying...
 							</Text>
 						)}
+					</View>
+
+					<Separator />
+
+					{/* Data Management Section */}
+					<View style={{ marginBottom: 8 }}>
+						<Text
+							variant="label"
+							style={{
+								fontSize: 13,
+								fontWeight: "600",
+								opacity: 0.7,
+								marginBottom: 12,
+							}}
+						>
+							DATA MANAGEMENT
+						</Text>
+
+						{/* Export Chats */}
+						<View style={{ marginBottom: 16 }}>
+							<Text
+								style={{
+									fontSize: 15,
+									fontWeight: "500",
+									marginBottom: 6,
+								}}
+							>
+								Export Chats
+							</Text>
+							<Text
+								style={{
+									fontSize: 13,
+									opacity: 0.6,
+									marginBottom: 12,
+									lineHeight: 18,
+								}}
+							>
+								Export all {chatsSummary.chatCount} conversations (
+								{chatsSummary.messageCount} messages)
+							</Text>
+
+							{/* Format Picker */}
+							<View style={{ marginBottom: 12 }}>
+								<Text
+									style={{
+										fontSize: 12,
+										opacity: 0.7,
+										marginBottom: 8,
+									}}
+								>
+									Format
+								</Text>
+								<View style={{ flexDirection: "row", gap: 8 }}>
+									<TouchableOpacity
+										style={{
+											flex: 1,
+											paddingVertical: 10,
+											paddingHorizontal: 14,
+											borderRadius: 8,
+											backgroundColor:
+												exportFormat === "markdown"
+													? theme.primary
+													: theme.card,
+											borderWidth: 1,
+											borderColor:
+												exportFormat === "markdown"
+													? theme.primary
+													: "transparent",
+										}}
+										onPress={() => {
+											Haptics.selectionAsync();
+											setExportFormat("markdown");
+										}}
+										activeOpacity={0.7}
+									>
+										<Text
+											style={{
+												fontSize: 13,
+												fontWeight: "500",
+												textAlign: "center",
+												color:
+													exportFormat === "markdown"
+														? theme.background
+														: theme.text,
+											}}
+										>
+											Markdown
+										</Text>
+									</TouchableOpacity>
+									<TouchableOpacity
+										style={{
+											flex: 1,
+											paddingVertical: 10,
+											paddingHorizontal: 14,
+											borderRadius: 8,
+											backgroundColor:
+												exportFormat === "json" ? theme.primary : theme.card,
+											borderWidth: 1,
+											borderColor:
+												exportFormat === "json" ? theme.primary : "transparent",
+										}}
+										onPress={() => {
+											Haptics.selectionAsync();
+											setExportFormat("json");
+										}}
+										activeOpacity={0.7}
+									>
+										<Text
+											style={{
+												fontSize: 13,
+												fontWeight: "500",
+												textAlign: "center",
+												color:
+													exportFormat === "json"
+														? theme.background
+														: theme.text,
+											}}
+										>
+											JSON
+										</Text>
+									</TouchableOpacity>
+								</View>
+							</View>
+
+							<Button
+								variant="secondary"
+								size="sm"
+								onPress={handleExportChats}
+								disabled={isExporting || chatsSummary.chatCount === 0}
+							>
+								{isExporting
+									? "Exporting..."
+									: `Export`}
+							</Button>
+							{exportMessage && (
+								<Text
+									style={{
+										fontSize: 12,
+										color: exportMessage.includes("failed")
+											? theme.destructive
+											: theme.green,
+										marginTop: 8,
+									}}
+								>
+									{exportMessage}
+								</Text>
+							)}
+						</View>
 					</View>
 
 					<Separator />
