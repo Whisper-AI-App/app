@@ -200,10 +200,19 @@ export async function exportAllChats(
  */
 export function getChatsSummary(): { chatCount: number; messageCount: number } {
 	const chatIds = mainStore.getRowIds("chats");
+
+	// Count messages only from existing chats
+	let messageCount = 0;
 	const messageIds = mainStore.getRowIds("messages");
+	for (const messageId of messageIds) {
+		const msg = mainStore.getRow("messages", messageId);
+		if (msg?.chatId && chatIds.includes(msg.chatId)) {
+			messageCount++;
+		}
+	}
 
 	return {
 		chatCount: chatIds.length,
-		messageCount: messageIds.length,
+		messageCount,
 	};
 }
