@@ -48,12 +48,12 @@
     },
     {
       "author": "650 Industries, Inc.",
-      "description": "Contributing 20 open source libraries",
+      "description": "Contributing 21 open source libraries",
       "packages": [
         "expo-av",
         "expo-clipboard",
         "expo-constants",
-        "+ 17 more"
+        "+ 18 more"
       ],
       "priority": 50,
       "section": "libraries"
@@ -226,12 +226,12 @@
     "libraries": [
       {
         "author": "650 Industries, Inc.",
-        "description": "Contributing 20 open source libraries",
+        "description": "Contributing 21 open source libraries",
         "packages": [
           "expo-av",
           "expo-clipboard",
           "expo-constants",
-          "+ 17 more"
+          "+ 18 more"
         ],
         "priority": 50,
         "section": "libraries"
