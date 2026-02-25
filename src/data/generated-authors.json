@@ -48,13 +48,23 @@
     },
     {
       "author": "650 Industries, Inc.",
-      "description": "Contributing 21 open source libraries",
+      "description": "Contributing 22 open source libraries",
       "packages": [
         "expo-av",
         "expo-clipboard",
         "expo-constants",
-        "+ 18 more"
+        "+ 19 more"
       ],
+      "priority": 50,
+      "section": "libraries"
+    },
+    {
+      "author": "Colin McDonnell",
+      "description": "Creator of zod",
+      "packages": [
+        "zod"
+      ],
+      "url": "https://zod.dev",
       "priority": 50,
       "section": "libraries"
     },
@@ -161,12 +171,12 @@
     },
     {
       "author": "Other Libraries",
-      "description": "Contributing 7 open source libraries",
+      "description": "Contributing 8 open source libraries",
       "packages": [
         "@mote-software/tinybase-persister-expo-file-system",
+        "@nanocollective/json-up",
         "@react-navigation/native",
-        "react-native-get-random-values",
-        "+ 4 more"
+        "+ 5 more"
       ],
       "priority": 99,
       "section": "libraries"
@@ -226,13 +236,23 @@
     "libraries": [
       {
         "author": "650 Industries, Inc.",
-        "description": "Contributing 21 open source libraries",
+        "description": "Contributing 22 open source libraries",
         "packages": [
           "expo-av",
           "expo-clipboard",
           "expo-constants",
-          "+ 18 more"
+          "+ 19 more"
         ],
+        "priority": 50,
+        "section": "libraries"
+      },
+      {
+        "author": "Colin McDonnell",
+        "description": "Creator of zod",
+        "packages": [
+          "zod"
+        ],
+        "url": "https://zod.dev",
         "priority": 50,
         "section": "libraries"
       },
@@ -339,12 +359,12 @@
       },
       {
         "author": "Other Libraries",
-        "description": "Contributing 7 open source libraries",
+        "description": "Contributing 8 open source libraries",
         "packages": [
           "@mote-software/tinybase-persister-expo-file-system",
+          "@nanocollective/json-up",
           "@react-navigation/native",
-          "react-native-get-random-values",
-          "+ 4 more"
+          "+ 5 more"
         ],
         "priority": 99,
         "section": "libraries"
