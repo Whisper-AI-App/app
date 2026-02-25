@@ -28,6 +28,7 @@ let mockModelFileUri: string | undefined;
 // Mock the store module with all exports
 jest.mock("../../stores/main/main-store", () => ({
 	mainStore: require("../../__mocks__/main-store-mock").mockMainStore,
+	mainStoreFilePath: "file:///mock/documents/whisper.json",
 	initMainStore: () => mockInitMainStore(),
 	getModelFileUri: () => mockModelFileUri,
 }));
@@ -103,15 +104,19 @@ describe("reset actions", () => {
 
 			await resetEverything();
 
-			expect(mockFileDelete).toHaveBeenCalled();
+			// 1 model file + 2 store files = 3 deletions
+			expect(mockFileDelete).toHaveBeenCalledTimes(3);
 		});
 
-		it("skips file deletion when no model file uri", async () => {
+		it("skips model file deletion when no model file uri", async () => {
 			mockModelFileUri = undefined;
+			mockFileExists = true;
+			mockFileDelete.mockResolvedValue(undefined);
 
 			await resetEverything();
 
-			expect(mockFileDelete).not.toHaveBeenCalled();
+			// Only 2 store files deleted, no model file
+			expect(mockFileDelete).toHaveBeenCalledTimes(2);
 		});
 
 		it("skips file deletion when file does not exist", async () => {
@@ -139,12 +144,14 @@ describe("reset actions", () => {
 			expect(mockMainStore.delTables).toHaveBeenCalled();
 		});
 
-		it("calls initMainStore to reinitialize", async () => {
+		it("deletes store files from disk", async () => {
 			mockModelFileUri = undefined;
+			mockFileDelete.mockResolvedValue(undefined);
 
 			await resetEverything();
 
-			expect(mockInitMainStore).toHaveBeenCalled();
+			// Should delete both the main store file and backup file
+			expect(mockFileDelete).toHaveBeenCalledTimes(2);
 		});
 	});
 });
