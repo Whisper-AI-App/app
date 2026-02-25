@@ -257,7 +257,8 @@ describe("migration schema sync", () => {
 			const tableRecord = (tablesZod.shape[tableName] as any)
 				.removeDefault()
 				.unwrap();
-			const migrationCells = Object.keys(tableRecord.element.shape);
+			const valueType = tableRecord._zod.def.valueType;
+			const migrationCells = Object.keys(valueType.shape);
 			const storeCells = Object.keys(
 				tablesSchemaMainStore[tableName as keyof typeof tablesSchemaMainStore],
 			);
