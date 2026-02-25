@@ -593,9 +593,7 @@ export default function Settings() {
 								onPress={handleExportChats}
 								disabled={isExporting || chatsSummary.chatCount === 0}
 							>
-								{isExporting
-									? "Exporting..."
-									: `Export`}
+								{isExporting ? "Exporting..." : `Export`}
 							</Button>
 							{exportMessage && (
 								<Text
@@ -737,6 +735,9 @@ export default function Settings() {
 											onPress={() => {
 												resetEverything();
 												setShowResetEverythingConfirm(false);
+												if (router.canDismiss()) {
+													router.dismissAll();
+												}
 												router.replace("/");
 											}}
 										>

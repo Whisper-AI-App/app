@@ -24,11 +24,10 @@ export function getModelFileUri(): string | undefined {
 	return mainStore.getValue("ai_chat_model_fileUri") as string | undefined;
 }
 
+/**
+ * Initializes the main store with default values.
+ * Called after migrations have run successfully.
+ */
 export function initMainStore() {
-	if (
-		typeof mainStore.getValue("version") === "undefined" ||
-		!mainStore.getValue("version")
-	) {
-		mainStore.setValue("version", "1");
-	}
+	// placeholder for the future
 }
