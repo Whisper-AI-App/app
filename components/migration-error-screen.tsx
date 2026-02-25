@@ -1,10 +1,11 @@
+import { AlertDialog, useAlertDialog } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import { Text } from "@/components/ui/text";
 import { View } from "@/components/ui/view";
-import { saveBackupData } from "@/src/actions/reset";
 import { Colors } from "@/theme/colors";
 import * as Updates from "expo-updates";
 import { AlertTriangle, RefreshCw, Save, Trash2 } from "lucide-react-native";
+import { useState } from "react";
 import { useColorScheme } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { GradientBackground } from "./gradient-background";
@@ -25,8 +26,24 @@ export function MigrationErrorScreen({
 }: MigrationErrorScreenProps) {
 	const colorScheme = useColorScheme() ?? "light";
 	const theme = Colors[colorScheme];
+	const [isRetrying, setIsRetrying] = useState(false);
+	const backupErrorDialog = useAlertDialog();
+	const [backupErrorMessage, setBackupErrorMessage] = useState("");
+
+	const handleSaveBackup = async () => {
+		try {
+			throw new Error("Test: could not read backup file");
+		} catch (e) {
+			setBackupErrorMessage(
+				e instanceof Error ? e.message : "An unexpected error occurred.",
+			);
+			backupErrorDialog.open();
+		}
+	};
 
 	const handleTryAgain = async () => {
+		setIsRetrying(true);
+		await new Promise((resolve) => setTimeout(resolve, 300));
 		// Reload the app to retry migrations
 		if (Updates.reloadAsync) {
 			await Updates.reloadAsync();
@@ -120,11 +137,12 @@ export function MigrationErrorScreen({
 							onPress={handleTryAgain}
 							icon={RefreshCw}
 							size="lg"
+							disabled={isRetrying}
 						>
-							Try Again
+							{isRetrying ? "Retrying" : "Try Again"}
 						</Button>
 
-						<Button variant="secondary" onPress={saveBackupData} icon={Save}>
+						<Button variant="secondary" onPress={handleSaveBackup} icon={Save}>
 							Save Backup
 						</Button>
 
@@ -151,6 +169,15 @@ export function MigrationErrorScreen({
 					</View>
 				</View>
 			</SafeAreaView>
+			<AlertDialog
+				isVisible={backupErrorDialog.isVisible}
+				onClose={backupErrorDialog.close}
+				title="Backup Failed"
+				description={`Could not find or access a backup.`}
+				confirmText="Close"
+				onConfirm={backupErrorDialog.close}
+				showCancelButton={false}
+			/>
 		</View>
 	);
 }
