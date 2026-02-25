@@ -52,7 +52,7 @@ function jsonToStore(store: Store, state: StoreState): void {
 		store.delTables();
 
 		for (const [key, value] of Object.entries(state.values)) {
-			store.setValue(key, value as Value);
+			if (value !== undefined) store.setValue(key, value as Value);
 		}
 		// Set version from migrated state
 		store.setValue("version", String(state._version));
