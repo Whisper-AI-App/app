@@ -24,13 +24,14 @@ describe("message actions", () => {
 	});
 
 	describe("upsertMessage", () => {
-		it("creates new message with id, chatId, contents, role, createdAt, providerId, and status", () => {
+		it("creates new message with id, chatId, contents, role, createdAt, providerId, modelId, and status", () => {
 			upsertMessage(
 				"msg-1",
 				"chat-1",
 				"Hello world",
 				"user",
 				"whisper-ai",
+				"",
 				"done",
 			);
 
@@ -41,6 +42,7 @@ describe("message actions", () => {
 				role: "user",
 				createdAt: "2024-01-15T10:30:00.000Z",
 				providerId: "whisper-ai",
+				modelId: "",
 				status: "done",
 			});
 		});
@@ -58,6 +60,7 @@ describe("message actions", () => {
 							role: "user",
 							createdAt: originalCreatedAt,
 							providerId: "whisper-ai",
+							modelId: "",
 							status: "done",
 						},
 					},
@@ -73,6 +76,7 @@ describe("message actions", () => {
 				role: "user",
 				createdAt: originalCreatedAt, // Should preserve original createdAt
 				providerId: "whisper-ai", // Should preserve original providerId
+				modelId: "", // Should preserve original modelId
 				status: "done", // Should preserve original status
 			});
 		});
@@ -100,7 +104,7 @@ describe("message actions", () => {
 		});
 
 		it("defaults status to 'done' when not provided", () => {
-			upsertMessage("msg-1", "chat-1", "Hello", "user", "whisper-ai");
+			upsertMessage("msg-1", "chat-1", "Hello", "user", "whisper-ai", "");
 
 			const savedMessage = mockMainStore.setRow.mock.calls[0][2];
 			expect(savedMessage.status).toBe("done");
@@ -113,6 +117,7 @@ describe("message actions", () => {
 				"Partial...",
 				"assistant",
 				"whisper-ai",
+				"",
 				"length",
 			);
 

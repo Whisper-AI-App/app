@@ -50,6 +50,9 @@ jest.mock("expo-haptics", () => ({
 
 jest.mock("tinybase/ui-react", () => ({
 	useValue: jest.fn(() => undefined),
+	useStore: jest.fn(() => ({
+		getCell: jest.fn(() => ""),
+	})),
 }));
 
 let mockUuidCounter = 0;
@@ -149,6 +152,7 @@ describe("useChatCompletion", () => {
 				"Hi",
 				"user",
 				"whisper-ai",
+				"",
 				"done",
 			);
 
@@ -159,6 +163,7 @@ describe("useChatCompletion", () => {
 				"Hello!",
 				"assistant",
 				"whisper-ai",
+				"",
 				"done",
 			);
 		});
@@ -205,6 +210,7 @@ describe("useChatCompletion", () => {
 				"",
 				"assistant",
 				"whisper-ai",
+				"",
 				"error",
 			);
 			expect(result.current.isAiTyping).toBe(false);
@@ -232,6 +238,7 @@ describe("useChatCompletion", () => {
 				"partial response...",
 				"assistant",
 				"whisper-ai",
+				"",
 				"length",
 			);
 			expect(result.current.continueMessage).not.toBeNull();
@@ -255,6 +262,7 @@ describe("useChatCompletion", () => {
 				"complete response",
 				"assistant",
 				"whisper-ai",
+				"",
 				"done",
 			);
 			expect(result.current.continueMessage).toBeNull();
@@ -308,6 +316,7 @@ describe("useChatCompletion", () => {
 				"...continued text",
 				"assistant",
 				"whisper-ai",
+				"",
 				"done",
 			);
 		});
@@ -415,6 +424,7 @@ describe("useChatCompletion", () => {
 				"",
 				"assistant",
 				"whisper-ai",
+				"",
 				"error",
 			);
 			expect(result.current.isAiTyping).toBe(false);
