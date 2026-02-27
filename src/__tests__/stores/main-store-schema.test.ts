@@ -48,7 +48,7 @@ describe("store schema sync validation", () => {
 			expect(chatCells).toHaveLength(4);
 		});
 
-		it("messages table should have id, chatId, contents, role, createdAt cells", () => {
+		it("messages table should have id, chatId, contents, role, createdAt, providerId, status cells", () => {
 			const messageCells = Object.keys(tablesSchemaMainStore.messages);
 
 			expect(messageCells).toContain("id");
@@ -56,7 +56,9 @@ describe("store schema sync validation", () => {
 			expect(messageCells).toContain("contents");
 			expect(messageCells).toContain("role");
 			expect(messageCells).toContain("createdAt");
-			expect(messageCells).toHaveLength(5);
+			expect(messageCells).toContain("providerId");
+			expect(messageCells).toContain("status");
+			expect(messageCells).toHaveLength(7);
 		});
 
 		it("each table cell should have a type definition", () => {

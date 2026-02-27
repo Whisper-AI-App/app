@@ -11,19 +11,8 @@ export const valuesSchemaMainStore = {
 	onboardedAt: { type: "string" as const },
 	theme: { type: "string" as const },
 	localAuthEnabled: { type: "boolean" as const },
-	// Model card data - stores complete WhisperLLMCard as JSON
-	ai_chat_model_card: { type: "string" as const },
-	ai_chat_model_cardId: { type: "string" as const },
-	ai_chat_model_config_version: { type: "string" as const },
-	// Download state
-	ai_chat_model_downloadedAt: { type: "string" as const },
-	ai_chat_model_filename: { type: "string" as const }, // Just filename, not full path (path changes between app updates)
-	ai_chat_model_fileUri: { type: "string" as const }, // Deprecated: kept for backward compatibility
-	ai_chat_model_progressSizeGB: { type: "number" as const },
-	ai_chat_model_downloadError: { type: "string" as const },
-	ai_chat_model_resumableState: { type: "string" as const },
-	ai_chat_model_isPaused: { type: "boolean" as const },
-	ai_chat_model_fileRemoved: { type: "boolean" as const },
+	// Active AI provider
+	activeProviderId: { type: "string" as const },
 	// Chat background settings
 	chat_background_type: { type: "string" as const }, // "default" | "preset" | "custom"
 	chat_background_uri: { type: "string" as const }, // URI to background image
@@ -55,5 +44,29 @@ export const tablesSchemaMainStore = {
 		contents: { type: "string" as const },
 		role: { type: "string" as const },
 		createdAt: { type: "string" as const },
+		providerId: { type: "string" as const },
+		modelId: { type: "string" as const },
+		status: { type: "string" as const },
+	},
+	aiProviders: {
+		id: { type: "string" as const },
+		status: { type: "string" as const }, // ProviderStatus
+		error: { type: "string" as const }, // Error message when status is "error"
+		selectedModelId: { type: "string" as const },
+		// Download state (Whisper AI)
+		modelCard: { type: "string" as const }, // JSON: WhisperLLMCard
+		modelCardId: { type: "string" as const },
+		configVersion: { type: "string" as const },
+		downloadedAt: { type: "string" as const },
+		filename: { type: "string" as const }, // Just filename, path reconstructed at runtime
+		progressSizeGB: { type: "number" as const },
+		totalSizeGB: { type: "number" as const },
+		downloadError: { type: "string" as const },
+		resumableState: { type: "string" as const }, // Serialized download resumable
+		isPaused: { type: "boolean" as const },
+		fileRemoved: { type: "boolean" as const },
+		// OAuth state (OpenRouter)
+		apiKey: { type: "string" as const },
+		oAuthCodeVerifier: { type: "string" as const },
 	},
 } as const;

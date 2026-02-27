@@ -24,8 +24,15 @@ describe("message actions", () => {
 	});
 
 	describe("upsertMessage", () => {
-		it("creates new message with id, chatId, contents, role, and createdAt", () => {
-			upsertMessage("msg-1", "chat-1", "Hello world", "user");
+		it("creates new message with id, chatId, contents, role, createdAt, providerId, and status", () => {
+			upsertMessage(
+				"msg-1",
+				"chat-1",
+				"Hello world",
+				"user",
+				"whisper-ai",
+				"done",
+			);
 
 			expect(mockMainStore.setRow).toHaveBeenCalledWith("messages", "msg-1", {
 				id: "msg-1",
@@ -33,6 +40,8 @@ describe("message actions", () => {
 				contents: "Hello world",
 				role: "user",
 				createdAt: "2024-01-15T10:30:00.000Z",
+				providerId: "whisper-ai",
+				status: "done",
 			});
 		});
 
@@ -48,6 +57,8 @@ describe("message actions", () => {
 							contents: "Original message",
 							role: "user",
 							createdAt: originalCreatedAt,
+							providerId: "whisper-ai",
+							status: "done",
 						},
 					},
 				},
@@ -61,6 +72,8 @@ describe("message actions", () => {
 				contents: "Updated message",
 				role: "user",
 				createdAt: originalCreatedAt, // Should preserve original createdAt
+				providerId: "whisper-ai", // Should preserve original providerId
+				status: "done", // Should preserve original status
 			});
 		});
 
@@ -84,6 +97,51 @@ describe("message actions", () => {
 			expect(mockMainStore.setRow).toHaveBeenCalledTimes(2);
 			expect(mockMainStore.setRow.mock.calls[0][2].role).toBe("user");
 			expect(mockMainStore.setRow.mock.calls[1][2].role).toBe("assistant");
+		});
+
+		it("defaults status to 'done' when not provided", () => {
+			upsertMessage("msg-1", "chat-1", "Hello", "user", "whisper-ai");
+
+			const savedMessage = mockMainStore.setRow.mock.calls[0][2];
+			expect(savedMessage.status).toBe("done");
+		});
+
+		it("accepts explicit status parameter", () => {
+			upsertMessage(
+				"msg-1",
+				"chat-1",
+				"Partial...",
+				"assistant",
+				"whisper-ai",
+				"length",
+			);
+
+			const savedMessage = mockMainStore.setRow.mock.calls[0][2];
+			expect(savedMessage.status).toBe("length");
+		});
+
+		it("preserves existing status on update when not provided", () => {
+			seedMockMainStore(
+				{},
+				{
+					messages: {
+						"msg-1": {
+							id: "msg-1",
+							chatId: "chat-1",
+							contents: "Partial",
+							role: "assistant",
+							createdAt: "2024-01-01T00:00:00.000Z",
+							providerId: "whisper-ai",
+							status: "length",
+						},
+					},
+				},
+			);
+
+			upsertMessage("msg-1", "chat-1", "Updated", "assistant");
+
+			const savedMessage = mockMainStore.setRow.mock.calls[0][2];
+			expect(savedMessage.status).toBe("length");
 		});
 	});
 

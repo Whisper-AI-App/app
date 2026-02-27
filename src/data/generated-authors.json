@@ -48,12 +48,12 @@
     },
     {
       "author": "650 Industries, Inc.",
-      "description": "Contributing 22 open source libraries",
+      "description": "Contributing 23 open source libraries",
       "packages": [
         "expo-av",
         "expo-clipboard",
         "expo-constants",
-        "+ 19 more"
+        "+ 20 more"
       ],
       "priority": 50,
       "section": "libraries"
@@ -171,12 +171,12 @@
     },
     {
       "author": "Other Libraries",
-      "description": "Contributing 8 open source libraries",
+      "description": "Contributing 10 open source libraries",
       "packages": [
         "@mote-software/tinybase-persister-expo-file-system",
         "@nanocollective/json-up",
-        "@react-navigation/native",
-        "+ 5 more"
+        "@openrouter/ai-sdk-provider",
+        "+ 7 more"
       ],
       "priority": 99,
       "section": "libraries"
@@ -236,12 +236,12 @@
     "libraries": [
       {
         "author": "650 Industries, Inc.",
-        "description": "Contributing 22 open source libraries",
+        "description": "Contributing 23 open source libraries",
         "packages": [
           "expo-av",
           "expo-clipboard",
           "expo-constants",
-          "+ 19 more"
+          "+ 20 more"
         ],
         "priority": 50,
         "section": "libraries"
@@ -359,12 +359,12 @@
       },
       {
         "author": "Other Libraries",
-        "description": "Contributing 8 open source libraries",
+        "description": "Contributing 10 open source libraries",
         "packages": [
           "@mote-software/tinybase-persister-expo-file-system",
           "@nanocollective/json-up",
-          "@react-navigation/native",
-          "+ 5 more"
+          "@openrouter/ai-sdk-provider",
+          "+ 7 more"
         ],
         "priority": 99,
         "section": "libraries"

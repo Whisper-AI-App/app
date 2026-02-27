@@ -2,7 +2,7 @@ import { AuthGate } from "@/components/auth-gate";
 import { ErrorBoundary } from "@/components/error-boundary";
 import { MigrationErrorScreen } from "@/components/migration-error-screen";
 import { StatusBar } from "@/components/status-bar";
-import { AIChatProvider } from "@/contexts/AIChatContext";
+import { AIProviderProvider } from "@/contexts/AIProviderContext";
 import { resetEverything } from "@/src/actions/reset";
 import {
 	initMainStore,
@@ -84,7 +84,7 @@ export default function RootLayout() {
 			<Provider store={mainStore as unknown as Store}>
 				<AuthGate>
 					<ErrorBoundary>
-						<AIChatProvider>
+						<AIProviderProvider>
 							<ThemeProvider>
 								<StatusBar />
 								<ErrorBoundary>
@@ -95,10 +95,13 @@ export default function RootLayout() {
 										<Stack.Screen name="settings" />
 										<Stack.Screen name="chat" />
 										<Stack.Screen name="game" />
+										<Stack.Screen name="setup-ai" />
+									<Stack.Screen name="provider-setup/[providerId]" />
+										<Stack.Screen name="callback/[provider]" />
 									</Stack>
 								</ErrorBoundary>
 							</ThemeProvider>
-						</AIChatProvider>
+						</AIProviderProvider>
 					</ErrorBoundary>
 				</AuthGate>
 			</Provider>

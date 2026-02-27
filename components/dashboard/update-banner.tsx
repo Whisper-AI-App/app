@@ -1,7 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { Text } from "@/components/ui/text";
 import { View } from "@/components/ui/view";
-import type { ModelUpdateInfo } from "@/src/actions/ai/types";
+import type { ModelUpdateInfo } from "@/src/ai-providers/whisper-ai/model-config";
 import { Colors } from "@/theme/colors";
 import { useColorScheme } from "react-native";
 

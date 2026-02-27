@@ -11,18 +11,18 @@ import { View } from "@/components/ui/view";
 export default function Index() {
 	const router = useRouter();
 	const onboardedAt = useValue("onboardedAt");
-	const downloadedAt = useValue("ai_chat_model_downloadedAt");
+	const activeProviderId = useValue("activeProviderId") as string | undefined;
 
 	useEffect(() => {
 		if (onboardedAt) {
-			// If onboarded but model not downloaded, go to download page
-			if (!downloadedAt) {
-				router.replace("/download");
-			} else {
+			if (activeProviderId) {
 				router.replace("/dashboard");
+			} else {
+				// Onboarded but no provider set up - go to setup-ai
+				router.replace("/setup-ai");
 			}
 		}
-	}, [onboardedAt, downloadedAt]);
+	}, [onboardedAt, activeProviderId]);
 
 	return (
 		<View style={{ flex: 1 }}>
@@ -43,7 +43,7 @@ export default function Index() {
 				<Onboarding
 					steps={onboardingSteps}
 					onComplete={() => {
-						router.replace("/download");
+						router.replace("/setup-ai");
 					}}
 					showSkip={false}
 				/>

@@ -128,22 +128,6 @@ const mockWhisperLLMCardsJson = {
 	},
 };
 
-// Mock the constants module to avoid circular dependency issues
-jest.mock("../../actions/ai/constants", () => ({
-	DEFAULT_AI_CHAT_MODEL: {
-		name: "Default Test Model",
-		type: "gguf" as const,
-		sourceUrl: "https://example.com/default-model.gguf",
-		sizeGB: 0.5,
-		parametersB: 0.5,
-		ramGB: 2,
-		systemMessage: {
-			template: "You are a helpful assistant.",
-			defaultTemplateValues: {},
-		},
-	},
-}));
-
 // Mock utility functions
 jest.mock("../../utils/bytes", () => ({
 	bytesToGB: jest.fn((bytes: number) => bytes / (1024 * 1024 * 1024)),
@@ -159,25 +143,37 @@ jest.mock("../../utils/generate-model-filename", () => ({
 
 import * as whisperLLMCards from "whisper-llm-cards";
 // Import the functions under test AFTER mocks
-import { DEFAULT_AI_CHAT_MODEL } from "../../actions/ai/constants";
+import { DEFAULT_AI_CHAT_MODEL } from "../../ai-providers/whisper-ai/constants";
 import {
 	pauseDownload,
 	resumeDownload,
-	startOrResumeDownloadOfAIChatModel,
-} from "../../actions/ai/download-control";
+	startDownload,
+} from "../../ai-providers/whisper-ai/download";
 import {
 	areCardsEqual,
 	checkForModelUpdates,
 	fetchLatestRecommendedModel,
 	getStoredModelCard,
 	updateModelCard,
-} from "../../actions/ai/model-config";
+} from "../../ai-providers/whisper-ai/model-config";
 import { validateModelFileName } from "../../utils/generate-model-filename";
 
 // Get references to mocked functions
 const mockedGetLatestConfig = whisperLLMCards.getLatestConfig as jest.Mock;
 const mockedRecommendModelCard =
 	whisperLLMCards.recommendModelCard as jest.Mock;
+
+// Helper to seed whisper-ai provider row
+function seedWhisperAI(cells: Record<string, unknown>) {
+	seedMockMainStore(undefined, {
+		aiProviders: {
+			"whisper-ai": {
+				id: "whisper-ai",
+				...cells,
+			},
+		},
+	});
+}
 
 describe("ai-chat-model actions", () => {
 	beforeEach(() => {
@@ -255,46 +251,44 @@ describe("ai-chat-model actions", () => {
 					defaultTemplateValues: {},
 				},
 			};
-			seedMockMainStore({
-				ai_chat_model_card: JSON.stringify(card),
+			seedWhisperAI({
+				modelCard: JSON.stringify(card),
 			});
 
-			const result = getStoredModelCard();
+			const result = getStoredModelCard(mockMainStore as any);
 
 			expect(result).toEqual(card);
 		});
 
 		it("returns null when no card stored", () => {
-			// No card seeded
-
-			const result = getStoredModelCard();
+			const result = getStoredModelCard(mockMainStore as any);
 
 			expect(result).toBeNull();
 		});
 
 		it("returns null for invalid JSON", () => {
-			seedMockMainStore({
-				ai_chat_model_card: "invalid json {{{",
+			seedWhisperAI({
+				modelCard: "invalid json {{{",
 			});
 
-			const result = getStoredModelCard();
+			const result = getStoredModelCard(mockMainStore as any);
 
 			expect(result).toBeNull();
 		});
 
 		it("returns null for empty string", () => {
-			seedMockMainStore({
-				ai_chat_model_card: "",
+			seedWhisperAI({
+				modelCard: "",
 			});
 
-			const result = getStoredModelCard();
+			const result = getStoredModelCard(mockMainStore as any);
 
 			expect(result).toBeNull();
 		});
 	});
 
 	describe("updateModelCard", () => {
-		it("updates card, cardId, and config_version", () => {
+		it("updates card, cardId, and configVersion", () => {
 			const card = {
 				name: "New Model",
 				type: "gguf" as const,
@@ -308,18 +302,24 @@ describe("ai-chat-model actions", () => {
 				},
 			};
 
-			updateModelCard(card, "new-card-id", "2.0.0");
+			updateModelCard(mockMainStore as any, card, "new-card-id", "2.0.0");
 
-			expect(mockMainStore.setValue).toHaveBeenCalledWith(
-				"ai_chat_model_card",
+			expect(mockMainStore.setCell).toHaveBeenCalledWith(
+				"aiProviders",
+				"whisper-ai",
+				"modelCard",
 				JSON.stringify(card),
 			);
-			expect(mockMainStore.setValue).toHaveBeenCalledWith(
-				"ai_chat_model_cardId",
+			expect(mockMainStore.setCell).toHaveBeenCalledWith(
+				"aiProviders",
+				"whisper-ai",
+				"modelCardId",
 				"new-card-id",
 			);
-			expect(mockMainStore.setValue).toHaveBeenCalledWith(
-				"ai_chat_model_config_version",
+			expect(mockMainStore.setCell).toHaveBeenCalledWith(
+				"aiProviders",
+				"whisper-ai",
+				"configVersion",
 				"2.0.0",
 			);
 		});
@@ -387,14 +387,14 @@ describe("ai-chat-model actions", () => {
 
 		it("returns hasUpdate: false when versions and cards match", async () => {
 			const card = mockWhisperLLMCardsJson.cards["default-card-id"];
-			seedMockMainStore({
-				ai_chat_model_config_version: "1.0.0",
-				ai_chat_model_card: JSON.stringify(card),
-				ai_chat_model_filename: "default-test-model-v1.0.0-abc123.gguf",
+			seedWhisperAI({
+				configVersion: "1.0.0",
+				modelCard: JSON.stringify(card),
+				filename: "default-test-model-v1.0.0-abc123.gguf",
 			});
 			(validateModelFileName as jest.Mock).mockReturnValue(true);
 
-			const result = await checkForModelUpdates();
+			const result = await checkForModelUpdates(mockMainStore as any);
 
 			expect(result.hasUpdate).toBe(false);
 			expect(result.requiresDownload).toBe(false);
@@ -402,14 +402,14 @@ describe("ai-chat-model actions", () => {
 
 		it("detects version mismatch", async () => {
 			const card = mockWhisperLLMCardsJson.cards["default-card-id"];
-			seedMockMainStore({
-				ai_chat_model_config_version: "0.9.0", // Old version
-				ai_chat_model_card: JSON.stringify(card),
-				ai_chat_model_filename: "test-model-v0.9.0-abc123.gguf",
+			seedWhisperAI({
+				configVersion: "0.9.0", // Old version
+				modelCard: JSON.stringify(card),
+				filename: "test-model-v0.9.0-abc123.gguf",
 			});
 			(validateModelFileName as jest.Mock).mockReturnValue(true);
 
-			const result = await checkForModelUpdates();
+			const result = await checkForModelUpdates(mockMainStore as any);
 
 			expect(result.hasUpdate).toBe(true);
 			expect(result.currentVersion).toBe("0.9.0");
@@ -418,14 +418,14 @@ describe("ai-chat-model actions", () => {
 
 		it("detects filename mismatch (invalid filename)", async () => {
 			const card = mockWhisperLLMCardsJson.cards["default-card-id"];
-			seedMockMainStore({
-				ai_chat_model_config_version: "1.0.0",
-				ai_chat_model_card: JSON.stringify(card),
-				ai_chat_model_filename: "invalid-filename.gguf",
+			seedWhisperAI({
+				configVersion: "1.0.0",
+				modelCard: JSON.stringify(card),
+				filename: "invalid-filename.gguf",
 			});
 			(validateModelFileName as jest.Mock).mockReturnValue(false);
 
-			const result = await checkForModelUpdates();
+			const result = await checkForModelUpdates(mockMainStore as any);
 
 			expect(result.hasUpdate).toBe(true);
 			expect(result.requiresDownload).toBe(true);
@@ -438,14 +438,14 @@ describe("ai-chat-model actions", () => {
 				...mockWhisperLLMCardsJson.cards["default-card-id"],
 				parametersB: 0.4, // Different parameter count
 			};
-			seedMockMainStore({
-				ai_chat_model_config_version: "0.9.0",
-				ai_chat_model_card: JSON.stringify(oldCard),
-				ai_chat_model_filename: "test-model-v0.9.0-abc123.gguf",
+			seedWhisperAI({
+				configVersion: "0.9.0",
+				modelCard: JSON.stringify(oldCard),
+				filename: "test-model-v0.9.0-abc123.gguf",
 			});
 			(validateModelFileName as jest.Mock).mockReturnValue(true);
 
-			const result = await checkForModelUpdates();
+			const result = await checkForModelUpdates(mockMainStore as any);
 
 			expect(result.hasUpdate).toBe(true);
 			// Same sourceUrl means no download required
@@ -455,18 +455,16 @@ describe("ai-chat-model actions", () => {
 
 	describe("pauseDownload", () => {
 		it("returns early when no active download", async () => {
-			await pauseDownload();
+			await pauseDownload(mockMainStore as any);
 
 			expect(mockPauseAsync).not.toHaveBeenCalled();
-			expect(mockMainStore.setValue).not.toHaveBeenCalled();
+			expect(mockMainStore.setCell).not.toHaveBeenCalled();
 		});
 	});
 
 	describe("resumeDownload", () => {
 		it("returns early when no saved resumable state", async () => {
-			// No resumable state seeded
-
-			await resumeDownload();
+			await resumeDownload(mockMainStore as any);
 
 			expect(mockCreateDownloadResumable).not.toHaveBeenCalled();
 		});
@@ -477,13 +475,13 @@ describe("ai-chat-model actions", () => {
 				options: {},
 				resumeData: "mock-resume-data",
 			};
-			seedMockMainStore({
-				ai_chat_model_resumableState: JSON.stringify(resumableState),
-				ai_chat_model_fileUri: "file:///mock/documents/model.gguf",
+			seedWhisperAI({
+				resumableState: JSON.stringify(resumableState),
+				filename: "model.gguf",
 			});
 			mockDownloadAsync.mockResolvedValue({ status: 200 });
 
-			await resumeDownload();
+			await resumeDownload(mockMainStore as any);
 
 			expect(mockCreateDownloadResumable).toHaveBeenCalledWith(
 				"https://example.com/model.gguf",
@@ -492,14 +490,16 @@ describe("ai-chat-model actions", () => {
 				expect.any(Function),
 				"mock-resume-data",
 			);
-			expect(mockMainStore.setValue).toHaveBeenCalledWith(
-				"ai_chat_model_isPaused",
+			expect(mockMainStore.setCell).toHaveBeenCalledWith(
+				"aiProviders",
+				"whisper-ai",
+				"isPaused",
 				false,
 			);
 		});
 	});
 
-	describe("startOrResumeDownloadOfAIChatModel", () => {
+	describe("startDownload", () => {
 		const testCard = {
 			name: "Test Model",
 			type: "gguf" as const,
@@ -517,30 +517,36 @@ describe("ai-chat-model actions", () => {
 			mockDownloadAsync.mockResolvedValue({ status: 200 });
 			mockFileExistsValue = false;
 
-			await startOrResumeDownloadOfAIChatModel(
+			await startDownload(
+				mockMainStore as any,
 				testCard,
 				"test-card-id",
 				"1.0.0",
 			);
 
 			expect(mockCreateDownloadResumable).toHaveBeenCalled();
-			expect(mockMainStore.setValue).toHaveBeenCalledWith(
-				"ai_chat_model_card",
+			expect(mockMainStore.setCell).toHaveBeenCalledWith(
+				"aiProviders",
+				"whisper-ai",
+				"modelCard",
 				JSON.stringify(testCard),
 			);
-			expect(mockMainStore.setValue).toHaveBeenCalledWith(
-				"ai_chat_model_cardId",
+			expect(mockMainStore.setCell).toHaveBeenCalledWith(
+				"aiProviders",
+				"whisper-ai",
+				"modelCardId",
 				"test-card-id",
 			);
 		});
 
 		it("skips if already downloaded with matching filename", async () => {
-			seedMockMainStore({
-				ai_chat_model_filename: "test-model-v1.0.0-abc123.gguf",
-				ai_chat_model_downloadedAt: "2024-01-01T00:00:00.000Z",
+			seedWhisperAI({
+				filename: "test-model-v1.0.0-abc123.gguf",
+				downloadedAt: "2024-01-01T00:00:00.000Z",
 			});
 
-			await startOrResumeDownloadOfAIChatModel(
+			await startDownload(
+				mockMainStore as any,
 				testCard,
 				"test-card-id",
 				"1.0.0",
@@ -555,14 +561,15 @@ describe("ai-chat-model actions", () => {
 				options: {},
 				resumeData: "mock-resume-data",
 			};
-			seedMockMainStore({
-				ai_chat_model_isPaused: true,
-				ai_chat_model_resumableState: JSON.stringify(resumableState),
-				ai_chat_model_fileUri: "file:///mock/documents/test.gguf",
+			seedWhisperAI({
+				isPaused: true,
+				resumableState: JSON.stringify(resumableState),
+				filename: "test.gguf",
 			});
 			mockDownloadAsync.mockResolvedValue({ status: 200 });
 
-			await startOrResumeDownloadOfAIChatModel(
+			await startDownload(
+				mockMainStore as any,
 				testCard,
 				"test-card-id",
 				"1.0.0",
@@ -580,17 +587,18 @@ describe("ai-chat-model actions", () => {
 
 		it("restarts download with restart flag (deletes existing file)", async () => {
 			// Use a different filename so the "already downloaded" check doesn't return early
-			seedMockMainStore({
-				ai_chat_model_filename: "old-model-v0.9.0-xyz789.gguf",
-				ai_chat_model_downloadedAt: "2024-01-01T00:00:00.000Z",
-				ai_chat_model_isPaused: true,
-				ai_chat_model_resumableState: "{}",
+			seedWhisperAI({
+				filename: "old-model-v0.9.0-xyz789.gguf",
+				downloadedAt: "2024-01-01T00:00:00.000Z",
+				isPaused: true,
+				resumableState: "{}",
 			});
 			mockFileExistsValue = true;
 			mockFileDelete.mockResolvedValue(undefined);
 			mockDownloadAsync.mockResolvedValue({ status: 200 });
 
-			await startOrResumeDownloadOfAIChatModel(
+			await startDownload(
+				mockMainStore as any,
 				testCard,
 				"test-card-id",
 				"1.0.0",
@@ -598,8 +606,10 @@ describe("ai-chat-model actions", () => {
 			);
 
 			expect(mockFileDelete).toHaveBeenCalled();
-			expect(mockMainStore.setValue).toHaveBeenCalledWith(
-				"ai_chat_model_progressSizeGB",
+			expect(mockMainStore.setCell).toHaveBeenCalledWith(
+				"aiProviders",
+				"whisper-ai",
+				"progressSizeGB",
 				0,
 			);
 		});
@@ -608,14 +618,17 @@ describe("ai-chat-model actions", () => {
 			mockDownloadAsync.mockResolvedValue({ status: 200 });
 			mockFileExistsValue = false;
 
-			await startOrResumeDownloadOfAIChatModel(
+			await startDownload(
+				mockMainStore as any,
 				testCard,
 				"test-card-id",
 				"1.0.0",
 			);
 
-			expect(mockMainStore.setValue).toHaveBeenCalledWith(
-				"ai_chat_model_downloadedAt",
+			expect(mockMainStore.setCell).toHaveBeenCalledWith(
+				"aiProviders",
+				"whisper-ai",
+				"downloadedAt",
 				"2024-01-15T10:30:00.000Z",
 			);
 		});
@@ -624,14 +637,17 @@ describe("ai-chat-model actions", () => {
 			mockDownloadAsync.mockResolvedValue({ status: 206 });
 			mockFileExistsValue = false;
 
-			await startOrResumeDownloadOfAIChatModel(
+			await startDownload(
+				mockMainStore as any,
 				testCard,
 				"test-card-id",
 				"1.0.0",
 			);
 
-			expect(mockMainStore.setValue).toHaveBeenCalledWith(
-				"ai_chat_model_downloadedAt",
+			expect(mockMainStore.setCell).toHaveBeenCalledWith(
+				"aiProviders",
+				"whisper-ai",
+				"downloadedAt",
 				"2024-01-15T10:30:00.000Z",
 			);
 		});

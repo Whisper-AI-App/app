@@ -36,8 +36,17 @@ describe("migrations", () => {
 				values: {
 					version: String(CURRENT_SCHEMA_VERSION),
 					onboardedAt: "2024-01-01T00:00:00Z",
-					ai_chat_model_downloadedAt: "2024-01-02T00:00:00Z",
-					ai_chat_model_fileUri: "file:///some/model.gguf",
+					activeProviderId: "whisper-ai",
+				},
+				tables: {
+					aiProviders: {
+						"whisper-ai": {
+							id: "whisper-ai",
+							status: "ready",
+							downloadedAt: "2024-01-02T00:00:00Z",
+							filename: "model.gguf",
+						},
+					},
 				},
 			});
 
@@ -48,12 +57,7 @@ describe("migrations", () => {
 			expect(result.fromVersion).toBe(CURRENT_SCHEMA_VERSION);
 			expect(result.toVersion).toBe(CURRENT_SCHEMA_VERSION);
 			expect(store.getValue("onboardedAt")).toBe("2024-01-01T00:00:00Z");
-			expect(store.getValue("ai_chat_model_downloadedAt")).toBe(
-				"2024-01-02T00:00:00Z",
-			);
-			expect(store.getValue("ai_chat_model_fileUri")).toBe(
-				"file:///some/model.gguf",
-			);
+			expect(store.getValue("activeProviderId")).toBe("whisper-ai");
 		});
 
 		it("treats missing version as version 0", async () => {
@@ -191,8 +195,16 @@ describe("migrations", () => {
 				contents: "Hi",
 				role: "assistant",
 				createdAt: "2024-01-15T10:30:00Z",
+				status: "done",
 			},
-			requiredFields: ["id", "chatId", "contents", "role", "createdAt"],
+			requiredFields: [
+				"id",
+				"chatId",
+				"contents",
+				"role",
+				"createdAt",
+				"status",
+			],
 		},
 		{
 			table: "folders",

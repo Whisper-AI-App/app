@@ -16,12 +16,12 @@ import { PromptDialog } from "@/components/ui/prompt-dialog";
 import { SearchBar } from "@/components/ui/searchbar";
 import { SearchButton } from "@/components/ui/searchbutton";
 import { View } from "@/components/ui/view";
-import { useAIChat } from "@/contexts/AIChatContext";
+import { useAIProvider } from "@/contexts/AIProviderContext";
 import { useColor } from "@/hooks/useColor";
-import { checkForModelUpdates } from "@/src/actions/ai/model-config";
+import { checkForModelUpdates } from "@/src/ai-providers/whisper-ai/model-config";
+import type { ModelUpdateInfo } from "@/src/ai-providers/whisper-ai/model-config";
 import { renameChat } from "@/src/actions/chat";
-import type { ModelUpdateInfo } from "@/src/actions/ai/types";
-import { getModelFileUri } from "@/src/stores/main/main-store";
+import { mainStore } from "@/src/stores/main/main-store";
 import { Colors } from "@/theme/colors";
 import { useRouter } from "expo-router";
 import { MessageCircle, Settings } from "lucide-react-native";
@@ -38,10 +38,10 @@ import {
 } from "react-native-reanimated";
 import { SafeAreaView } from "react-native-safe-area-context";
 import {
+	useCell,
 	useRowIds,
 	useSortedRowIds,
 	useTable,
-	useValue,
 } from "tinybase/ui-react";
 
 export default function Dashboard() {
@@ -53,7 +53,6 @@ export default function Dashboard() {
 	const muted = useColor("textMuted");
 
 	const [searchQuery, setSearchQuery] = useState("");
-	const [modelLoadError, setModelLoadError] = useState(false);
 	const [updateNotificationVisible, setUpdateNotificationVisible] =
 		useState(false);
 	const [updateAvailable, setUpdateAvailable] = useState(false);
@@ -72,20 +71,19 @@ export default function Dashboard() {
 	const [renamingChatId, setRenamingChatId] = useState<string>("");
 	const [renamingChatName, setRenamingChatName] = useState<string>("");
 
-	const aiChat = useAIChat();
+	const { activeProvider, setupError } = useAIProvider();
 
-	// Check for completed model using useValue
-	const downloadedAt = useValue("ai_chat_model_downloadedAt") as
-		| string
-		| undefined;
-	// Use filename (not full path) to detect changes, then reconstruct full path
-	const filename = useValue("ai_chat_model_filename") as string | undefined;
-	const storedConfigVersion = useValue("ai_chat_model_config_version") as
-		| string
-		| undefined;
-	const aiChatModelCardJson = useValue("ai_chat_model_card") as
-		| string
-		| undefined;
+	// Subscribe to whisper-ai provider state for update checks
+	const configVersion = useCell(
+		"aiProviders",
+		"whisper-ai",
+		"configVersion",
+	) as string | undefined;
+	const downloadedAt = useCell(
+		"aiProviders",
+		"whisper-ai",
+		"downloadedAt",
+	) as string | undefined;
 
 	// Get all chat IDs sorted by creation date (newest first)
 	const chatIds = useSortedRowIds("chats", "createdAt", true);
@@ -98,10 +96,10 @@ export default function Dashboard() {
 	const messagesTable = useTable("messages");
 
 	// Get folder data
-	const folderIds = useSortedRowIds("folders", "createdAt", false); // oldest first
+	const folderIds = useSortedRowIds("folders", "createdAt", false);
 	const foldersTable = useTable("folders");
 
-	// Process folders with chat counts, sorted by chat count (descending)
+	// Process folders with chat counts
 	const foldersWithCounts = useMemo(() => {
 		const folders = folderIds.map((folderId) => {
 			const folder = foldersTable[folderId];
@@ -114,11 +112,9 @@ export default function Dashboard() {
 				chatCount,
 			};
 		});
-		// Sort by chat count (most chats first)
 		return folders.sort((a, b) => b.chatCount - a.chatCount);
 	}, [folderIds, foldersTable, chatsTable]);
 
-	// Total chat count
 	const totalChatCount = chatIds.length;
 
 	// Create a map of chatId -> latest message for preview
@@ -126,7 +122,6 @@ export default function Dashboard() {
 		const allPreviews = chatIds.map((chatId) => {
 			const chat = chatsTable[chatId];
 
-			// Find the latest message for this chat
 			const chatMessages = messageIds
 				.map((id) => messagesTable[id])
 				.filter((msg) => msg?.chatId === chatId)
@@ -147,7 +142,6 @@ export default function Dashboard() {
 			};
 		});
 
-		// Filter by selected folder
 		let filteredPreviews = allPreviews;
 		if (selectedFolderId !== null) {
 			filteredPreviews = allPreviews.filter(
@@ -155,7 +149,6 @@ export default function Dashboard() {
 			);
 		}
 
-		// Filter based on search query
 		const query = searchQuery.trim().toLowerCase();
 		if (!query) {
 			return filteredPreviews;
@@ -174,44 +167,6 @@ export default function Dashboard() {
 		messagesTable,
 		selectedFolderId,
 	]);
-
-	// Check for completed model on mount and load it if available
-	useEffect(() => {
-		if (downloadedAt && filename && !aiChat.isLoaded && !modelLoadError) {
-			// Reconstruct full path from filename (handles app updates changing paths)
-			const fileUri = getModelFileUri();
-			if (!fileUri) return;
-
-			// Parse the model card to get runtime config
-			let runtime: import("whisper-llm-cards").RuntimeConfig | undefined;
-			if (aiChatModelCardJson) {
-				try {
-					const aiChatModelCard = JSON.parse(aiChatModelCardJson);
-					runtime = aiChatModelCard.runtime;
-				} catch {
-					console.warn("[Dashboard] Failed to parse ai_chat_model_card");
-				}
-			}
-
-			// Model is downloaded but not loaded yet, load it
-			console.log("[Dashboard] Loading model from:", fileUri);
-			aiChat
-				.loadModel({ ggufPath: fileUri, runtime })
-				.then(() => {
-					console.log("[Dashboard] Model loaded successfully");
-					setModelLoadError(false);
-				})
-				.catch((error) => {
-					console.error("[Dashboard] Failed to load model:", error);
-					setModelLoadError(true);
-				});
-		}
-	}, [downloadedAt, filename, aiChat, modelLoadError, aiChatModelCardJson]);
-
-	// Function to retry loading the model
-	const retryLoadModel = () => {
-		setModelLoadError(false);
-	};
 
 	// Animated scroll handler
 	const scrollHandler = useAnimatedScrollHandler({
@@ -251,43 +206,33 @@ export default function Dashboard() {
 		};
 	});
 
-	// Check for model updates after model is loaded
+	// Check for model updates (whisper-ai only) after provider is ready
 	useEffect(() => {
-		console.log("[Dashboard] Update check conditions:", {
-			downloadedAt: !!downloadedAt,
-			isLoaded: aiChat.isLoaded,
-			storedConfigVersion,
-		});
-
-		if (!downloadedAt || !aiChat.isLoaded || !storedConfigVersion) {
+		if (
+			!downloadedAt ||
+			!activeProvider?.isConfigured() ||
+			!configVersion ||
+			activeProvider.id !== "whisper-ai"
+		) {
 			return;
 		}
 
 		const checkForUpdates = async () => {
 			try {
-				const updateInfo = await checkForModelUpdates();
-
-				if (updateInfo.hasUpdate) {
-					console.log(
-						"[Dashboard] Update available:",
-						updateInfo.requiresDownload ? "download required" : "metadata only",
-						`(${updateInfo.reason})`,
-					);
-					setUpdateInfo(updateInfo);
+				const info = await checkForModelUpdates(mainStore as any);
+				if (info.hasUpdate) {
+					setUpdateInfo(info);
 					setUpdateAvailable(true);
 					setUpdateNotificationVisible(true);
-				} else {
-					console.log("[Dashboard] No update available");
 				}
 			} catch (error) {
 				console.error("[Dashboard] Failed to check for updates:", error);
 			}
 		};
 
-		// Check for updates with a small delay to not interfere with model loading
 		const timeout = setTimeout(checkForUpdates, 2000);
 		return () => clearTimeout(timeout);
-	}, [downloadedAt, aiChat.isLoaded, storedConfigVersion]);
+	}, [downloadedAt, activeProvider, configVersion]);
 
 	const showUpdateAlert = useMemo(() => {
 		return updateAvailable && !updateNotificationVisible && updateInfo;
@@ -327,15 +272,12 @@ export default function Dashboard() {
 		setRenamingChatName("");
 	};
 
-	// Get the managed folder's name for the sheet
 	const managedFolderName =
 		foldersTable[managedFolderId]?.name?.toString() || "";
 
-	// Get the current folder ID for the chat being moved
 	const movingChatFolderId =
 		chatsTable[movingChatId]?.folderId?.toString() || "";
 
-	// Navigate to chat with optional folder context
 	const navigateToNewChat = () => {
 		if (selectedFolderId) {
 			router.push(`/chat?folderId=${selectedFolderId}`);
@@ -378,7 +320,9 @@ export default function Dashboard() {
 					</Button>
 				</View>
 
-				{modelLoadError && <ModelLoadError onRetry={retryLoadModel} />}
+				{setupError && (
+					<ModelLoadError onRetry={() => activeProvider?.setup()} />
+				)}
 
 				{showUpdateAlert && updateInfo && (
 					<UpdateBanner
@@ -461,11 +405,9 @@ export default function Dashboard() {
 						isVisible={updateNotificationVisible}
 						onClose={() => {
 							setUpdateNotificationVisible(false);
-							// If it's just metadata update, dismiss permanently
 							if (!updateInfo.requiresDownload) {
 								setUpdateAvailable(false);
 							}
-							// If download required, keep banner visible
 						}}
 						currentCard={updateInfo.currentCard}
 						newCard={updateInfo.newCard}

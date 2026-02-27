@@ -1,15 +1,10 @@
 import { Logo } from "@/components/logo";
-import { ModelUpdateNotification } from "@/components/model-update-notification";
 import { Button } from "@/components/ui/button";
 import { ModeToggle } from "@/components/ui/mode-toggle";
 import { Separator } from "@/components/ui/separator";
 import { Text } from "@/components/ui/text";
 import { View } from "@/components/ui/view";
-import {
-	checkForModelUpdates,
-	getStoredModelCard,
-} from "@/src/actions/ai/model-config";
-import type { ModelUpdateInfo } from "@/src/actions/ai/types";
+import { useAIProvider } from "@/contexts/AIProviderContext";
 import {
 	type ExportFormat,
 	exportAllChats,
@@ -30,7 +25,7 @@ import { useEffect, useRef, useState } from "react";
 import { Switch, TouchableOpacity, useColorScheme } from "react-native";
 import { ScrollView } from "react-native-gesture-handler";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { useValue } from "tinybase/ui-react";
+import { useTable, useValue } from "tinybase/ui-react";
 
 export default function Settings() {
 	const colorScheme = useColorScheme() ?? "light";
@@ -41,10 +36,6 @@ export default function Settings() {
 		useState(false);
 	const [showResetEverythingConfirm, setShowResetEverythingConfirm] =
 		useState(false);
-	const [checkingForUpdates, setCheckingForUpdates] = useState(false);
-	const [showUpToDate, setShowUpToDate] = useState(false);
-	const [updateInfo, setUpdateInfo] = useState<ModelUpdateInfo | null>(null);
-	const [showUpdateNotification, setShowUpdateNotification] = useState(false);
 
 	// Export state
 	const [isExporting, setIsExporting] = useState(false);
@@ -68,22 +59,16 @@ export default function Settings() {
 		boolean | null
 	>(null);
 
-	const configVersion = useValue("ai_chat_model_config_version") as
-		| string
-		| undefined;
-	const downloadedAt = useValue("ai_chat_model_downloadedAt") as
-		| string
-		| undefined;
-	const modelCard = getStoredModelCard();
+	const { providers, activeProvider } = useAIProvider();
+	const providerRows = useTable("aiProviders");
 
-	// Easter egg state - tap logo 5 times to unlock game
+	// Easter egg state
 	const [logoTapCount, setLogoTapCount] = useState(0);
 	const tapTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
 	const handleLogoTap = () => {
 		Haptics.selectionAsync();
 
-		// Clear previous timeout
 		if (tapTimeoutRef.current) {
 			clearTimeout(tapTimeoutRef.current);
 		}
@@ -92,19 +77,16 @@ export default function Settings() {
 		setLogoTapCount(newCount);
 
 		if (newCount >= 5) {
-			// Easter egg activated!
 			Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
 			setLogoTapCount(0);
 			router.push("/game");
 		} else {
-			// Reset tap count after 1 second of no taps
 			tapTimeoutRef.current = setTimeout(() => {
 				setLogoTapCount(0);
 			}, 1000);
 		}
 	};
 
-	// Cleanup timeout on unmount
 	useEffect(() => {
 		return () => {
 			if (tapTimeoutRef.current) {
@@ -136,7 +118,6 @@ export default function Settings() {
 
 	const handleLocalAuthToggle = async (value: boolean) => {
 		if (value) {
-			// Enabling - verify auth works first
 			setIsAuthenticating(true);
 			setAuthStatusMessage(null);
 
@@ -154,35 +135,9 @@ export default function Settings() {
 				setAuthStatusMessage(result.error || "Authentication failed");
 			}
 		} else {
-			// Disabling - no auth check needed
 			setLocalAuthToggle(false);
 			setLocalAuth(false);
 			setAuthStatusMessage(null);
-		}
-	};
-
-	const handleCheckForUpdates = async () => {
-		if (!downloadedAt || !configVersion) {
-			return;
-		}
-
-		setCheckingForUpdates(true);
-		try {
-			const result = await checkForModelUpdates();
-			if (result.hasUpdate) {
-				setUpdateInfo(result);
-				setShowUpdateNotification(true);
-			} else {
-				// Show "Up to date!" for 2 seconds
-				setShowUpToDate(true);
-				setTimeout(() => {
-					setShowUpToDate(false);
-				}, 2000);
-			}
-		} catch (error) {
-			console.error("[Settings] Failed to check for updates:", error);
-		} finally {
-			setCheckingForUpdates(false);
 		}
 	};
 
@@ -256,7 +211,7 @@ export default function Settings() {
 				style={{ flex: 1 }}
 				contentContainerStyle={{ paddingBottom: 32 }}
 			>
-				{/* Logo Section - Tap 5 times for easter egg */}
+				{/* Logo Section */}
 				<TouchableOpacity
 					onPress={handleLogoTap}
 					activeOpacity={0.8}
@@ -287,7 +242,6 @@ export default function Settings() {
 						</Text>
 						<ModeToggle showLabel={true} />
 
-						{/* Chat Background */}
 						<TouchableOpacity
 							style={{
 								marginTop: 16,
@@ -310,7 +264,6 @@ export default function Settings() {
 							<ChevronRight color={theme.textMuted} strokeWidth={2} size={20} />
 						</TouchableOpacity>
 
-						{/* App Icon */}
 						<TouchableOpacity
 							style={{
 								marginTop: 16,
@@ -334,7 +287,7 @@ export default function Settings() {
 
 					<Separator />
 
-					{/* Status Section */}
+					{/* AI Providers Section */}
 					<View style={{ marginBottom: 8 }}>
 						<Text
 							variant="label"
@@ -345,49 +298,17 @@ export default function Settings() {
 								marginBottom: 12,
 							}}
 						>
-							STATUS
+							Your AI
 						</Text>
-						<View style={{ marginBottom: 16 }}>
-							<Text
-								style={{
-									fontSize: 15,
-									fontWeight: "500",
-									marginBottom: 6,
-								}}
-							>
-								AI Chat Version
-							</Text>
-							{modelCard && configVersion && (
-								<Text
-									style={{
-										fontSize: 12,
-										opacity: 0.6,
-										marginBottom: 12,
-										lineHeight: 18,
-									}}
-								>
-									{modelCard.name} • v{configVersion} •{" "}
-									{modelCard.sizeGB.toFixed(1)} GB
-								</Text>
-							)}
-							<Button
-								variant="secondary"
-								size="sm"
-								onPress={handleCheckForUpdates}
-								disabled={
-									checkingForUpdates ||
-									showUpToDate ||
-									!downloadedAt ||
-									!configVersion
-								}
-							>
-								{checkingForUpdates
-									? "Checking..."
-									: showUpToDate
-										? "Up to date!"
-										: "Check for Updates"}
-							</Button>
-						</View>
+
+						<Button
+							variant="secondary"
+							size="sm"
+							style={{ marginTop: 12 }}
+							onPress={() => router.push("/setup-ai")}
+						>
+							Manage AI
+						</Button>
 					</View>
 
 					<Separator />
@@ -481,7 +402,6 @@ export default function Settings() {
 							DATA MANAGEMENT
 						</Text>
 
-						{/* Export Chats */}
 						<View style={{ marginBottom: 16 }}>
 							<Text
 								style={{
@@ -504,7 +424,6 @@ export default function Settings() {
 								{chatsSummary.messageCount} messages)
 							</Text>
 
-							{/* Format Picker */}
 							<View style={{ marginBottom: 12 }}>
 								<Text
 									style={{
@@ -593,7 +512,7 @@ export default function Settings() {
 								onPress={handleExportChats}
 								disabled={isExporting || chatsSummary.chatCount === 0}
 							>
-								{isExporting ? "Exporting..." : `Export`}
+								{isExporting ? "Exporting..." : "Export"}
 							</Button>
 							{exportMessage && (
 								<Text
@@ -613,7 +532,7 @@ export default function Settings() {
 
 					<Separator />
 
-					{/* Data Management Section */}
+					{/* Danger Area */}
 					<View style={{ marginBottom: 8 }}>
 						<Text
 							variant="label"
@@ -627,7 +546,6 @@ export default function Settings() {
 							DANGER AREA
 						</Text>
 
-						{/* Clear Conversations */}
 						<View style={{ marginBottom: 24 }}>
 							<Text
 								style={{
@@ -693,7 +611,6 @@ export default function Settings() {
 							)}
 						</View>
 
-						{/* Reset Everything */}
 						<View style={{ marginBottom: 16 }}>
 							<Text
 								style={{
@@ -732,8 +649,8 @@ export default function Settings() {
 											variant="destructive"
 											size="sm"
 											style={{ flex: 1 }}
-											onPress={() => {
-												resetEverything();
+											onPress={async () => {
+												await resetEverything();
 												setShowResetEverythingConfirm(false);
 												if (router.canDismiss()) {
 													router.dismissAll();
@@ -781,7 +698,6 @@ export default function Settings() {
 							WITH THANKS TO
 						</Text>
 
-						{/* Open Source Credits */}
 						<Button
 							variant="secondary"
 							size="sm"
@@ -797,7 +713,7 @@ export default function Settings() {
 
 					<Separator />
 
-					{/* Copyright Footer */}
+					{/* Footer */}
 					<View
 						style={{
 							alignItems: "center",
@@ -805,22 +721,10 @@ export default function Settings() {
 							gap: 4,
 						}}
 					>
-						<Text
-							style={{
-								fontSize: 12,
-								opacity: 0.5,
-								textAlign: "center",
-							}}
-						>
+						<Text style={{ fontSize: 12, opacity: 0.5, textAlign: "center" }}>
 							Copyright © 2025 Whisper.
 						</Text>
-						<Text
-							style={{
-								fontSize: 10,
-								opacity: 0.4,
-								textAlign: "center",
-							}}
-						>
+						<Text style={{ fontSize: 10, opacity: 0.4, textAlign: "center" }}>
 							Trading style of Ava Technologies Global LTD.
 						</Text>
 						<Text
@@ -837,19 +741,6 @@ export default function Settings() {
 					</View>
 				</View>
 			</ScrollView>
-
-			{/* Model Update Notification */}
-			{updateInfo && (
-				<ModelUpdateNotification
-					isVisible={showUpdateNotification}
-					onClose={() => setShowUpdateNotification(false)}
-					currentCard={updateInfo.currentCard}
-					newCard={updateInfo.newCard}
-					currentVersion={updateInfo.currentVersion || "unknown"}
-					newVersion={updateInfo.newVersion}
-					requiresDownload={updateInfo.requiresDownload}
-				/>
-			)}
 		</SafeAreaView>
 	);
 }

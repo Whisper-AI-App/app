@@ -8,6 +8,7 @@ import {
 	ChevronRight,
 	CircleAlert,
 	Info,
+	X,
 } from "lucide-react-native";
 import { useCallback } from "react";
 import { TouchableOpacity } from "react-native";
@@ -17,6 +18,7 @@ interface ChatNoticeProps {
 	message: string;
 	actionLabel?: string;
 	onAction?: () => void;
+	onDismiss?: () => void;
 }
 
 export function ChatNotice({
@@ -24,6 +26,7 @@ export function ChatNotice({
 	message,
 	actionLabel,
 	onAction,
+	onDismiss,
 }: ChatNoticeProps) {
 	const colorScheme = useColorScheme() ?? "light";
 	const theme = Colors[colorScheme];
@@ -43,6 +46,13 @@ export function ChatNotice({
 		}
 		onAction?.();
 	}, [onAction]);
+
+	const handleDismiss = useCallback(() => {
+		if (process.env.EXPO_OS === "ios") {
+			Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+		}
+		onDismiss?.();
+	}, [onDismiss]);
 
 	return (
 		<View
@@ -71,6 +81,15 @@ export function ChatNotice({
 				>
 					{message}
 				</Text>
+				{onDismiss && (
+					<TouchableOpacity
+						onPress={handleDismiss}
+						activeOpacity={0.7}
+						hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+					>
+						<X size={14} color={color} />
+					</TouchableOpacity>
+				)}
 			</View>
 			{actionLabel && onAction && (
 				<TouchableOpacity

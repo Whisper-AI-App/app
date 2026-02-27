@@ -48,6 +48,21 @@ export const mockMainStore = {
 			mockMainStoreData.tables[tableId][rowId] = row;
 		},
 	),
+	getCell: jest.fn(
+		(tableId: string, rowId: string, cellId: string) =>
+			mockMainStoreData.tables[tableId]?.[rowId]?.[cellId],
+	),
+	setCell: jest.fn(
+		(tableId: string, rowId: string, cellId: string, value: unknown) => {
+			if (!mockMainStoreData.tables[tableId]) {
+				mockMainStoreData.tables[tableId] = {};
+			}
+			if (!mockMainStoreData.tables[tableId][rowId]) {
+				mockMainStoreData.tables[tableId][rowId] = {};
+			}
+			mockMainStoreData.tables[tableId][rowId][cellId] = value;
+		},
+	),
 	delRow: jest.fn((tableId: string, rowId: string) => {
 		if (mockMainStoreData.tables[tableId]) {
 			delete mockMainStoreData.tables[tableId][rowId];

@@ -1,7 +1,7 @@
 import { Icon } from "@/components/ui/icon";
 import type { OnboardingStep } from "@/components/ui/onboarding";
 import { Colors } from "@/theme/colors";
-import { Bird, Rocket, ShieldCheck } from "lucide-react-native";
+import { Bird, ShieldCheck } from "lucide-react-native";
 import { Logo } from "../logo";
 import { LocalAuthStepContent } from "./local-auth-step";
 
@@ -44,20 +44,5 @@ export const onboardingSteps: OnboardingStep[] = [
 			/>
 		),
 		customContent: <LocalAuthStepContent />,
-	},
-	{
-		id: "4",
-		title: "Get Started",
-		description:
-			"We'll prepare your private AI by downloading the model locally. Once ready, you can start chatting — privately, instantly.",
-		icon: (
-			<Icon
-				name={Rocket}
-				size={128}
-				lightColor={Colors.light.secondaryForeground}
-				darkColor={Colors.dark.secondaryForeground}
-				strokeWidth={1.35}
-			/>
-		),
 	},
 ];
