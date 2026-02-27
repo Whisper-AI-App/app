@@ -4,29 +4,19 @@ import type { IMessage } from "react-native-gifted-chat";
  * Shared type definitions for chat feature
  */
 
-export interface ChatNotice {
-	type: "error" | "warning";
-	message: string;
-}
+export type MessageStatus = "done" | "length" | "cancelled" | "error";
 
-export interface CompletionResult {
-	content: string;
-	stopped_eos: boolean;
-	stopped_limit: number;
-	context_full: boolean;
-	truncated: boolean;
-	tokens_predicted: number;
-	tokens_evaluated: number;
-}
+// Re-export unified CompletionResult from providers
+export type { CompletionResult } from "@/src/ai-providers/types";
 
 export interface ChatRenderersProps {
 	setIsInputFocused: (focused: boolean) => void;
 	isTyping?: boolean;
 	isNewChat?: boolean;
-	isCutOff?: boolean;
-	onContinue?: () => void;
+	lastMessageStatus?: MessageStatus | null;
+	onContinue?: (() => Promise<void>) | null;
 	onStop?: () => void;
-	chatNotice?: ChatNotice | null;
+	onDismissNotice?: () => void;
 }
 
 export interface UseChatStateOptions {
@@ -62,17 +52,14 @@ export interface UseChatCompletionReturn {
 	streamingText: string;
 	sendMessage: (text: string) => Promise<void>;
 	stopGeneration: () => void;
-	// PR features
-	isCutOff: boolean;
-	lastAiMessageId: string | null;
 	continueMessage: (() => Promise<void>) | null;
-	chatNotice: ChatNotice | null;
 	// Main feature
 	clearInferenceCache: () => Promise<void>;
 }
 
 export interface ChatHeaderProps {
 	chatName?: string;
+	centerContent?: React.ReactNode;
 	hasMessages: boolean;
 	onClose: () => void;
 	onNewChat: () => void;

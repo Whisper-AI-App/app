@@ -15,7 +15,7 @@ async function deleteFileIfExists(uri: string): Promise<void> {
 }
 
 export function clearConversations() {
-	// Delete all chats and messages while keeping settings and model
+	// Delete all chats and messages while keeping settings and providers
 	mainStore.delTable("chats");
 	mainStore.delTable("messages");
 }
@@ -27,9 +27,7 @@ export async function resetEverything() {
 		await deleteFileIfExists(modelFileUri);
 	}
 
-	// Delete store files from disk. This is essential when auto-save isn't
-	// running (e.g. migration error screen), where in-memory clearing alone
-	// would not persist across a reload.
+	// Delete store files from disk
 	await deleteFileIfExists(mainStoreFilePath);
 	await deleteFileIfExists(mainStoreFilePath.replace(".json", ".backup.json"));
 
@@ -39,14 +37,11 @@ export async function resetEverything() {
 
 /**
  * Shares the pre-migration backup (or the store file as fallback) as a JSON
- * file via the native share sheet. Called from the migration error screen so
- * users can save their data before deciding to reset.
+ * file via the native share sheet.
  */
 export async function saveBackupData(): Promise<void> {
 	const backupUri = mainStoreFilePath.replace(".json", ".backup.json");
 
-	// Prefer the backup file written before migrations ran; fall back to the
-	// main store file (which is also pre-migration since auto-save never ran).
 	const sourceUri = (await FileSystemLegacy.getInfoAsync(backupUri)).exists
 		? backupUri
 		: mainStoreFilePath;

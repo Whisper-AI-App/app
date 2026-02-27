@@ -1,19 +1,36 @@
 import { renderHook, act } from "@testing-library/react-native";
-import type { CompletionResult } from "../../types/chat";
+import type { CompletionResult } from "../../ai-providers/types";
 
 // --- Mocks ---
 
 const mockCompletion = jest.fn();
 const mockClearCache = jest.fn().mockResolvedValue(undefined);
-const mockUseAIChat = jest.fn(() => ({
-	isLoaded: true,
-	completion: mockCompletion,
-	loadModel: jest.fn(),
-	clearCache: mockClearCache,
-}));
+const mockStopCompletion = jest.fn();
+const mockGetSystemMessage = jest.fn(() => "mock system message");
+const mockGetContextSize = jest.fn(() => 4096);
+const mockIsConfigured = jest.fn(() => true);
 
-jest.mock("@/contexts/AIChatContext", () => ({
-	useAIChat: () => mockUseAIChat(),
+const mockActiveProvider = {
+	id: "whisper-ai",
+	name: "Whisper AI",
+	completion: mockCompletion,
+	stopCompletion: mockStopCompletion,
+	clearCache: mockClearCache,
+	getSystemMessage: mockGetSystemMessage,
+	getContextSize: mockGetContextSize,
+	isConfigured: mockIsConfigured,
+};
+
+jest.mock("@/contexts/AIProviderContext", () => ({
+	useAIProvider: () => ({
+		activeProvider: mockActiveProvider,
+		providers: [mockActiveProvider],
+		isSettingUp: false,
+		setupError: null,
+		setActiveProvider: jest.fn(),
+		enableProvider: jest.fn(),
+		disableProvider: jest.fn(),
+	}),
 }));
 
 const mockUpsertChat = jest.fn();
@@ -33,16 +50,15 @@ jest.mock("expo-haptics", () => ({
 
 jest.mock("tinybase/ui-react", () => ({
 	useValue: jest.fn(() => undefined),
+	useStore: jest.fn(() => ({
+		getCell: jest.fn(() => ""),
+	})),
 }));
 
 let mockUuidCounter = 0;
 jest.mock("uuid", () => ({
 	v4: () => `uuid-${++mockUuidCounter}`,
 }));
-
-jest.mock("whisper-llm-cards", () => ({
-	processSystemMessage: jest.fn(() => "mock system message"),
-}), { virtual: true });
 
 // Import after mocks
 import { useChatCompletion } from "@/hooks/useChatCompletion";
@@ -54,12 +70,11 @@ const makeResult = (
 	overrides: Partial<CompletionResult> = {},
 ): CompletionResult => ({
 	content: "AI response",
-	stopped_eos: true,
-	stopped_limit: 0,
-	context_full: false,
-	truncated: false,
-	tokens_predicted: 50,
-	tokens_evaluated: 10,
+	finishReason: "stop",
+	usage: {
+		promptTokens: 10,
+		completionTokens: 50,
+	},
 	...overrides,
 });
 
@@ -91,12 +106,7 @@ describe("useChatCompletion", () => {
 	beforeEach(() => {
 		jest.clearAllMocks();
 		mockUuidCounter = 0;
-		mockUseAIChat.mockReturnValue({
-			isLoaded: true,
-			completion: mockCompletion,
-			loadModel: jest.fn(),
-			clearCache: mockClearCache,
-		});
+		mockIsConfigured.mockReturnValue(true);
 	});
 
 	describe("initial state", () => {
@@ -107,8 +117,6 @@ describe("useChatCompletion", () => {
 
 			expect(result.current.isAiTyping).toBe(false);
 			expect(result.current.streamingText).toBe("");
-			expect(result.current.isCutOff).toBe(false);
-			expect(result.current.chatNotice).toBeNull();
 			expect(result.current.continueMessage).toBeNull();
 		});
 	});
@@ -126,7 +134,7 @@ describe("useChatCompletion", () => {
 			expect(mockUpsertMessage).not.toHaveBeenCalled();
 		});
 
-		it("saves user message and AI response", async () => {
+		it("saves user message and AI response with status", async () => {
 			setupCompletion("Hello!");
 
 			const { result } = renderHook(() =>
@@ -137,20 +145,26 @@ describe("useChatCompletion", () => {
 				await result.current.sendMessage("Hi");
 			});
 
-			// User message saved
+			// User message saved with status "done"
 			expect(mockUpsertMessage).toHaveBeenCalledWith(
 				"uuid-1",
 				"chat-1",
 				"Hi",
 				"user",
+				"whisper-ai",
+				"",
+				"done",
 			);
 
-			// AI response saved
+			// AI response saved with status "done"
 			expect(mockUpsertMessage).toHaveBeenCalledWith(
 				"uuid-2",
 				"chat-1",
 				"Hello!",
 				"assistant",
+				"whisper-ai",
+				"",
+				"done",
 			);
 		});
 
@@ -178,29 +192,7 @@ describe("useChatCompletion", () => {
 			expect(onChatCreated).toHaveBeenCalledWith("uuid-1");
 		});
 
-		it("clears previous chatNotice on new message", async () => {
-			// First call: force an error to set chatNotice
-			mockCompletion.mockRejectedValueOnce(new Error("fail"));
-			setupCompletion("ok");
-
-			const { result } = renderHook(() =>
-				useChatCompletion(defaultOptions),
-			);
-
-			await act(async () => {
-				await result.current.sendMessage("first");
-			});
-
-			expect(result.current.chatNotice).not.toBeNull();
-
-			await act(async () => {
-				await result.current.sendMessage("second");
-			});
-
-			expect(result.current.chatNotice).toBeNull();
-		});
-
-		it("sets error notice on completion failure", async () => {
+		it("saves error message with status 'error' on completion failure", async () => {
 			mockCompletion.mockRejectedValueOnce(new Error("model crashed"));
 
 			const { result } = renderHook(() =>
@@ -211,19 +203,23 @@ describe("useChatCompletion", () => {
 				await result.current.sendMessage("test");
 			});
 
-			expect(result.current.chatNotice).toEqual({
-				type: "error",
-				message:
-					"Something went wrong. Try sending your message again.",
-			});
+			// Should save empty AI message with error status
+			expect(mockUpsertMessage).toHaveBeenCalledWith(
+				expect.any(String),
+				"chat-1",
+				"",
+				"assistant",
+				"whisper-ai",
+				"",
+				"error",
+			);
 			expect(result.current.isAiTyping).toBe(false);
 			expect(result.current.streamingText).toBe("");
 		});
 
-		it("sets isCutOff and exposes continueMessage when response is cut off", async () => {
+		it("saves AI message with status 'length' and exposes continueMessage when response is cut off", async () => {
 			const cutOffResult = makeResult({
-				stopped_eos: false,
-				tokens_predicted: 300,
+				finishReason: "length",
 			});
 			setupCompletion("partial response...", cutOffResult);
 
@@ -235,12 +231,21 @@ describe("useChatCompletion", () => {
 				await result.current.sendMessage("tell me a story");
 			});
 
-			expect(result.current.isCutOff).toBe(true);
+			// AI message should be saved with "length" status
+			expect(mockUpsertMessage).toHaveBeenCalledWith(
+				expect.any(String),
+				"chat-1",
+				"partial response...",
+				"assistant",
+				"whisper-ai",
+				"",
+				"length",
+			);
 			expect(result.current.continueMessage).not.toBeNull();
 		});
 
-		it("does not set isCutOff when response completes normally", async () => {
-			const normalResult = makeResult({ stopped_eos: true });
+		it("saves AI message with status 'done' when response completes normally", async () => {
+			const normalResult = makeResult({ finishReason: "stop" });
 			setupCompletion("complete response", normalResult);
 
 			const { result } = renderHook(() =>
@@ -251,16 +256,20 @@ describe("useChatCompletion", () => {
 				await result.current.sendMessage("hello");
 			});
 
-			expect(result.current.isCutOff).toBe(false);
+			expect(mockUpsertMessage).toHaveBeenCalledWith(
+				expect.any(String),
+				"chat-1",
+				"complete response",
+				"assistant",
+				"whisper-ai",
+				"",
+				"done",
+			);
 			expect(result.current.continueMessage).toBeNull();
 		});
 
-		it("does not call completion when model is not loaded", async () => {
-			mockUseAIChat.mockReturnValue({
-				isLoaded: false,
-				completion: mockCompletion,
-				loadModel: jest.fn(),
-			});
+		it("does not call completion when provider is not configured", async () => {
+			mockIsConfigured.mockReturnValue(false);
 
 			const { result } = renderHook(() =>
 				useChatCompletion(defaultOptions),
@@ -279,11 +288,7 @@ describe("useChatCompletion", () => {
 
 	describe("continueMessage", () => {
 		it("saves continuation as a new separate message", async () => {
-			// First: send a message that gets cut off
-			const cutOffResult = makeResult({
-				stopped_eos: false,
-				tokens_predicted: 300,
-			});
+			const cutOffResult = makeResult({ finishReason: "length" });
 			setupCompletion("partial...", cutOffResult);
 
 			const { result } = renderHook(() =>
@@ -294,32 +299,30 @@ describe("useChatCompletion", () => {
 				await result.current.sendMessage("tell me 50 tips");
 			});
 
-			expect(result.current.isCutOff).toBe(true);
+			expect(result.current.continueMessage).not.toBeNull();
 			mockUpsertMessage.mockClear();
 			mockUuidCounter = 10;
 
-			// Now continue — set up a normal completion
-			const normalResult = makeResult({ stopped_eos: true });
+			const normalResult = makeResult({ finishReason: "stop" });
 			setupCompletion("...continued text", normalResult);
 
 			await act(async () => {
 				await result.current.continueMessage!();
 			});
 
-			// Should save as a NEW message, not update the old one
 			expect(mockUpsertMessage).toHaveBeenCalledWith(
 				"uuid-11",
 				"chat-1",
 				"...continued text",
 				"assistant",
+				"whisper-ai",
+				"",
+				"done",
 			);
 		});
 
 		it("includes hidden continue instruction in completion messages", async () => {
-			const cutOffResult = makeResult({
-				stopped_eos: false,
-				tokens_predicted: 300,
-			});
+			const cutOffResult = makeResult({ finishReason: "length" });
 			setupCompletion("partial...", cutOffResult);
 
 			const { result } = renderHook(() =>
@@ -331,14 +334,13 @@ describe("useChatCompletion", () => {
 			});
 
 			mockCompletion.mockClear();
-			const normalResult = makeResult({ stopped_eos: true });
+			const normalResult = makeResult({ finishReason: "stop" });
 			setupCompletion("more text", normalResult);
 
 			await act(async () => {
 				await result.current.continueMessage!();
 			});
 
-			// Check that the last message in the completion array is the hidden user continue
 			const completionCall = mockCompletion.mock.calls[0];
 			const messages = completionCall[0];
 			const lastMessage = messages[messages.length - 1];
@@ -347,16 +349,12 @@ describe("useChatCompletion", () => {
 				content: "Continue from where you left off.",
 			});
 
-			// The assistant partial should be second to last
 			const assistantMessage = messages[messages.length - 2];
 			expect(assistantMessage.role).toBe("assistant");
 		});
 
-		it("clears isCutOff when continuation completes normally", async () => {
-			const cutOffResult = makeResult({
-				stopped_eos: false,
-				tokens_predicted: 300,
-			});
+		it("clears continueMessage when continuation completes normally", async () => {
+			const cutOffResult = makeResult({ finishReason: "length" });
 			setupCompletion("partial...", cutOffResult);
 
 			const { result } = renderHook(() =>
@@ -367,24 +365,20 @@ describe("useChatCompletion", () => {
 				await result.current.sendMessage("test");
 			});
 
-			expect(result.current.isCutOff).toBe(true);
+			expect(result.current.continueMessage).not.toBeNull();
 
-			const normalResult = makeResult({ stopped_eos: true });
+			const normalResult = makeResult({ finishReason: "stop" });
 			setupCompletion("done", normalResult);
 
 			await act(async () => {
 				await result.current.continueMessage!();
 			});
 
-			expect(result.current.isCutOff).toBe(false);
 			expect(result.current.continueMessage).toBeNull();
 		});
 
-		it("keeps isCutOff if continuation is also cut off", async () => {
-			const cutOffResult = makeResult({
-				stopped_eos: false,
-				tokens_predicted: 300,
-			});
+		it("keeps continueMessage if continuation is also cut off", async () => {
+			const cutOffResult = makeResult({ finishReason: "length" });
 			setupCompletion("partial...", cutOffResult);
 
 			const { result } = renderHook(() =>
@@ -395,22 +389,17 @@ describe("useChatCompletion", () => {
 				await result.current.sendMessage("test");
 			});
 
-			// Continue but still cut off
 			setupCompletion("still partial...", cutOffResult);
 
 			await act(async () => {
 				await result.current.continueMessage!();
 			});
 
-			expect(result.current.isCutOff).toBe(true);
 			expect(result.current.continueMessage).not.toBeNull();
 		});
 
-		it("sets error notice on continuation failure", async () => {
-			const cutOffResult = makeResult({
-				stopped_eos: false,
-				tokens_predicted: 300,
-			});
+		it("saves error message on continuation failure", async () => {
+			const cutOffResult = makeResult({ finishReason: "length" });
 			setupCompletion("partial...", cutOffResult);
 
 			const { result } = renderHook(() =>
@@ -421,111 +410,24 @@ describe("useChatCompletion", () => {
 				await result.current.sendMessage("test");
 			});
 
-			// Continue fails
+			mockUpsertMessage.mockClear();
 			mockCompletion.mockRejectedValueOnce(new Error("crash"));
 
 			await act(async () => {
 				await result.current.continueMessage!();
 			});
 
-			expect(result.current.chatNotice).toEqual({
-				type: "error",
-				message: "Couldn't continue the response. Try again.",
-			});
+			// Should save empty AI message with error status
+			expect(mockUpsertMessage).toHaveBeenCalledWith(
+				expect.any(String),
+				"chat-1",
+				"",
+				"assistant",
+				"whisper-ai",
+				"",
+				"error",
+			);
 			expect(result.current.isAiTyping).toBe(false);
-		});
-
-		it("clears chatNotice at the start of continuation", async () => {
-			// Get into a cut-off state with an error notice
-			mockCompletion.mockRejectedValueOnce(new Error("fail"));
-
-			const { result } = renderHook(() =>
-				useChatCompletion(defaultOptions),
-			);
-
-			// First send fails → error notice
-			await act(async () => {
-				await result.current.sendMessage("first");
-			});
-			expect(result.current.chatNotice).not.toBeNull();
-
-			// Now send again and get cut off
-			const cutOffResult = makeResult({
-				stopped_eos: false,
-				tokens_predicted: 300,
-			});
-			setupCompletion("partial...", cutOffResult);
-
-			await act(async () => {
-				await result.current.sendMessage("second");
-			});
-
-			// chatNotice should have been cleared by sendMessage
-			expect(result.current.chatNotice).toBeNull();
-			expect(result.current.isCutOff).toBe(true);
-
-			// Set up a successful continue
-			const normalResult = makeResult({ stopped_eos: true });
-			setupCompletion("done", normalResult);
-
-			await act(async () => {
-				await result.current.continueMessage!();
-			});
-
-			// Notice should still be null (no error)
-			expect(result.current.chatNotice).toBeNull();
-		});
-
-		it("does nothing if model is not loaded", async () => {
-			const cutOffResult = makeResult({
-				stopped_eos: false,
-				tokens_predicted: 300,
-			});
-			setupCompletion("partial...", cutOffResult);
-
-			const { result } = renderHook(() =>
-				useChatCompletion(defaultOptions),
-			);
-
-			await act(async () => {
-				await result.current.sendMessage("test");
-			});
-
-			// Unload the model
-			mockUseAIChat.mockReturnValue({
-				isLoaded: false,
-				completion: mockCompletion,
-				loadModel: jest.fn(),
-			});
-
-			const { result: result2 } = renderHook(() =>
-				useChatCompletion(defaultOptions),
-			);
-
-			// continueMessage should be null since isCutOff resets per hook instance
-			expect(result2.current.continueMessage).toBeNull();
-		});
-	});
-
-	describe("context_full handling", () => {
-		it("does not set isCutOff when context_full is true", async () => {
-			const contextFullResult = makeResult({
-				stopped_eos: false,
-				context_full: true,
-				tokens_predicted: 50,
-			});
-			setupCompletion("response", contextFullResult);
-
-			const { result } = renderHook(() =>
-				useChatCompletion(defaultOptions),
-			);
-
-			await act(async () => {
-				await result.current.sendMessage("test");
-			});
-
-			// context_full means isResponseCutOff returns false
-			expect(result.current.isCutOff).toBe(false);
 		});
 	});
 });

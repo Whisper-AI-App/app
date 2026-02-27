@@ -14,6 +14,7 @@ import { ChatActionsMenu } from "./chat-actions-menu";
  */
 export const ChatPageHeader: React.FC<ChatHeaderProps> = ({
 	chatName,
+	centerContent,
 	hasMessages,
 	onClose,
 	onNewChat,
@@ -42,22 +43,35 @@ export const ChatPageHeader: React.FC<ChatHeaderProps> = ({
 				<ChevronLeft color={theme.textMuted} strokeWidth={2} size={24} />
 			</Button>
 
-			{chatName && (
-				<Text
+			{centerContent ? (
+				<View
 					style={{
-						fontSize: chatName.length > 30 ? 14 : 18,
-						fontWeight: "600",
-						position: "absolute",
-						left: 56,
-						right: 100,
-						textAlign: "center",
-						paddingLeft: 16,
-						paddingRight: 24,
+						flex: 1,
+						alignItems: "center",
+						justifyContent: "center",
+						marginHorizontal: 8,
 					}}
-					numberOfLines={2}
 				>
-					{chatName}
-				</Text>
+					{centerContent}
+				</View>
+			) : (
+				chatName && (
+					<Text
+						style={{
+							fontSize: chatName.length > 30 ? 14 : 18,
+							fontWeight: "600",
+							position: "absolute",
+							left: 56,
+							right: 100,
+							textAlign: "center",
+							paddingLeft: 16,
+							paddingRight: 24,
+						}}
+						numberOfLines={2}
+					>
+						{chatName}
+					</Text>
+				)
 			)}
 
 			<View style={{ marginLeft: "auto", flexDirection: "row", gap: 0 }}>
