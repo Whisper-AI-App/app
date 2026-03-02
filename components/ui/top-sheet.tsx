@@ -40,7 +40,7 @@ export function TopSheet({
 	const mutedColor = useColor("muted");
 	const insets = useSafeAreaInsets();
 
-	const maxHeight = maxHeightProp ?? SCREEN_HEIGHT * 0.6;
+	const maxHeight = maxHeightProp ?? SCREEN_HEIGHT * 0.85;
 	const translateY = useSharedValue(-maxHeight);
 	const opacity = useSharedValue(0);
 	const context = useSharedValue({ y: 0 });
@@ -129,15 +129,14 @@ export function TopSheet({
 						rBackdropStyle,
 					]}
 				>
-					<GestureDetector gesture={gesture}>
-						<Animated.View
+					<Animated.View
 							style={[
 								{
 									position: "absolute",
 									top: 0,
 									left: 0,
 									right: 0,
-									maxHeight,
+									height: maxHeight,
 									backgroundColor: cardColor,
 									borderBottomLeftRadius: BORDER_RADIUS,
 									borderBottomRightRadius: BORDER_RADIUS,
@@ -151,25 +150,26 @@ export function TopSheet({
 								{children}
 							</View>
 
-							{/* Bottom drag handle */}
-							<View
-								style={{
-									width: "100%",
-									paddingVertical: 10,
-									alignItems: "center",
-								}}
-							>
-								<View
+							{/* Bottom drag handle - only this area responds to pan gesture */}
+							<GestureDetector gesture={gesture}>
+								<Animated.View
 									style={{
-										width: 40,
-										height: 4,
-										backgroundColor: mutedColor,
-										borderRadius: 999,
+										width: "100%",
+										paddingVertical: 10,
+										alignItems: "center",
 									}}
-								/>
-							</View>
+								>
+									<View
+										style={{
+											width: 40,
+											height: 4,
+											backgroundColor: mutedColor,
+											borderRadius: 999,
+										}}
+									/>
+								</Animated.View>
+							</GestureDetector>
 						</Animated.View>
-					</GestureDetector>
 
 					{/* Backdrop tap area (below the sheet) */}
 					<TouchableWithoutFeedback onPress={onClose}>
