@@ -1,5 +1,6 @@
 import type { Store } from "tinybase";
 import type { AIProvider, AIProviderFactory } from "./types";
+import { createOpenAIProvider } from "./openai/provider";
 import { createOpenRouterProvider } from "./openrouter/provider";
 import { createWhisperAIProvider } from "./whisper-ai/provider";
 
@@ -7,6 +8,7 @@ import { createWhisperAIProvider } from "./whisper-ai/provider";
 export const PROVIDER_FACTORIES: AIProviderFactory[] = [
 	createWhisperAIProvider,
 	createOpenRouterProvider,
+	createOpenAIProvider,
 ];
 
 // Create all provider instances from store

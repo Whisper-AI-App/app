@@ -1,4 +1,4 @@
-import { createOpenRouter } from "@openrouter/ai-sdk-provider";
+import { createOpenAI } from "@ai-sdk/openai";
 import { streamText } from "ai";
 import { fetch as expoFetch } from "expo/fetch";
 import type { Store } from "tinybase";
@@ -8,49 +8,42 @@ import type {
 	CompletionResult,
 	ProviderModel,
 } from "../types";
-import { handleOAuthCallback, startOAuth } from "./oauth";
 
-const OPENROUTER_MODELS_URL = "https://openrouter.ai/api/v1/models";
-const OPENROUTER_AUTH_KEY_URL = "https://openrouter.ai/api/v1/auth/key";
+const OPENAI_MODELS_URL = "https://api.openai.com/v1/models";
 const DEFAULT_CLOUD_CONTEXT_SIZE = 128000;
 
 // Module-scoped runtime state
 let abortController: AbortController | null = null;
 let cachedModels: ProviderModel[] = [];
 
-export function createOpenRouterProvider(store: Store): AIProvider {
+export function createOpenAIProvider(store: Store): AIProvider {
 	function getApiKey(): string {
-		return (
-			(store.getCell("aiProviders", "openrouter", "apiKey") as string) || ""
-		);
+		return (store.getCell("aiProviders", "openai", "apiKey") as string) || "";
 	}
 
 	function getSelectedModelId(): string {
 		return (
-			(store.getCell(
-				"aiProviders",
-				"openrouter",
-				"selectedModelId",
-			) as string) || ""
+			(store.getCell("aiProviders", "openai", "selectedModelId") as string) ||
+			""
 		);
 	}
 
 	const provider: AIProvider = {
-		id: "openrouter",
-		name: "OpenRouter",
-		description: "Access hundreds of cloud AI models via OpenRouter.",
-		avatar: require("../../../assets/images/ai-providers/openrouter.png"),
+		id: "openai",
+		name: "OpenAI",
+		description: "Access GPT models directly from OpenAI.",
+		avatar: require("../../../assets/images/ai-providers/openai.png"),
 		type: "cloud",
-		defaultModelId: "openai/gpt-oss-20b:nitro",
+		defaultModelId: "gpt-4o-mini",
 		capabilities: {
-			oauth: true,
+			oauth: false,
 			download: false,
-			userApiKey: false,
+			userApiKey: true,
 		},
 
 		enable() {
-			store.setRow("aiProviders", "openrouter", {
-				id: "openrouter",
+			store.setRow("aiProviders", "openai", {
+				id: "openai",
 				status: "needs_setup",
 				error: "",
 				selectedModelId: "",
@@ -75,21 +68,20 @@ export function createOpenRouterProvider(store: Store): AIProvider {
 				abortController.abort();
 				abortController = null;
 			}
-			store.delRow("aiProviders", "openrouter");
+			store.delRow("aiProviders", "openai");
 		},
 
 		async setup() {
 			const apiKey = getApiKey();
 			if (!apiKey) {
-				store.setCell("aiProviders", "openrouter", "status", "needs_setup");
+				store.setCell("aiProviders", "openai", "status", "needs_setup");
 				return;
 			}
 
-			store.setCell("aiProviders", "openrouter", "status", "configuring");
+			store.setCell("aiProviders", "openai", "status", "configuring");
 
 			try {
-				// Validate API key
-				const response = await expoFetch(OPENROUTER_AUTH_KEY_URL, {
+				const response = await expoFetch(OPENAI_MODELS_URL, {
 					headers: { Authorization: `Bearer ${apiKey}` },
 				});
 
@@ -97,23 +89,15 @@ export function createOpenRouterProvider(store: Store): AIProvider {
 					throw new Error("Invalid API key");
 				}
 
-				store.setCell("aiProviders", "openrouter", "status", "ready");
-				store.setCell("aiProviders", "openrouter", "error", "");
+				store.setCell("aiProviders", "openai", "status", "ready");
+				store.setCell("aiProviders", "openai", "error", "");
 			} catch (error) {
-				console.error("[OpenRouter] Setup failed:", error);
+				console.error("[OpenAI] Setup failed:", error);
 				const errorMessage =
 					error instanceof Error ? error.message : "Setup failed";
-				store.setCell("aiProviders", "openrouter", "error", errorMessage);
-				store.setCell("aiProviders", "openrouter", "status", "error");
+				store.setCell("aiProviders", "openai", "error", errorMessage);
+				store.setCell("aiProviders", "openai", "status", "error");
 			}
-		},
-
-		async startOAuth() {
-			await startOAuth(store);
-		},
-
-		async handleOAuthCallback(params: Record<string, string>) {
-			await handleOAuthCallback(store, params);
 		},
 
 		async models(search?: string) {
@@ -121,7 +105,7 @@ export function createOpenRouterProvider(store: Store): AIProvider {
 			if (!apiKey) return [];
 
 			try {
-				const response = await expoFetch(OPENROUTER_MODELS_URL, {
+				const response = await expoFetch(OPENAI_MODELS_URL, {
 					headers: { Authorization: `Bearer ${apiKey}` },
 				});
 
@@ -132,32 +116,31 @@ export function createOpenRouterProvider(store: Store): AIProvider {
 				const data = (await response.json()) as {
 					data: Array<{
 						id: string;
-						name: string;
-						description?: string;
-						context_length?: number;
-						architecture?: {
-							instruct_type?: string | null;
-							input_modalities?: string[];
-							output_modalities?: string[];
-						};
+						owned_by: string;
 					}>;
 				};
 
-				// Filter to chat-capable models: must accept text input and produce text output
+				// Allowlist of current model families known to work with chat completions
+				const ALLOWED_PREFIXES = [
+					"gpt-4o",
+					"gpt-4.1",
+					"gpt-4.5",
+					"chatgpt-4o",
+					"o1",
+					"o3",
+					"o4",
+				];
+
 				let models: ProviderModel[] = data.data
 					.filter((m) => {
-						const arch = m.architecture;
-						if (!arch) return false;
-						const hasTextInput = arch.input_modalities?.includes("text");
-						const hasTextOutput = arch.output_modalities?.includes("text");
-						return hasTextInput && hasTextOutput;
+						const id = m.id.toLowerCase();
+						return ALLOWED_PREFIXES.some((prefix) => id.startsWith(prefix));
 					})
 					.map((m) => ({
 						id: m.id,
-						name: m.name,
-						description: m.description,
-						contextLength: m.context_length,
-					}));
+						name: m.id,
+					}))
+					.sort((a, b) => a.name.localeCompare(b.name));
 
 				cachedModels = models;
 
@@ -180,13 +163,13 @@ export function createOpenRouterProvider(store: Store): AIProvider {
 
 				return models;
 			} catch (error) {
-				console.error("[OpenRouter] Failed to fetch models:", error);
+				console.error("[OpenAI] Failed to fetch models:", error);
 				return [];
 			}
 		},
 
 		setModel(modelId: string) {
-			store.setCell("aiProviders", "openrouter", "selectedModelId", modelId);
+			store.setCell("aiProviders", "openai", "selectedModelId", modelId);
 		},
 
 		async completion(
@@ -200,23 +183,19 @@ export function createOpenRouterProvider(store: Store): AIProvider {
 				return { content: "", finishReason: "error" };
 			}
 
-			// Keep a local reference so stopCompletion() nulling the module
-			// variable doesn't break abort detection in the catch block.
 			const localAbortController = new AbortController();
 			abortController = localAbortController;
 
 			let content = "";
 
 			try {
-				// Pass expo/fetch to createOpenRouter so its internal postToApi uses
-				// the streaming-capable fetch required by React Native / Hermes.
-				const openrouter = createOpenRouter({
+				const openai = createOpenAI({
 					apiKey,
 					fetch: expoFetch as unknown as typeof globalThis.fetch,
 				});
 
 				const result = streamText({
-					model: openrouter(modelId),
+					model: openai(modelId),
 					messages,
 					abortSignal: localAbortController.signal,
 				});
@@ -241,7 +220,7 @@ export function createOpenRouterProvider(store: Store): AIProvider {
 				if (localAbortController.signal.aborted) {
 					return { content, finishReason: "cancelled" };
 				}
-				console.error("[OpenRouter] Completion failed:", error);
+				console.error("[OpenAI] Completion failed:", error);
 				throw error;
 			} finally {
 				abortController = null;

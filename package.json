@@ -26,6 +26,7 @@
     "knip": "knip --no-config-hints"
   },
   "dependencies": {
+    "@ai-sdk/openai": "^3.0.37",
     "@expo-google-fonts/inter": "^0.4.2",
     "@expo/metro-runtime": "~6.1.2",
     "@expo/vector-icons": "^15.0.3",

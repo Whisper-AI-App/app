@@ -223,7 +223,45 @@ export default function SetupAI() {
 					</Text>
 
 					{providers
-						.filter((p) => p.type === "cloud")
+						.filter((p) => p.type === "cloud" && !p.capabilities.userApiKey)
+						.map((p) => (
+							<ProviderSetupCard
+								key={p.id}
+								provider={p}
+								onConfigure={handleConfigure}
+								onToggleEnabled={handleToggleEnabled}
+							/>
+						))}
+
+					<Text
+						style={{
+							fontSize: 24,
+							marginTop: 40,
+							marginBottom: 8,
+							lineHeight: 24,
+							textAlign: "center",
+							fontWeight: "600",
+						}}
+					>
+						Bring your own API Key
+					</Text>
+					<Text
+						style={{
+							fontSize: 14,
+							lineHeight: 20,
+							textAlign: "center",
+							marginBottom: 32,
+							color: theme.text,
+							opacity: 0.8,
+							maxWidth: 200,
+							margin: "auto",
+						}}
+					>
+						Connect directly with your own API key.
+					</Text>
+
+					{providers
+						.filter((p) => p.capabilities.userApiKey)
 						.map((p) => (
 							<ProviderSetupCard
 								key={p.id}

@@ -39,6 +39,7 @@ export interface AIProvider {
 	readonly capabilities: {
 		oauth: boolean;
 		download: boolean;
+		userApiKey: boolean;
 	};
 
 	// Lifecycle

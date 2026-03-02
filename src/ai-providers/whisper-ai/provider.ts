@@ -50,6 +50,7 @@ export function createWhisperAIProvider(store: Store): AIProvider {
 		capabilities: {
 			oauth: false,
 			download: true,
+			userApiKey: false,
 		},
 
 		enable() {
