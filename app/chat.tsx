@@ -1,6 +1,7 @@
 import { ChatBackground } from "@/components/chat-background";
 import { ChatPageHeader } from "@/components/chat/chat-page-header";
 import { MoveToFolderSheet } from "@/components/move-to-folder-sheet";
+import { OfflineBanner } from "@/components/offline-banner";
 import { ProviderAndModelSelector } from "@/components/ProviderAndModelSelector";
 import { SuggestionCards } from "@/components/suggestion-cards";
 import { PromptDialog } from "@/components/ui/prompt-dialog";
@@ -11,6 +12,7 @@ import { useChatCompletion } from "@/hooks/useChatCompletion";
 import { useChatMessages } from "@/hooks/useChatMessages";
 import { useChatRenderers } from "@/hooks/useChatRenderers";
 import { useChatState } from "@/hooks/useChatState";
+import { useNetworkState } from "@/hooks/useNetworkState";
 import { setMessageStatus } from "@/src/actions/message";
 import { wouldTruncate } from "@/src/utils/context-window";
 import { useLocalSearchParams, useRouter } from "expo-router";
@@ -78,8 +80,11 @@ export default function ChatPage() {
 		useChatMessages(currentChatId);
 
 	// Get contextSize from active provider
-	const { activeProvider } = useAIProvider();
+	const { activeProvider, setupError } = useAIProvider();
 	const contextSize = activeProvider?.getContextSize() ?? 2048;
+	const { isConnected } = useNetworkState();
+	const isCloudProvider = activeProvider?.type === "cloud";
+	const isOfflineCloud = isCloudProvider && !isConnected;
 
 	// Show warning when conversation will be truncated
 	const showTruncationWarning = useMemo(() => {
@@ -194,6 +199,21 @@ export default function ChatPage() {
 						onDelete={handleDeleteChat}
 						onMoveToFolder={currentChatId ? handleMoveToFolder : undefined}
 					/>
+
+					{isOfflineCloud && <OfflineBanner />}
+
+					{setupError && !isOfflineCloud && (
+						<View
+							style={{
+								padding: 8,
+								backgroundColor: "rgba(255,60,60,0.15)",
+							}}
+						>
+							<Text style={{ fontSize: 12, textAlign: "center" }}>
+								Provider setup failed. Check settings.
+							</Text>
+						</View>
+					)}
 
 					{showTruncationWarning && (
 						<View

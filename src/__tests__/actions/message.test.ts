@@ -10,7 +10,7 @@ jest.mock("../../stores/main/main-store", () => ({
 }));
 
 // Import the functions under test AFTER mocks
-import { deleteMessage, upsertMessage } from "../../actions/message";
+import { deleteMessage, setMessageStatus, upsertMessage } from "../../actions/message";
 
 describe("message actions", () => {
 	beforeEach(() => {
@@ -147,6 +147,45 @@ describe("message actions", () => {
 
 			const savedMessage = mockMainStore.setRow.mock.calls[0][2];
 			expect(savedMessage.status).toBe("length");
+		});
+	});
+
+	describe("setMessageStatus", () => {
+		it("calls setCell with correct arguments", () => {
+			setMessageStatus("msg-1", "error");
+
+			expect(mockMainStore.setCell).toHaveBeenCalledWith(
+				"messages",
+				"msg-1",
+				"status",
+				"error",
+			);
+		});
+
+		it("can set any valid status value", () => {
+			setMessageStatus("msg-1", "length");
+			expect(mockMainStore.setCell).toHaveBeenCalledWith(
+				"messages",
+				"msg-1",
+				"status",
+				"length",
+			);
+
+			setMessageStatus("msg-2", "cancelled");
+			expect(mockMainStore.setCell).toHaveBeenCalledWith(
+				"messages",
+				"msg-2",
+				"status",
+				"cancelled",
+			);
+
+			setMessageStatus("msg-3", "done");
+			expect(mockMainStore.setCell).toHaveBeenCalledWith(
+				"messages",
+				"msg-3",
+				"status",
+				"done",
+			);
 		});
 	});
 

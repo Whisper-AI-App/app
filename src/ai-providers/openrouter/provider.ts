@@ -16,6 +16,7 @@ const DEFAULT_CLOUD_CONTEXT_SIZE = 128000;
 
 // Module-scoped runtime state
 let abortController: AbortController | null = null;
+let cachedModels: ProviderModel[] = [];
 
 export function createOpenRouterProvider(store: Store): AIProvider {
 	function getApiKey(): string {
@@ -141,16 +142,14 @@ export function createOpenRouterProvider(store: Store): AIProvider {
 					}>;
 				};
 
-				// Filter to chat-capable models: must accept text input,
-				// produce text output, and support an instruct format
+				// Filter to chat-capable models: must accept text input and produce text output
 				let models: ProviderModel[] = data.data
 					.filter((m) => {
 						const arch = m.architecture;
 						if (!arch) return false;
 						const hasTextInput = arch.input_modalities?.includes("text");
 						const hasTextOutput = arch.output_modalities?.includes("text");
-						const hasInstruct = !!arch.instruct_type;
-						return hasTextInput && hasTextOutput && hasInstruct;
+						return hasTextInput && hasTextOutput;
 					})
 					.map((m) => ({
 						id: m.id,
@@ -158,6 +157,8 @@ export function createOpenRouterProvider(store: Store): AIProvider {
 						description: m.description,
 						contextLength: m.context_length,
 					}));
+
+				cachedModels = models;
 
 				if (search) {
 					const query = search.toLowerCase();
@@ -264,6 +265,13 @@ export function createOpenRouterProvider(store: Store): AIProvider {
 		},
 
 		getContextSize(): number {
+			const modelId = getSelectedModelId();
+			if (modelId) {
+				const model = cachedModels.find((m) => m.id === modelId);
+				if (model?.contextLength) {
+					return model.contextLength;
+				}
+			}
 			return DEFAULT_CLOUD_CONTEXT_SIZE;
 		},
 

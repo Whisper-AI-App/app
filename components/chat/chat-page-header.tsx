@@ -75,7 +75,7 @@ export const ChatPageHeader: React.FC<ChatHeaderProps> = ({
 			)}
 
 			<View style={{ marginLeft: "auto", flexDirection: "row", gap: 0 }}>
-				{hasMessages && (
+				{hasMessages ? (
 					<>
 						<Button size="icon" variant="ghost" onPress={onNewChat}>
 							<SquarePen color={theme.text} width={20} />
@@ -94,6 +94,8 @@ export const ChatPageHeader: React.FC<ChatHeaderProps> = ({
 							}
 						/>
 					</>
+				) : (
+					<View style={{ width: 48 }}></View>
 				)}
 			</View>
 		</View>

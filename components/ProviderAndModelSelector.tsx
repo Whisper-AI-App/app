@@ -1,13 +1,14 @@
 import { useAIProvider } from "@/contexts/AIProviderContext";
 import { useColor } from "@/hooks/useColor";
+import { useNetworkState } from "@/hooks/useNetworkState";
 import type { AIProvider, ProviderModel } from "@/src/ai-providers/types";
 import type { AppIconVariant } from "@/src/data/app-icon-presets";
 import { getAppIconPresetById } from "@/src/data/app-icon-presets";
 import { Colors } from "@/theme/colors";
 import { Image } from "expo-image";
 import { useRouter } from "expo-router";
-import { Check, ChevronDown, Search } from "lucide-react-native";
-import { useEffect, useState } from "react";
+import { Check, ChevronDown, Search, WifiOff } from "lucide-react-native";
+import { useEffect, useRef, useState } from "react";
 import {
 	ActivityIndicator,
 	TextInput,
@@ -21,6 +22,7 @@ import { TopSheet } from "./ui/top-sheet";
 import { View } from "./ui/view";
 
 const TOP_MODEL_COUNT = 5;
+const MODELS_CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes
 
 function formatModelId(modelId: string): string {
 	// "anthropic/claude-3.5-sonnet" → "claude-3.5-sonnet"
@@ -60,8 +62,10 @@ export function ProviderAndModelSelector() {
 					flexDirection: "row",
 					alignItems: "center",
 					gap: 6,
-					paddingHorizontal: 4,
-					paddingVertical: 4,
+					paddingHorizontal: 10,
+					paddingVertical: 6,
+					backgroundColor: "rgba(125,125,125,0.1)",
+					borderRadius: 20,
 				}}
 				activeOpacity={0.7}
 			>
@@ -70,7 +74,7 @@ export function ProviderAndModelSelector() {
 					style={{ width: 16, height: 16, borderRadius: 8 }}
 				/>
 				<View>
-					<Text style={{ fontSize: 16, fontWeight: "600" }} numberOfLines={1}>
+					<Text style={{ fontSize: 14, fontWeight: "600" }} numberOfLines={1}>
 						{displayName}
 					</Text>
 					{selectedModelId ? (
@@ -124,6 +128,7 @@ function SelectAIContent({
 	const [searchQuery, setSearchQuery] = useState("");
 	const colorScheme = useColorScheme() ?? "light";
 	const theme = Colors[colorScheme];
+	const { isConnected } = useNetworkState();
 
 	useEffect(() => {
 		if (!open) setSearchQuery("");
@@ -174,6 +179,7 @@ function SelectAIContent({
 			theme={theme}
 			searchQuery={query}
 			open={open}
+			isConnected={isConnected}
 			onSelectModel={(modelId) => onSelectCloudModel(p, modelId)}
 			onSetup={onSetup}
 		/>
@@ -315,6 +321,7 @@ function CloudProviderSection({
 	theme,
 	searchQuery,
 	open,
+	isConnected,
 	onSelectModel,
 	onSetup,
 }: {
@@ -323,6 +330,7 @@ function CloudProviderSection({
 	theme: (typeof Colors)["light"];
 	searchQuery: string;
 	open: boolean;
+	isConnected: boolean;
 	onSelectModel: (modelId: string) => void;
 	onSetup: () => void;
 }) {
@@ -336,18 +344,29 @@ function CloudProviderSection({
 	) as string | undefined;
 	const [models, setModels] = useState<ProviderModel[]>([]);
 	const [isLoading, setIsLoading] = useState(false);
+	const modelsCacheRef = useRef<{ data: ProviderModel[]; timestamp: number } | null>(null);
 
 	const isReady = status === "ready";
 	const isActiveProvider = activeProviderId === provider.id;
 	const isSearching = searchQuery.length > 0;
 
-	// Fetch models when sheet opens and provider is ready
+	// Fetch models when sheet opens and provider is ready (with TTL cache)
 	useEffect(() => {
 		if (!open || !isReady) return;
+
+		const cache = modelsCacheRef.current;
+		if (cache && Date.now() - cache.timestamp < MODELS_CACHE_TTL_MS) {
+			setModels(cache.data);
+			return;
+		}
+
 		setIsLoading(true);
 		provider
 			.models()
-			.then(setModels)
+			.then((result) => {
+				modelsCacheRef.current = { data: result, timestamp: Date.now() };
+				setModels(result);
+			})
 			.catch(console.error)
 			.finally(() => setIsLoading(false));
 	}, [open, provider, isReady]);
@@ -408,7 +427,27 @@ function CloudProviderSection({
 				</Text>
 			</View>
 
-			{!isReady ? (
+			{!isConnected ? (
+				<View
+					style={{
+						flexDirection: "row",
+						alignItems: "center",
+						gap: 8,
+						paddingVertical: 12,
+						paddingLeft: 30,
+					}}
+				>
+					<WifiOff color={theme.textMuted} size={14} strokeWidth={2} />
+					<Text
+						style={{
+							fontSize: 13,
+							color: theme.textMuted,
+						}}
+					>
+						You're offline, internet needed for {provider.name}
+					</Text>
+				</View>
+			) : !isReady ? (
 				<TouchableOpacity
 					onPress={onSetup}
 					activeOpacity={0.7}

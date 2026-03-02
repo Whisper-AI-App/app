@@ -72,9 +72,7 @@ export const mockMainStore = {
 		Object.keys(mockMainStoreData.tables[tableId] || {}),
 	),
 	delTable: jest.fn((tableId: string) => {
-		if (mockMainStoreData.tables[tableId]) {
-			mockMainStoreData.tables[tableId] = {};
-		}
+		delete mockMainStoreData.tables[tableId];
 	}),
 	delTables: jest.fn(() => {
 		mockMainStoreData.tables = createEmptyTables();

@@ -119,6 +119,14 @@ describe("useChatCompletion", () => {
 			expect(result.current.streamingText).toBe("");
 			expect(result.current.continueMessage).toBeNull();
 		});
+
+		it("returns isContinuing as false initially", () => {
+			const { result } = renderHook(() =>
+				useChatCompletion(defaultOptions),
+			);
+
+			expect(result.current.isContinuing).toBe(false);
+		});
 	});
 
 	describe("sendMessage", () => {
@@ -284,6 +292,58 @@ describe("useChatCompletion", () => {
 			// But completion never called
 			expect(mockCompletion).not.toHaveBeenCalled();
 		});
+
+		it("saves AI message with status 'cancelled' when completion is cancelled", async () => {
+			const cancelledResult = makeResult({ finishReason: "cancelled" });
+			setupCompletion("partial text before cancel", cancelledResult);
+
+			const { result } = renderHook(() =>
+				useChatCompletion(defaultOptions),
+			);
+
+			await act(async () => {
+				await result.current.sendMessage("test");
+			});
+
+			expect(mockUpsertMessage).toHaveBeenCalledWith(
+				expect.any(String),
+				"chat-1",
+				"partial text before cancel",
+				"assistant",
+				"whisper-ai",
+				"",
+				"cancelled",
+			);
+			expect(result.current.continueMessage).not.toBeNull();
+		});
+	});
+
+	describe("stopGeneration", () => {
+		it("calls provider stopCompletion", () => {
+			const { result } = renderHook(() =>
+				useChatCompletion(defaultOptions),
+			);
+
+			act(() => {
+				result.current.stopGeneration();
+			});
+
+			expect(mockStopCompletion).toHaveBeenCalled();
+		});
+	});
+
+	describe("clearInferenceCache", () => {
+		it("calls provider clearCache", async () => {
+			const { result } = renderHook(() =>
+				useChatCompletion(defaultOptions),
+			);
+
+			await act(async () => {
+				await result.current.clearInferenceCache();
+			});
+
+			expect(mockClearCache).toHaveBeenCalled();
+		});
 	});
 
 	describe("continueMessage", () => {
@@ -428,6 +488,39 @@ describe("useChatCompletion", () => {
 				"error",
 			);
 			expect(result.current.isAiTyping).toBe(false);
+		});
+
+		it("saves cancelled status when continuation is cancelled", async () => {
+			const cutOffResult = makeResult({ finishReason: "length" });
+			setupCompletion("partial...", cutOffResult);
+
+			const { result } = renderHook(() =>
+				useChatCompletion(defaultOptions),
+			);
+
+			await act(async () => {
+				await result.current.sendMessage("test");
+			});
+
+			mockUpsertMessage.mockClear();
+			mockUuidCounter = 10;
+			const cancelledResult = makeResult({ finishReason: "cancelled" });
+			setupCompletion("continued but cancelled", cancelledResult);
+
+			await act(async () => {
+				await result.current.continueMessage!();
+			});
+
+			expect(mockUpsertMessage).toHaveBeenCalledWith(
+				"uuid-11",
+				"chat-1",
+				"continued but cancelled",
+				"assistant",
+				"whisper-ai",
+				"",
+				"cancelled",
+			);
+			expect(result.current.continueMessage).not.toBeNull();
 		});
 	});
 });

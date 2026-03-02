@@ -141,12 +141,13 @@ export function TopSheet({
 									backgroundColor: cardColor,
 									borderBottomLeftRadius: BORDER_RADIUS,
 									borderBottomRightRadius: BORDER_RADIUS,
+									overflow: "hidden",
 								},
 								rSheetStyle,
 							]}
 						>
 							{/* Content with safe area top padding */}
-							<View style={{ flex: 1, paddingTop: insets.top }}>
+							<View style={{ flex: 1, paddingTop: insets.top, overflow: "hidden" }}>
 								{children}
 							</View>
 

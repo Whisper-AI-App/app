@@ -8,6 +8,7 @@ import { FolderManagementSheet } from "@/components/folder-management-sheet";
 import { FolderSelector } from "@/components/folder-selector";
 import { GradientBackground } from "@/components/gradient-background";
 import { ModelLoadError } from "@/components/model-load-error";
+import { OfflineBanner } from "@/components/offline-banner";
 import { ModelUpdateNotification } from "@/components/model-update-notification";
 import { MoveToFolderSheet } from "@/components/move-to-folder-sheet";
 import { Button } from "@/components/ui/button";
@@ -18,6 +19,7 @@ import { SearchButton } from "@/components/ui/searchbutton";
 import { View } from "@/components/ui/view";
 import { useAIProvider } from "@/contexts/AIProviderContext";
 import { useColor } from "@/hooks/useColor";
+import { useNetworkState } from "@/hooks/useNetworkState";
 import { checkForModelUpdates } from "@/src/ai-providers/whisper-ai/model-config";
 import type { ModelUpdateInfo } from "@/src/ai-providers/whisper-ai/model-config";
 import { renameChat } from "@/src/actions/chat";
@@ -72,6 +74,9 @@ export default function Dashboard() {
 	const [renamingChatName, setRenamingChatName] = useState<string>("");
 
 	const { activeProvider, setupError } = useAIProvider();
+	const { isConnected } = useNetworkState();
+	const isCloudProvider = activeProvider?.type === "cloud";
+	const isOfflineCloud = isCloudProvider && !isConnected;
 
 	// Subscribe to whisper-ai provider state for update checks
 	const configVersion = useCell(
@@ -320,7 +325,9 @@ export default function Dashboard() {
 					</Button>
 				</View>
 
-				{setupError && (
+				{isOfflineCloud && <OfflineBanner />}
+
+				{setupError && !isOfflineCloud && (
 					<ModelLoadError onRetry={() => activeProvider?.setup()} />
 				)}
 

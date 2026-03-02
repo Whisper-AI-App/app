@@ -23,7 +23,7 @@ type AIProviderContextType = {
 	providers: AIProvider[];
 
 	// Management
-	setActiveProvider(id: string): void;
+	setActiveProvider(id: string): Promise<void>;
 	enableProvider(id: string): void;
 	disableProvider(id: string): Promise<void>;
 };
@@ -88,16 +88,18 @@ export function AIProviderProvider({ children }: { children: ReactNode }) {
 	}, [activeProvider, store]);
 
 	const setActiveProvider = useCallback(
-		(id: string) => {
+		async (id: string) => {
 			if (!store) return;
 
 			// Teardown current provider before switching (releases llama context, etc.)
 			if (activeProviderId && activeProviderId !== id) {
 				const oldProvider = providers.find((p) => p.id === activeProviderId);
 				if (oldProvider) {
-					oldProvider.teardown().catch((err) =>
-						console.error(`[AIProvider] Teardown error for ${activeProviderId}:`, err),
-					);
+					try {
+						await oldProvider.teardown();
+					} catch (err) {
+						console.error(`[AIProvider] Teardown error for ${activeProviderId}:`, err);
+					}
 				}
 			}
 
@@ -140,18 +142,29 @@ export function AIProviderProvider({ children }: { children: ReactNode }) {
 		[providers, activeProviderId, store],
 	);
 
+	const value = useMemo(
+		() => ({
+			activeProvider,
+			isSettingUp,
+			setupError,
+			providers,
+			setActiveProvider,
+			enableProvider,
+			disableProvider,
+		}),
+		[
+			activeProvider,
+			isSettingUp,
+			setupError,
+			providers,
+			setActiveProvider,
+			enableProvider,
+			disableProvider,
+		],
+	);
+
 	return (
-		<AIProviderContext.Provider
-			value={{
-				activeProvider,
-				isSettingUp,
-				setupError,
-				providers,
-				setActiveProvider,
-				enableProvider,
-				disableProvider,
-			}}
-		>
+		<AIProviderContext.Provider value={value}>
 			{children}
 		</AIProviderContext.Provider>
 	);
