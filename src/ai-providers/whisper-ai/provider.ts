@@ -181,6 +181,10 @@ export function createWhisperAIProvider(store: Store): AIProvider {
 					currentContextSize = runtime?.n_ctx ?? DEFAULT_CONTEXT_SIZE;
 					stopWords = runtime?.stop ?? [];
 
+					const modelCardId = store.getCell("aiProviders", "whisper-ai", "modelCardId") as string | undefined;
+					if (modelCardId) {
+						store.setCell("aiProviders", "whisper-ai", "selectedModelId", modelCardId);
+					}
 					store.setCell("aiProviders", "whisper-ai", "status", "ready");
 					store.setCell("aiProviders", "whisper-ai", "error", "");
 					console.log("[WhisperAI] Model loaded successfully");

@@ -271,6 +271,8 @@ export const migrations = createMigrations()
 							fileRemoved: z.boolean(),
 							apiKey: z.string(),
 							oAuthCodeVerifier: z.string(),
+							endpointUrl: z.string(),
+							protocol: z.string(),
 						}),
 					)
 					.optional()
@@ -313,6 +315,8 @@ export const migrations = createMigrations()
 				fileRemoved: boolean;
 				apiKey: string;
 				oAuthCodeVerifier: string;
+				endpointUrl: string;
+				protocol: string;
 			};
 			const aiProviders: Record<string, ProviderRow> = {};
 
@@ -334,7 +338,7 @@ export const migrations = createMigrations()
 				} else if (filename) {
 					status = "needs_setup";
 				} else {
-					status = "disabled";
+					status = "needs_setup";
 				}
 
 				// Parse model card to get totalSizeGB
@@ -348,13 +352,14 @@ export const migrations = createMigrations()
 					}
 				}
 
+				const modelCardId = strVal("ai_chat_model_cardId");
 				aiProviders["whisper-ai"] = {
 					id: "whisper-ai",
 					status,
 					error: "",
-					selectedModelId: "",
+					selectedModelId: modelCardId,
 					modelCard,
-					modelCardId: strVal("ai_chat_model_cardId"),
+					modelCardId,
 					configVersion: strVal("ai_chat_model_config_version"),
 					downloadedAt,
 					filename,
@@ -366,6 +371,8 @@ export const migrations = createMigrations()
 					fileRemoved,
 					apiKey: "",
 					oAuthCodeVerifier: "",
+					endpointUrl: "",
+					protocol: "",
 				};
 			}
 

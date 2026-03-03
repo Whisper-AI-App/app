@@ -118,7 +118,6 @@ export function ProviderSetupCard({
 					opacity: 0.6,
 					marginBottom: 12,
 					lineHeight: 18,
-					maxWidth: 128 + 40,
 				}}
 			>
 				{provider.description}

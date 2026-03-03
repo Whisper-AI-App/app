@@ -65,8 +65,12 @@ export const tablesSchemaMainStore = {
 		resumableState: { type: "string" as const }, // Serialized download resumable
 		isPaused: { type: "boolean" as const },
 		fileRemoved: { type: "boolean" as const },
-		// OAuth state (OpenRouter)
+		// OAuth state (i.e. OpenRouter)
 		apiKey: { type: "string" as const },
 		oAuthCodeVerifier: { type: "string" as const },
+		// endpoint URL
+		endpointUrl: { type: "string" as const },
+		// Protocol type (i.e. "anthropic")
+		protocol: { type: "string" as const },
 	},
 } as const;

@@ -35,6 +35,7 @@ export function ProviderAndModelSelector() {
 	const { activeProvider, providers, setActiveProvider } = useAIProvider();
 	const textMuted = useColor("textMuted");
 	const primary = useColor("primary");
+	const destructive = useColor("destructive");
 	const router = useRouter();
 
 	const selectedModelId = useCell(
@@ -81,7 +82,11 @@ export function ProviderAndModelSelector() {
 						<Text style={{ fontSize: 11, color: textMuted }} numberOfLines={1}>
 							{formatModelId(selectedModelId)}
 						</Text>
-					) : null}
+					) : (
+						<Text style={{ fontSize: 11, color: destructive }}>
+							Select a model
+						</Text>
+					)}
 				</View>
 				<ChevronDown color={textMuted} size={14} strokeWidth={2} />
 			</TouchableOpacity>
@@ -344,7 +349,12 @@ function CloudProviderSection({
 	) as string | undefined;
 	const [models, setModels] = useState<ProviderModel[]>([]);
 	const [isLoading, setIsLoading] = useState(false);
-	const modelsCacheRef = useRef<{ data: ProviderModel[]; timestamp: number } | null>(null);
+	const [fetchFailed, setFetchFailed] = useState(false);
+	const [manualModelId, setManualModelId] = useState("");
+	const modelsCacheRef = useRef<{
+		data: ProviderModel[];
+		timestamp: number;
+	} | null>(null);
 
 	const isReady = status === "ready";
 	const isActiveProvider = activeProviderId === provider.id;
@@ -361,13 +371,17 @@ function CloudProviderSection({
 		}
 
 		setIsLoading(true);
+		setFetchFailed(false);
 		provider
 			.models()
 			.then((result) => {
 				modelsCacheRef.current = { data: result, timestamp: Date.now() };
 				setModels(result);
+				setFetchFailed(result.length === 0);
 			})
-			.catch(console.error)
+			.catch(() => {
+				setFetchFailed(true);
+			})
 			.finally(() => setIsLoading(false));
 	}, [open, provider, isReady]);
 
@@ -524,6 +538,75 @@ function CloudProviderSection({
 							No models found
 						</Text>
 					)}
+					{fetchFailed && displayModels.length === 0 && (
+						<Text
+							style={{
+								fontSize: 12,
+								color: theme.textMuted,
+								paddingLeft: 30,
+								paddingBottom: 8,
+							}}
+						>
+							Couldn't load models from this provider
+						</Text>
+					)}
+					<View
+						style={{
+							flexDirection: "row",
+							alignItems: "center",
+							gap: 8,
+							paddingLeft: 30,
+							paddingTop: 8,
+						}}
+					>
+						<TextInput
+							value={manualModelId}
+							onChangeText={setManualModelId}
+							placeholder="Enter model ID..."
+							placeholderTextColor={theme.textMuted}
+							style={{
+								flex: 1,
+								paddingVertical: 8,
+								paddingHorizontal: 12,
+								fontSize: 14,
+								color: theme.text,
+								backgroundColor: "rgba(125,125,125,0.1)",
+								borderRadius: 8,
+							}}
+							autoCapitalize="none"
+							autoCorrect={false}
+							returnKeyType="done"
+							onSubmitEditing={() => {
+								if (manualModelId.trim()) {
+									onSelectModel(manualModelId.trim());
+									setManualModelId("");
+								}
+							}}
+						/>
+						<TouchableOpacity
+							onPress={() => {
+								if (manualModelId.trim()) {
+									onSelectModel(manualModelId.trim());
+									setManualModelId("");
+								}
+							}}
+							style={{
+								backgroundColor: theme.green,
+								borderRadius: 8,
+								paddingVertical: 8,
+								paddingHorizontal: 12,
+								opacity: manualModelId.trim() ? 1 : 0.4,
+							}}
+							disabled={!manualModelId.trim()}
+							activeOpacity={0.7}
+						>
+							<Text
+								style={{ color: "#FFFFFF", fontSize: 14, fontWeight: "600" }}
+							>
+								Use
+							</Text>
+						</TouchableOpacity>
+					</View>
 				</>
 			)}
 		</View>

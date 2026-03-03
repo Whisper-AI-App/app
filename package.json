@@ -26,6 +26,7 @@
     "knip": "knip --no-config-hints"
   },
   "dependencies": {
+    "@ai-sdk/anthropic": "^3.0.50",
     "@ai-sdk/openai": "^3.0.37",
     "@expo-google-fonts/inter": "^0.4.2",
     "@expo/metro-runtime": "~6.1.2",
