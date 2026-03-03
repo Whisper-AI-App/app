@@ -5,6 +5,9 @@ export function upsertMessage(
 	chatId: string,
 	contents: string,
 	role: string,
+	providerId?: string,
+	modelId?: string,
+	status?: string,
 ) {
 	const existingMessage = mainStore.getRow("messages", id);
 
@@ -14,7 +17,14 @@ export function upsertMessage(
 		contents,
 		role,
 		createdAt: existingMessage?.createdAt || new Date().toISOString(),
+		providerId: providerId || (existingMessage?.providerId as string) || "",
+		modelId: modelId || (existingMessage?.modelId as string) || "",
+		status: status || (existingMessage?.status as string) || "done",
 	});
+}
+
+export function setMessageStatus(messageId: string, status: string) {
+	mainStore.setCell("messages", messageId, "status", status);
 }
 
 export function deleteMessage(messageId: string) {

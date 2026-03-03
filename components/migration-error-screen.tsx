@@ -2,6 +2,7 @@ import { AlertDialog, useAlertDialog } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import { Text } from "@/components/ui/text";
 import { View } from "@/components/ui/view";
+import { saveBackupData } from "@/src/actions/reset";
 import { Colors } from "@/theme/colors";
 import * as Updates from "expo-updates";
 import { AlertTriangle, RefreshCw, Save, Trash2 } from "lucide-react-native";
@@ -32,7 +33,7 @@ export function MigrationErrorScreen({
 
 	const handleSaveBackup = async () => {
 		try {
-			throw new Error("Test: could not read backup file");
+			await saveBackupData();
 		} catch (e) {
 			setBackupErrorMessage(
 				e instanceof Error ? e.message : "An unexpected error occurred.",

@@ -36,8 +36,17 @@ describe("migrations", () => {
 				values: {
 					version: String(CURRENT_SCHEMA_VERSION),
 					onboardedAt: "2024-01-01T00:00:00Z",
-					ai_chat_model_downloadedAt: "2024-01-02T00:00:00Z",
-					ai_chat_model_fileUri: "file:///some/model.gguf",
+					activeProviderId: "whisper-ai",
+				},
+				tables: {
+					aiProviders: {
+						"whisper-ai": {
+							id: "whisper-ai",
+							status: "ready",
+							downloadedAt: "2024-01-02T00:00:00Z",
+							filename: "model.gguf",
+						},
+					},
 				},
 			});
 
@@ -48,12 +57,7 @@ describe("migrations", () => {
 			expect(result.fromVersion).toBe(CURRENT_SCHEMA_VERSION);
 			expect(result.toVersion).toBe(CURRENT_SCHEMA_VERSION);
 			expect(store.getValue("onboardedAt")).toBe("2024-01-01T00:00:00Z");
-			expect(store.getValue("ai_chat_model_downloadedAt")).toBe(
-				"2024-01-02T00:00:00Z",
-			);
-			expect(store.getValue("ai_chat_model_fileUri")).toBe(
-				"file:///some/model.gguf",
-			);
+			expect(store.getValue("activeProviderId")).toBe("whisper-ai");
 		});
 
 		it("treats missing version as version 0", async () => {
@@ -184,15 +188,27 @@ describe("migrations", () => {
 		{
 			table: "messages",
 			rowId: "row-1",
-			sparseRow: { contents: "Hello" }, // missing id, chatId, role, createdAt
+			sparseRow: { contents: "Hello" }, // missing id, chatId, role, createdAt, providerId, modelId
 			fullRow: {
 				id: "row-1",
 				chatId: "c-1",
 				contents: "Hi",
 				role: "assistant",
 				createdAt: "2024-01-15T10:30:00Z",
+				status: "done",
+				providerId: "whisper-ai",
+				modelId: "v0 model",
 			},
-			requiredFields: ["id", "chatId", "contents", "role", "createdAt"],
+			requiredFields: [
+				"id",
+				"chatId",
+				"contents",
+				"role",
+				"createdAt",
+				"status",
+				"providerId",
+				"modelId",
+			],
 		},
 		{
 			table: "folders",
@@ -264,5 +280,384 @@ describe("migration schema sync", () => {
 			);
 			expect(new Set(migrationCells)).toEqual(new Set(storeCells));
 		}
+	});
+});
+
+// ─── V3 migration isolated tests ─────────────────────────────────────────────
+
+describe("V3 migration", () => {
+	/**
+	 * Helper: creates a version-2 store with the given ai_chat_model_* values
+	 * and optional tables, then runs migrations and returns the result.
+	 */
+	async function migrateFromV2(opts: {
+		modelValues?: Record<string, unknown>;
+		otherValues?: Record<string, unknown>;
+		tables?: Record<string, Record<string, Record<string, unknown>>>;
+	}) {
+		const store = createTestStore({
+			values: {
+				version: "2",
+				...(opts.otherValues ?? {}),
+				...(opts.modelValues ?? {}),
+			},
+			tables: opts.tables ?? {},
+		});
+		const result = await runMigrations(store);
+		return { store, result };
+	}
+
+	// ── T1.1: fileRemoved=true => status "needs_setup" ────────────────────
+
+	it("sets status to needs_setup when fileRemoved is true", async () => {
+		const { store } = await migrateFromV2({
+			modelValues: {
+				ai_chat_model_downloadedAt: "2024-06-01T00:00:00Z",
+				ai_chat_model_filename: "model.gguf",
+				ai_chat_model_fileRemoved: true,
+			},
+		});
+
+		const provider = store.getRow("aiProviders", "whisper-ai");
+		expect(provider.status).toBe("needs_setup");
+	});
+
+	// ── T1.2: downloadedAt present (not fileRemoved) => status "ready" ───
+
+	it("sets status to ready when downloadedAt is present and fileRemoved is false", async () => {
+		const { store } = await migrateFromV2({
+			modelValues: {
+				ai_chat_model_downloadedAt: "2024-06-01T00:00:00Z",
+				ai_chat_model_filename: "model.gguf",
+			},
+		});
+
+		const provider = store.getRow("aiProviders", "whisper-ai");
+		expect(provider.status).toBe("ready");
+	});
+
+	// ── T1.3: only filename (no downloadedAt) => status "needs_setup" ────
+
+	it("sets status to needs_setup when only filename is present", async () => {
+		const { store } = await migrateFromV2({
+			modelValues: {
+				ai_chat_model_filename: "partial-model.gguf",
+			},
+		});
+
+		const provider = store.getRow("aiProviders", "whisper-ai");
+		expect(provider.status).toBe("needs_setup");
+	});
+
+	// ── T1.4: no model data => no whisper-ai row ─────────────────────────
+
+	it("does not create whisper-ai row when no model data exists", async () => {
+		const { store } = await migrateFromV2({
+			modelValues: {},
+			otherValues: { onboardedAt: "2024-01-01T00:00:00Z" },
+		});
+
+		const provider = store.getRow("aiProviders", "whisper-ai");
+		// Row should be empty (no cells)
+		expect(Object.keys(provider)).toHaveLength(0);
+	});
+
+	// ── T1.5: activeProviderId set to "whisper-ai" when status is "ready" ─
+
+	it("sets activeProviderId to whisper-ai when status is ready", async () => {
+		const { store } = await migrateFromV2({
+			modelValues: {
+				ai_chat_model_downloadedAt: "2024-06-01T00:00:00Z",
+				ai_chat_model_filename: "model.gguf",
+			},
+		});
+
+		expect(store.getValue("activeProviderId")).toBe("whisper-ai");
+	});
+
+	// ── T1.6: activeProviderId undefined when status is not "ready" ──────
+
+	it("does not set activeProviderId when status is needs_setup", async () => {
+		const { store } = await migrateFromV2({
+			modelValues: {
+				ai_chat_model_filename: "model.gguf",
+			},
+		});
+
+		expect(store.getValue("activeProviderId")).toBeUndefined();
+	});
+
+	it("does not set activeProviderId when fileRemoved is true", async () => {
+		const { store } = await migrateFromV2({
+			modelValues: {
+				ai_chat_model_downloadedAt: "2024-06-01T00:00:00Z",
+				ai_chat_model_filename: "model.gguf",
+				ai_chat_model_fileRemoved: true,
+			},
+		});
+
+		expect(store.getValue("activeProviderId")).toBeUndefined();
+	});
+
+	it("does not set activeProviderId when no model data exists", async () => {
+		const { store } = await migrateFromV2({
+			modelValues: {},
+		});
+
+		expect(store.getValue("activeProviderId")).toBeUndefined();
+	});
+
+	// ── T1.7: messages get providerId, modelId, status ───────────────────
+
+	it("adds providerId, modelId, and status to all existing messages", async () => {
+		const { store } = await migrateFromV2({
+			modelValues: {
+				ai_chat_model_downloadedAt: "2024-06-01T00:00:00Z",
+				ai_chat_model_filename: "model.gguf",
+			},
+			tables: {
+				messages: {
+					"msg-1": {
+						id: "msg-1",
+						chatId: "chat-1",
+						contents: "Hello there",
+						role: "user",
+						createdAt: "2024-05-01T00:00:00Z",
+					},
+					"msg-2": {
+						id: "msg-2",
+						chatId: "chat-1",
+						contents: "Hi! How can I help?",
+						role: "assistant",
+						createdAt: "2024-05-01T00:00:01Z",
+					},
+					"msg-3": {
+						id: "msg-3",
+						chatId: "chat-2",
+						contents: "Another chat message",
+						role: "user",
+						createdAt: "2024-05-02T00:00:00Z",
+					},
+				},
+			},
+		});
+
+		for (const msgId of ["msg-1", "msg-2", "msg-3"]) {
+			const msg = store.getRow("messages", msgId);
+			expect(msg.providerId).toBe("whisper-ai");
+			expect(msg.modelId).toBe("v0 model");
+			expect(msg.status).toBe("done");
+		}
+	});
+
+	it("preserves original message fields after adding provider fields", async () => {
+		const { store } = await migrateFromV2({
+			modelValues: {},
+			tables: {
+				messages: {
+					"msg-1": {
+						id: "msg-1",
+						chatId: "chat-1",
+						contents: "Original content",
+						role: "user",
+						createdAt: "2024-05-01T00:00:00Z",
+					},
+				},
+			},
+		});
+
+		const msg = store.getRow("messages", "msg-1");
+		expect(msg.id).toBe("msg-1");
+		expect(msg.chatId).toBe("chat-1");
+		expect(msg.contents).toBe("Original content");
+		expect(msg.role).toBe("user");
+		expect(msg.createdAt).toBe("2024-05-01T00:00:00Z");
+	});
+
+	// ── T1.8: ai_chat_model_* values are removed from output ─────────────
+
+	it("removes ai_chat_model_* values from the store after migration", async () => {
+		const { store } = await migrateFromV2({
+			modelValues: {
+				ai_chat_model_card: '{"sizeGB":0.4}',
+				ai_chat_model_cardId: "card-123",
+				ai_chat_model_config_version: "1.0",
+				ai_chat_model_downloadedAt: "2024-06-01T00:00:00Z",
+				ai_chat_model_filename: "model.gguf",
+				ai_chat_model_fileUri: "file:///path/to/model.gguf",
+				ai_chat_model_progressSizeGB: 0.4,
+				ai_chat_model_downloadError: "",
+				ai_chat_model_resumableState: "",
+				ai_chat_model_isPaused: false,
+				ai_chat_model_fileRemoved: false,
+			},
+			otherValues: {
+				onboardedAt: "2024-01-01T00:00:00Z",
+			},
+		});
+
+		const aiModelKeys = [
+			"ai_chat_model_card",
+			"ai_chat_model_cardId",
+			"ai_chat_model_config_version",
+			"ai_chat_model_downloadedAt",
+			"ai_chat_model_filename",
+			"ai_chat_model_fileUri",
+			"ai_chat_model_progressSizeGB",
+			"ai_chat_model_downloadError",
+			"ai_chat_model_resumableState",
+			"ai_chat_model_isPaused",
+			"ai_chat_model_fileRemoved",
+		];
+
+		for (const key of aiModelKeys) {
+			expect(store.getValue(key)).toBeUndefined();
+		}
+
+		// Non-model values should still be present
+		expect(store.getValue("onboardedAt")).toBe("2024-01-01T00:00:00Z");
+		expect(store.getValue("version")).toBe(String(CURRENT_SCHEMA_VERSION));
+	});
+
+	// ── T1.9: totalSizeGB is parsed from modelCard JSON ──────────────────
+
+	it("parses totalSizeGB from modelCard JSON sizeGB field", async () => {
+		const { store } = await migrateFromV2({
+			modelValues: {
+				ai_chat_model_card: JSON.stringify({ sizeGB: 1.23 }),
+				ai_chat_model_downloadedAt: "2024-06-01T00:00:00Z",
+				ai_chat_model_filename: "model.gguf",
+			},
+		});
+
+		const provider = store.getRow("aiProviders", "whisper-ai");
+		expect(provider.totalSizeGB).toBe(1.23);
+	});
+
+	it("defaults totalSizeGB to 0 when modelCard has no sizeGB", async () => {
+		const { store } = await migrateFromV2({
+			modelValues: {
+				ai_chat_model_card: JSON.stringify({ name: "some model" }),
+				ai_chat_model_downloadedAt: "2024-06-01T00:00:00Z",
+				ai_chat_model_filename: "model.gguf",
+			},
+		});
+
+		const provider = store.getRow("aiProviders", "whisper-ai");
+		expect(provider.totalSizeGB).toBe(0);
+	});
+
+	it("defaults totalSizeGB to 0 when modelCard is invalid JSON", async () => {
+		const { store } = await migrateFromV2({
+			modelValues: {
+				ai_chat_model_card: "not valid json {{{",
+				ai_chat_model_downloadedAt: "2024-06-01T00:00:00Z",
+				ai_chat_model_filename: "model.gguf",
+			},
+		});
+
+		const provider = store.getRow("aiProviders", "whisper-ai");
+		expect(provider.totalSizeGB).toBe(0);
+	});
+
+	it("defaults totalSizeGB to 0 when no modelCard exists", async () => {
+		const { store } = await migrateFromV2({
+			modelValues: {
+				ai_chat_model_downloadedAt: "2024-06-01T00:00:00Z",
+				ai_chat_model_filename: "model.gguf",
+			},
+		});
+
+		const provider = store.getRow("aiProviders", "whisper-ai");
+		expect(provider.totalSizeGB).toBe(0);
+	});
+});
+
+// ─── Rollback tests ──────────────────────────────────────────────────────────
+
+describe("V3 migration rollback", () => {
+	it("restores store to pre-migration state when migration fails", async () => {
+		// Create a version-2 store with a message whose `id` is a number.
+		// TinyBase allows mixed value types (string | number | boolean).
+		// The V3 up() spreads `...msg`, keeping the numeric id.
+		// The V3 Zod schema requires `id: z.string()`, so validation fails
+		// and runMigrations rolls back to the snapshot.
+		const store = createTestStore({
+			values: {
+				version: "2",
+				onboardedAt: "2024-01-01T00:00:00Z",
+				ai_chat_model_filename: "model.gguf",
+			},
+			tables: {
+				chats: {
+					"chat-1": {
+						id: "chat-1",
+						name: "My Chat",
+						createdAt: "2024-01-01T00:00:00Z",
+						folderId: "",
+					},
+				},
+				messages: {
+					"msg-1": {
+						id: 999, // numeric id causes V3 schema validation to fail
+						chatId: "chat-1",
+						contents: "Hello",
+						role: "user",
+						createdAt: "2024-01-01T00:00:00Z",
+					},
+				},
+			},
+		});
+
+		const snapshotBefore = getStoreSnapshot(store);
+		const result = await runMigrations(store);
+
+		// Migration should have failed
+		expect(result.success).toBe(false);
+
+		// Store should be restored to exact pre-migration state
+		const snapshotAfter = getStoreSnapshot(store);
+		expect(snapshotAfter.values).toEqual(snapshotBefore.values);
+		expect(snapshotAfter.tables).toEqual(snapshotBefore.tables);
+
+		// Specific checks: original data is intact
+		expect(store.getValue("version")).toBe("2");
+		expect(store.getValue("onboardedAt")).toBe("2024-01-01T00:00:00Z");
+		expect(store.getValue("ai_chat_model_filename")).toBe("model.gguf");
+
+		const chat = store.getRow("chats", "chat-1");
+		expect(chat.name).toBe("My Chat");
+
+		const msg = store.getRow("messages", "msg-1");
+		expect(msg.id).toBe(999);
+		expect(msg.contents).toBe("Hello");
+	});
+
+	it("returns success false with error in MigrationResult when migration fails", async () => {
+		const store = createTestStore({
+			values: {
+				version: "2",
+				ai_chat_model_filename: "model.gguf",
+			},
+			tables: {
+				messages: {
+					"msg-1": {
+						id: 42, // numeric id causes V3 schema validation to fail
+						chatId: "chat-1",
+						contents: "Test",
+						role: "user",
+						createdAt: "2024-01-01T00:00:00Z",
+					},
+				},
+			},
+		});
+
+		const result = await runMigrations(store);
+
+		expect(result.success).toBe(false);
+		expect(result.error).toBeInstanceOf(Error);
+		expect(result.migrationsRun).toBe(0);
+		expect(result.fromVersion).toBe(2);
+		expect(result.toVersion).toBe(2); // stays at original version on failure
 	});
 });

@@ -6,19 +6,44 @@ import {
 
 // Mock expo-file-system first (before store mock)
 const mockFileDelete = jest.fn();
+const mockFileWrite = jest.fn();
 let mockFileExists = true;
 
 jest.mock("expo-file-system", () => ({
-	File: jest.fn().mockImplementation(() => ({
-		get exists() {
-			return mockFileExists;
-		},
-		delete: mockFileDelete,
-	})),
+	File: jest.fn().mockImplementation((...args: unknown[]) => {
+		const uri =
+			args.length === 2
+				? `file:///mock/cache/${args[1]}`
+				: String(args[0]);
+		return {
+			get exists() {
+				return mockFileExists;
+			},
+			delete: mockFileDelete,
+			write: mockFileWrite,
+			uri,
+		};
+	}),
 	Directory: jest.fn().mockImplementation(() => ({
-		uri: "file:///mock/documents",
+		uri: "file:///mock/cache",
 	})),
-	Paths: { document: "file:///mock/documents" },
+	Paths: { document: "file:///mock/documents", cache: "file:///mock/cache" },
+}));
+
+// Mock expo-file-system/legacy
+const mockGetInfoAsync = jest.fn();
+const mockReadAsStringAsync = jest.fn();
+
+jest.mock("expo-file-system/legacy", () => ({
+	getInfoAsync: (...args: unknown[]) => mockGetInfoAsync(...args),
+	readAsStringAsync: (...args: unknown[]) => mockReadAsStringAsync(...args),
+}));
+
+// Mock expo-sharing
+const mockShareAsync = jest.fn();
+
+jest.mock("expo-sharing", () => ({
+	shareAsync: (...args: unknown[]) => mockShareAsync(...args),
 }));
 
 // Mock initMainStore and getModelFileUri functions
@@ -34,13 +59,21 @@ jest.mock("../../stores/main/main-store", () => ({
 }));
 
 // Import the functions under test AFTER mocks
-import { clearConversations, resetEverything } from "../../actions/reset";
+import {
+	clearConversations,
+	resetEverything,
+	saveBackupData,
+} from "../../actions/reset";
 
 describe("reset actions", () => {
 	beforeEach(() => {
 		resetMockMainStore();
 		mockInitMainStore.mockReset();
 		mockFileDelete.mockReset();
+		mockFileWrite.mockReset();
+		mockGetInfoAsync.mockReset();
+		mockReadAsStringAsync.mockReset();
+		mockShareAsync.mockReset();
 		mockModelFileUri = undefined;
 		mockFileExists = true;
 	});
@@ -152,6 +185,74 @@ describe("reset actions", () => {
 
 			// Should delete both the main store file and backup file
 			expect(mockFileDelete).toHaveBeenCalledTimes(2);
+		});
+	});
+
+	describe("saveBackupData", () => {
+		beforeEach(() => {
+			jest.useFakeTimers();
+			jest.setSystemTime(new Date("2024-06-15T12:30:45.123Z"));
+		});
+
+		afterEach(() => {
+			jest.useRealTimers();
+		});
+
+		it("uses backup file when it exists", async () => {
+			mockGetInfoAsync.mockResolvedValue({ exists: true });
+			mockReadAsStringAsync.mockResolvedValue('{"data":"backup"}');
+			mockFileWrite.mockResolvedValue(undefined);
+			mockShareAsync.mockResolvedValue(undefined);
+
+			await saveBackupData();
+
+			expect(mockGetInfoAsync).toHaveBeenCalledWith(
+				"file:///mock/documents/whisper.backup.json",
+			);
+			expect(mockReadAsStringAsync).toHaveBeenCalledWith(
+				"file:///mock/documents/whisper.backup.json",
+			);
+		});
+
+		it("falls back to main store file when backup does not exist", async () => {
+			mockGetInfoAsync.mockResolvedValue({ exists: false });
+			mockReadAsStringAsync.mockResolvedValue('{"data":"main"}');
+			mockFileWrite.mockResolvedValue(undefined);
+			mockShareAsync.mockResolvedValue(undefined);
+
+			await saveBackupData();
+
+			expect(mockReadAsStringAsync).toHaveBeenCalledWith(
+				"file:///mock/documents/whisper.json",
+			);
+		});
+
+		it("writes content to a temp file with timestamped name", async () => {
+			mockGetInfoAsync.mockResolvedValue({ exists: false });
+			mockReadAsStringAsync.mockResolvedValue('{"store":"data"}');
+			mockFileWrite.mockResolvedValue(undefined);
+			mockShareAsync.mockResolvedValue(undefined);
+
+			await saveBackupData();
+
+			expect(mockFileWrite).toHaveBeenCalledWith('{"store":"data"}');
+		});
+
+		it("shares the temp file with correct options", async () => {
+			mockGetInfoAsync.mockResolvedValue({ exists: false });
+			mockReadAsStringAsync.mockResolvedValue('{"store":"data"}');
+			mockFileWrite.mockResolvedValue(undefined);
+			mockShareAsync.mockResolvedValue(undefined);
+
+			await saveBackupData();
+
+			expect(mockShareAsync).toHaveBeenCalledWith(
+				expect.stringContaining("whisper-backup-"),
+				{
+					mimeType: "application/json",
+					dialogTitle: "Save Whisper Backup",
+				},
+			);
 		});
 	});
 });

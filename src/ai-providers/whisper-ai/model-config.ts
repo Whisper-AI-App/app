@@ -1,4 +1,5 @@
 import * as Device from "expo-device";
+import type { Store } from "tinybase";
 import {
 	getLatestConfig,
 	recommendModelCard,
@@ -6,15 +7,22 @@ import {
 	type WhisperLLMCardsJSON,
 	whisperLLMCardsJson,
 } from "whisper-llm-cards";
-import { mainStore } from "../../stores/main/main-store";
 import { bytesToGB } from "../../utils/bytes";
 import { validateModelFileName } from "../../utils/generate-model-filename";
 import { DEFAULT_AI_CHAT_MODEL } from "./constants";
-import type { ModelUpdateInfo } from "./types";
+
+export interface ModelUpdateInfo {
+	hasUpdate: boolean;
+	currentCard: WhisperLLMCard | null;
+	newCard: WhisperLLMCard;
+	currentVersion: string | null;
+	newVersion: string;
+	requiresDownload: boolean;
+	reason?: "version_mismatch" | "metadata_changed" | "filename_invalid";
+}
 
 /**
  * Fetches the latest recommended model configuration
- * @returns Promise with config and recommended card
  */
 export async function fetchLatestRecommendedModel(): Promise<{
 	config: WhisperLLMCardsJSON;
@@ -24,7 +32,6 @@ export async function fetchLatestRecommendedModel(): Promise<{
 	try {
 		const config = await getLatestConfig();
 
-		// Get device RAM in GB for model recommendation
 		const deviceMemoryBytes = Device.totalMemory;
 		const ramGB = deviceMemoryBytes ? bytesToGB(deviceMemoryBytes) : undefined;
 
@@ -44,7 +51,6 @@ export async function fetchLatestRecommendedModel(): Promise<{
 		return { config, recommendedCard, cardId };
 	} catch (error) {
 		console.error("[AI Model] Failed to fetch latest config:", error);
-		// Fallback to bundled config
 		return {
 			config: whisperLLMCardsJson,
 			recommendedCard: DEFAULT_AI_CHAT_MODEL,
@@ -54,27 +60,28 @@ export async function fetchLatestRecommendedModel(): Promise<{
 }
 
 /**
- * Updates the stored model card metadata without downloading
- * Use this when only metadata has changed (same sourceUrl)
+ * Updates the stored model card metadata in aiProviders table
  */
 export function updateModelCard(
+	store: Store,
 	card: WhisperLLMCard,
 	cardId: string,
 	configVersion: string,
 ): void {
-	mainStore.setValue("ai_chat_model_card", JSON.stringify(card));
-	mainStore.setValue("ai_chat_model_cardId", cardId);
-	mainStore.setValue("ai_chat_model_config_version", configVersion);
+	store.setCell("aiProviders", "whisper-ai", "modelCard", JSON.stringify(card));
+	store.setCell("aiProviders", "whisper-ai", "modelCardId", cardId);
+	store.setCell("aiProviders", "whisper-ai", "configVersion", configVersion);
 }
 
 /**
- * Gets the currently stored model card
- * @returns The stored card or null if not found
+ * Gets the currently stored model card from aiProviders table
  */
-export function getStoredModelCard(): WhisperLLMCard | null {
-	const cardJson = mainStore.getValue("ai_chat_model_card") as
-		| string
-		| undefined;
+export function getStoredModelCard(store: Store): WhisperLLMCard | null {
+	const cardJson = store.getCell(
+		"aiProviders",
+		"whisper-ai",
+		"modelCard",
+	) as string | undefined;
 	if (!cardJson) return null;
 
 	try {
@@ -87,37 +94,36 @@ export function getStoredModelCard(): WhisperLLMCard | null {
 
 /**
  * Compares two model cards for equality
- * Performs a deep comparison of all fields
  */
 export function areCardsEqual(
 	card1: WhisperLLMCard | null,
 	card2: WhisperLLMCard,
 ): boolean {
 	if (!card1) return false;
-
-	// Deep equality check using JSON comparison
-	// This automatically handles all fields, including any newly added ones
 	return JSON.stringify(card1) === JSON.stringify(card2);
 }
 
 /**
  * Checks if a model update is available
- * @returns Update information including whether download is required
  */
-export async function checkForModelUpdates(): Promise<ModelUpdateInfo> {
-	const storedConfigVersion = mainStore.getValue(
-		"ai_chat_model_config_version",
+export async function checkForModelUpdates(
+	store: Store,
+): Promise<ModelUpdateInfo> {
+	const storedConfigVersion = store.getCell(
+		"aiProviders",
+		"whisper-ai",
+		"configVersion",
 	) as string | undefined;
-	// Use filename instead of full path (path changes between app updates)
-	const filename = mainStore.getValue("ai_chat_model_filename") as
-		| string
-		| undefined;
+	const filename = store.getCell(
+		"aiProviders",
+		"whisper-ai",
+		"filename",
+	) as string | undefined;
 
-	// Fetch latest recommended model
 	const { config, recommendedCard, cardId } =
 		await fetchLatestRecommendedModel();
 
-	const currentCard = getStoredModelCard();
+	const currentCard = getStoredModelCard(store);
 	const currentVersion = storedConfigVersion || null;
 	const newVersion = config.version;
 
@@ -129,17 +135,10 @@ export async function checkForModelUpdates(): Promise<ModelUpdateInfo> {
 			currentCard,
 			storedConfigVersion,
 		);
-		console.log("[checkForModelUpdates] Filename validation:", {
-			filename,
-			isValid: filenameValid,
-		});
 	}
 
-	// If filename doesn't match, treat as version mismatch (force update)
+	// If filename doesn't match, treat as version mismatch
 	if (filename && !filenameValid && currentCard) {
-		console.log(
-			"[checkForModelUpdates] Filename mismatch detected - treating as outdated",
-		);
 		return {
 			hasUpdate: true,
 			currentCard,
@@ -151,31 +150,10 @@ export async function checkForModelUpdates(): Promise<ModelUpdateInfo> {
 		};
 	}
 
-	// Check version mismatch
 	const versionsMatch = currentVersion === newVersion;
-
-	if (!versionsMatch) {
-		console.log("[checkForModelUpdates] Version mismatch:", {
-			currentVersion,
-			newVersion,
-		});
-	}
-
-	// Check if cards are identical (using deep comparison)
 	const cardsMatch = areCardsEqual(currentCard, recommendedCard);
 
-	if (!cardsMatch) {
-		console.log("[checkForModelUpdates] Card metadata differs:", {
-			currentCard,
-			recommendedCard,
-		});
-	}
-
-	// No update needed if versions match AND cards match AND filename is valid (or no file yet)
 	if (versionsMatch && cardsMatch && (filenameValid || !filename)) {
-		console.log(
-			"[checkForModelUpdates] No update available, versions and metadata match",
-		);
 		return {
 			hasUpdate: false,
 			currentCard,
@@ -186,29 +164,12 @@ export async function checkForModelUpdates(): Promise<ModelUpdateInfo> {
 		};
 	}
 
-	// Determine if download is required
-	// Download needed if:
-	// 1. sourceUrl changed (different model file)
-	// 2. Filename is invalid (file is outdated/corrupted)
 	const requiresDownload =
 		currentCard?.sourceUrl !== recommendedCard.sourceUrl || !filenameValid;
 
-	console.log("[checkForModelUpdates] Update needed:", {
-		requiresDownload,
-		reason: !versionsMatch
-			? "version_mismatch"
-			: !cardsMatch
-				? "metadata_changed"
-				: "filename_invalid",
-	});
-
-	// If metadata-only update (no download required), update card immediately
+	// If metadata-only update, apply immediately
 	if (!requiresDownload) {
-		updateModelCard(recommendedCard, cardId, newVersion);
-		console.log(
-			"[checkForModelUpdates] Metadata-only update - card updated to version",
-			newVersion,
-		);
+		updateModelCard(store, recommendedCard, cardId, newVersion);
 	}
 
 	return {

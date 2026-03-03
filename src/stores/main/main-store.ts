@@ -14,14 +14,15 @@ export const mainStoreFilePath = `${new FileSystem.Directory(FileSystem.Paths.do
  * can change between app updates.
  */
 export function getModelFileUri(): string | undefined {
-	const filename = mainStore.getValue("ai_chat_model_filename") as
-		| string
-		| undefined;
+	const filename = mainStore.getCell(
+		"aiProviders",
+		"whisper-ai",
+		"filename",
+	) as string | undefined;
 	if (filename) {
 		return `${new FileSystem.Directory(FileSystem.Paths.document).uri}/${filename}`;
 	}
-	// Fallback to legacy fileUri for migration
-	return mainStore.getValue("ai_chat_model_fileUri") as string | undefined;
+	return undefined;
 }
 
 /**

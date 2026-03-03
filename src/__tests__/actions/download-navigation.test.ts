@@ -87,9 +87,9 @@ jest.mock("../../utils/generate-model-filename", () => ({
 // Import after mocks
 import {
 	pauseDownload,
-	startOrResumeDownloadOfAIChatModel,
-} from "../../actions/ai/download-control";
-import { setActiveDownloadResumable } from "../../actions/ai/state";
+	setActiveDownloadResumable,
+	startDownload,
+} from "../../ai-providers/whisper-ai/download";
 import type { DownloadResumable } from "expo-file-system/legacy";
 
 describe("Download navigation behavior", () => {
@@ -121,11 +121,6 @@ describe("Download navigation behavior", () => {
 		 * This test verifies the fix for Issue #72:
 		 * "Pausing download after purge on iOS skips straight to chat list without the model"
 		 *
-		 * The bug was that navigation happened immediately when starting a download,
-		 * rather than only when downloadedAt was set. When pausing, the user was
-		 * already navigated away because startOrResumeDownloadOfAIChatModel
-		 * called router.replace() immediately.
-		 *
 		 * The fix ensures:
 		 * 1. pauseDownload sets isPaused to true
 		 * 2. pauseDownload does NOT set downloadedAt
@@ -146,31 +141,41 @@ describe("Download navigation behavior", () => {
 			// Simulate starting a download by setting the active resumable
 			setActiveDownloadResumable(mockResumable as unknown as DownloadResumable);
 
-			// Seed some download state
-			seedMockMainStore({
-				ai_chat_model_filename: "test-model-v1.0.0-abc123.gguf",
-				ai_chat_model_fileUri: "file:///mock/documents/test-model-v1.0.0-abc123.gguf",
-				ai_chat_model_isPaused: false,
+			// Seed aiProviders row with download state
+			seedMockMainStore(undefined, {
+				aiProviders: {
+					"whisper-ai": {
+						id: "whisper-ai",
+						filename: "test-model-v1.0.0-abc123.gguf",
+						isPaused: false,
+					},
+				},
 			});
 
 			// Act: Pause the download
-			await pauseDownload();
+			await pauseDownload(mockMainStore as any);
 
 			// Assert: isPaused should be true
-			expect(mockMainStore.setValue).toHaveBeenCalledWith(
-				"ai_chat_model_isPaused",
+			expect(mockMainStore.setCell).toHaveBeenCalledWith(
+				"aiProviders",
+				"whisper-ai",
+				"isPaused",
 				true,
 			);
 
 			// Assert: downloadedAt should NOT be set (this would trigger navigation)
-			expect(mockMainStore.setValue).not.toHaveBeenCalledWith(
-				"ai_chat_model_downloadedAt",
+			expect(mockMainStore.setCell).not.toHaveBeenCalledWith(
+				"aiProviders",
+				"whisper-ai",
+				"downloadedAt",
 				expect.anything(),
 			);
 
 			// Assert: resumable state should be saved for later resumption
-			expect(mockMainStore.setValue).toHaveBeenCalledWith(
-				"ai_chat_model_resumableState",
+			expect(mockMainStore.setCell).toHaveBeenCalledWith(
+				"aiProviders",
+				"whisper-ai",
+				"resumableState",
 				expect.any(String),
 			);
 		});
@@ -180,15 +185,15 @@ describe("Download navigation behavior", () => {
 			setActiveDownloadResumable(null);
 
 			// Act: Try to pause (should be no-op)
-			await pauseDownload();
+			await pauseDownload(mockMainStore as any);
 
 			// Assert: No store modifications
-			expect(mockMainStore.setValue).not.toHaveBeenCalled();
+			expect(mockMainStore.setCell).not.toHaveBeenCalled();
 			expect(mockPauseAsync).not.toHaveBeenCalled();
 		});
 	});
 
-	describe("startOrResumeDownloadOfAIChatModel state management", () => {
+	describe("startDownload state management", () => {
 		/**
 		 * These tests verify that the download function properly manages state
 		 * without directly controlling navigation (which is now handled by the component).
@@ -197,15 +202,18 @@ describe("Download navigation behavior", () => {
 		it("sets isPaused to false when starting download", async () => {
 			mockDownloadAsync.mockResolvedValue({ status: 200 });
 
-			await startOrResumeDownloadOfAIChatModel(
+			await startDownload(
+				mockMainStore as any,
 				testCard,
 				"test-card-id",
 				"1.0.0",
 			);
 
 			// Verify isPaused was set to false when download started
-			expect(mockMainStore.setValue).toHaveBeenCalledWith(
-				"ai_chat_model_isPaused",
+			expect(mockMainStore.setCell).toHaveBeenCalledWith(
+				"aiProviders",
+				"whisper-ai",
+				"isPaused",
 				false,
 			);
 		});
@@ -215,15 +223,18 @@ describe("Download navigation behavior", () => {
 			jest.useFakeTimers();
 			jest.setSystemTime(new Date("2024-01-15T10:30:00.000Z"));
 
-			await startOrResumeDownloadOfAIChatModel(
+			await startDownload(
+				mockMainStore as any,
 				testCard,
 				"test-card-id",
 				"1.0.0",
 			);
 
 			// downloadedAt should be set ONLY after successful download
-			expect(mockMainStore.setValue).toHaveBeenCalledWith(
-				"ai_chat_model_downloadedAt",
+			expect(mockMainStore.setCell).toHaveBeenCalledWith(
+				"aiProviders",
+				"whisper-ai",
+				"downloadedAt",
 				"2024-01-15T10:30:00.000Z",
 			);
 
@@ -234,28 +245,41 @@ describe("Download navigation behavior", () => {
 			// Simulate download being paused during downloadAsync
 			mockDownloadAsync.mockImplementation(async () => {
 				// Simulate user pausing during download
-				seedMockMainStore({ ai_chat_model_isPaused: true });
+				seedMockMainStore(undefined, {
+					aiProviders: {
+						"whisper-ai": {
+							isPaused: true,
+						},
+					},
+				});
 				return null; // Download returns null when paused
 			});
 
-			await startOrResumeDownloadOfAIChatModel(
+			await startDownload(
+				mockMainStore as any,
 				testCard,
 				"test-card-id",
 				"1.0.0",
 			);
 
 			// downloadedAt should NOT be set because download was paused
-			expect(mockMainStore.setValue).not.toHaveBeenCalledWith(
-				"ai_chat_model_downloadedAt",
-				expect.anything(),
+			const setCellCalls = mockMainStore.setCell.mock.calls;
+			const downloadedAtCalls = setCellCalls.filter(
+				(call: unknown[]) =>
+					call[0] === "aiProviders" &&
+					call[1] === "whisper-ai" &&
+					call[2] === "downloadedAt" &&
+					call[3] !== "", // Ignore the initial empty string set
 			);
+			expect(downloadedAtCalls.length).toBe(0);
 		});
 
 		it("does not set downloadedAt on download failure", async () => {
 			mockDownloadAsync.mockResolvedValue({ status: 500 });
 
 			try {
-				await startOrResumeDownloadOfAIChatModel(
+				await startDownload(
+					mockMainStore as any,
 					testCard,
 					"test-card-id",
 					"1.0.0",
@@ -264,10 +288,14 @@ describe("Download navigation behavior", () => {
 				// Expected to throw
 			}
 
-			// downloadedAt should NOT be set on failure
-			const setValueCalls = mockMainStore.setValue.mock.calls;
-			const downloadedAtCalls = setValueCalls.filter(
-				(call: unknown[]) => call[0] === "ai_chat_model_downloadedAt",
+			// downloadedAt should NOT be set on failure (only empty string initialization)
+			const setCellCalls = mockMainStore.setCell.mock.calls;
+			const downloadedAtCalls = setCellCalls.filter(
+				(call: unknown[]) =>
+					call[0] === "aiProviders" &&
+					call[1] === "whisper-ai" &&
+					call[2] === "downloadedAt" &&
+					call[3] !== "", // Ignore the initial empty string set
 			);
 			expect(downloadedAtCalls.length).toBe(0);
 		});
@@ -287,18 +315,29 @@ describe("Download navigation behavior", () => {
 			mockDownloadAsync.mockImplementation(() => new Promise(() => {})); // Never resolves
 
 			// Start the download (don't await - it never resolves)
-			startOrResumeDownloadOfAIChatModel(testCard, "test-card-id", "1.0.0");
+			startDownload(
+				mockMainStore as any,
+				testCard,
+				"test-card-id",
+				"1.0.0",
+			);
 
 			// Should set isPaused to false
-			expect(mockMainStore.setValue).toHaveBeenCalledWith(
-				"ai_chat_model_isPaused",
+			expect(mockMainStore.setCell).toHaveBeenCalledWith(
+				"aiProviders",
+				"whisper-ai",
+				"isPaused",
 				false,
 			);
 
-			// Should not have downloadedAt yet
-			const setValueCalls = mockMainStore.setValue.mock.calls;
-			const downloadedAtCalls = setValueCalls.filter(
-				(call: unknown[]) => call[0] === "ai_chat_model_downloadedAt",
+			// Should not have downloadedAt set yet (only empty string initialization)
+			const setCellCalls = mockMainStore.setCell.mock.calls;
+			const downloadedAtCalls = setCellCalls.filter(
+				(call: unknown[]) =>
+					call[0] === "aiProviders" &&
+					call[1] === "whisper-ai" &&
+					call[2] === "downloadedAt" &&
+					call[3] !== "",
 			);
 			expect(downloadedAtCalls.length).toBe(0);
 		});
@@ -308,21 +347,28 @@ describe("Download navigation behavior", () => {
 			jest.setSystemTime(new Date("2024-01-15T12:00:00.000Z"));
 			mockDownloadAsync.mockResolvedValue({ status: 200 });
 
-			await startOrResumeDownloadOfAIChatModel(
+			await startDownload(
+				mockMainStore as any,
 				testCard,
 				"test-card-id",
 				"1.0.0",
 			);
 
 			// After completion, downloadedAt should be set
-			expect(mockMainStore.setValue).toHaveBeenCalledWith(
-				"ai_chat_model_downloadedAt",
+			expect(mockMainStore.setCell).toHaveBeenCalledWith(
+				"aiProviders",
+				"whisper-ai",
+				"downloadedAt",
 				"2024-01-15T12:00:00.000Z",
 			);
 
 			// isPaused should be cleared (via cleanupDownloadState)
-			expect(mockMainStore.delValue).toHaveBeenCalledWith(
-				"ai_chat_model_isPaused",
+			// It gets set to false multiple times - during start and during cleanup
+			expect(mockMainStore.setCell).toHaveBeenCalledWith(
+				"aiProviders",
+				"whisper-ai",
+				"isPaused",
+				false,
 			);
 
 			jest.useRealTimers();

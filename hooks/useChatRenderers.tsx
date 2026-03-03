@@ -6,6 +6,7 @@ import { Markdown } from "@/components/ui/markdown";
 import { Text } from "@/components/ui/text";
 import { TypingIndicator } from "@/components/ui/typing-indicator";
 import { View } from "@/components/ui/view";
+import { useAIProvider } from "@/contexts/AIProviderContext";
 import { useColorScheme } from "@/hooks/useColorScheme";
 import { useKeyboardHeight } from "@/hooks/useKeyboardHeight";
 import type { AppIconVariant } from "@/src/data/app-icon-presets";
@@ -37,10 +38,10 @@ export function useChatRenderers({
 	isTyping = false,
 	isNewChat = false,
 	isFullPage = false,
-	isCutOff = false,
+	lastMessageStatus,
 	onContinue,
 	onStop,
-	chatNotice,
+	onDismissNotice,
 }: ChatRenderersProps & { isFullPage?: boolean }) {
 	const colorScheme = useColorScheme() ?? "light";
 	const theme = Colors[colorScheme];
@@ -48,6 +49,7 @@ export function useChatRenderers({
 		| AppIconVariant
 		| undefined;
 	const appIconPreset = getAppIconPresetById(appIconVariant || "Default");
+	const { providers } = useAIProvider();
 	const { keyboardHeight, keyboardAnimationDuration } = useKeyboardHeight();
 
 	const BASE_BOTTOM = isFullPage ? PAGE_BASE_BOTTOM : SHEET_BASE_BOTTOM;
@@ -76,39 +78,48 @@ export function useChatRenderers({
 			const firstMessageMarginTop = isFullPage ? 16 : 92;
 			const lastMessageMarginBottom = isFullPage ? 124 : 300;
 
-			// Render cutoff notice with continue action
-			if (message._id === "cutoff-notice" && onContinue) {
+			// Render status notice (length/cancelled/error)
+			if (message._id === "status-notice" && lastMessageStatus) {
 				const isLastMessage = JSON.stringify(props.nextMessage) === "{}";
-				return (
-					<View
-						style={{
-							width: SCREEN_WIDTH - 96,
-							marginBottom: isLastMessage ? lastMessageMarginBottom : 4,
-						}}
-					>
-						<ChatNotice
-							type="info"
-							message="Response was cut short."
-							actionLabel="Continue"
-							onAction={onContinue}
-						/>
-					</View>
-				);
-			}
 
-			// Render chat notice for special message
-			if (message._id === "chat-notice" && chatNotice) {
-				const isLastMessage = JSON.stringify(props.nextMessage) === "{}";
-				return (
-					<View
-						style={{
-							width: SCREEN_WIDTH - 96,
-							marginBottom: isLastMessage ? lastMessageMarginBottom : 4,
-						}}
-					>
-						<ChatNotice type={chatNotice.type} message={chatNotice.message} />
-					</View>
-				);
+				if (
+					lastMessageStatus === "length" ||
+					lastMessageStatus === "cancelled"
+				) {
+					return (
+						<View
+							style={{
+								width: SCREEN_WIDTH - 96,
+								marginBottom: isLastMessage ? lastMessageMarginBottom : 4,
+							}}
+						>
+							<ChatNotice
+								type="info"
+								message="Response was cut short."
+								actionLabel="Continue"
+								onAction={onContinue ? () => onContinue() : undefined}
+								onDismiss={onDismissNotice}
+							/>
+						</View>
+					);
+				}
+
+				if (lastMessageStatus === "error") {
+					return (
+						<View
+							style={{
+								width: SCREEN_WIDTH - 96,
+								marginBottom: isLastMessage ? lastMessageMarginBottom : 4,
+							}}
+						>
+							<ChatNotice
+								type="error"
+								message="Something went wrong. Try sending your message again."
+								onDismiss={onDismissNotice}
+							/>
+						</View>
+					);
+				}
 			}
 
 			// Render typing indicator for special message
@@ -138,8 +149,43 @@ export function useChatRenderers({
 			const isStreaming = message._id === "streaming";
 			const showCopyButton = (isSystemMessage || isUserMessage) && !isStreaming;
 
+			// Resolve provider name & model for assistant messages
+			const msgProviderId = (message as { providerId?: string })?.providerId;
+			const msgProvider = msgProviderId
+				? providers.find((p) => p.id === msgProviderId)
+				: null;
+			const providerName = msgProvider?.name;
+			const modelId =
+				(message as { modelId?: string })?.modelId || "";
+
 			return (
 				<View>
+					{isSystemMessage && providerName && (
+						<View
+							style={{
+								marginLeft: 4,
+								marginBottom: 3,
+								marginTop: marginTop > 4 ? 0 : 2,
+							}}
+						>
+							<Text
+								style={{
+									fontSize: 11,
+									fontWeight: "600",
+									color: theme.textMuted,
+								}}
+							>
+								{providerName}
+							</Text>
+							{modelId ? (
+								<Text
+									style={{ fontSize: 10, color: theme.textMuted, opacity: 0.6 }}
+								>
+									{modelId}
+								</Text>
+							) : null}
+						</View>
+					)}
 					<Bubble
 						{...props}
 						wrapperStyle={{
@@ -211,7 +257,15 @@ export function useChatRenderers({
 				</View>
 			);
 		},
-		[theme, colorScheme, isFullPage, isCutOff, onContinue, chatNotice],
+		[
+			theme,
+			colorScheme,
+			isFullPage,
+			lastMessageStatus,
+			onContinue,
+			onDismissNotice,
+			providers,
+		],
 	);
 
 	// Return null for GiftedChat's input toolbar - we render our own externally
@@ -294,11 +348,22 @@ export function useChatRenderers({
 	);
 
 	const renderAvatar = useCallback(
-		(props: { position: "left" | "right" }) => {
+		// eslint-disable-next-line @typescript-eslint/no-explicit-any
+		(props: { position: "left" | "right"; currentMessage?: any }) => {
 			if (props.position === "right") return null;
+
+			const msgProviderId = props.currentMessage?.providerId as string | undefined;
+			const isWhisper = !msgProviderId || msgProviderId === "whisper-ai";
+
+			let avatarSource = appIconPreset?.image;
+			if (!isWhisper) {
+				const provider = providers.find((p) => p.id === msgProviderId);
+				if (provider) avatarSource = provider.avatar;
+			}
+
 			return (
 				<Image
-					source={appIconPreset?.image}
+					source={avatarSource}
 					style={{
 						width: 28,
 						height: 28,
@@ -307,7 +372,7 @@ export function useChatRenderers({
 				/>
 			);
 		},
-		[appIconPreset],
+		[appIconPreset, providers],
 	);
 
 	const defaultContainerStyle = {

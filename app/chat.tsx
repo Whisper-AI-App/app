@@ -1,15 +1,19 @@
 import { ChatBackground } from "@/components/chat-background";
 import { ChatPageHeader } from "@/components/chat/chat-page-header";
 import { MoveToFolderSheet } from "@/components/move-to-folder-sheet";
+import { OfflineBanner } from "@/components/offline-banner";
+import { ProviderAndModelSelector } from "@/components/ProviderAndModelSelector";
 import { SuggestionCards } from "@/components/suggestion-cards";
 import { PromptDialog } from "@/components/ui/prompt-dialog";
 import { Text } from "@/components/ui/text";
 import { View } from "@/components/ui/view";
-import { useAIChat } from "@/contexts/AIChatContext";
+import { useAIProvider } from "@/contexts/AIProviderContext";
 import { useChatCompletion } from "@/hooks/useChatCompletion";
 import { useChatMessages } from "@/hooks/useChatMessages";
 import { useChatRenderers } from "@/hooks/useChatRenderers";
 import { useChatState } from "@/hooks/useChatState";
+import { useNetworkState } from "@/hooks/useNetworkState";
+import { setMessageStatus } from "@/src/actions/message";
 import { wouldTruncate } from "@/src/utils/context-window";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useCallback, useEffect, useMemo, useState } from "react";
@@ -72,10 +76,15 @@ export default function ChatPage() {
 	});
 
 	// Messages from TinyBase
-	const messages = useChatMessages(currentChatId);
+	const { messages, lastAssistantStatus, lastAssistantId } =
+		useChatMessages(currentChatId);
 
-	// Get contextSize from AI context for truncation warning
-	const { contextSize } = useAIChat();
+	// Get contextSize from active provider
+	const { activeProvider, setupError } = useAIProvider();
+	const contextSize = activeProvider?.getContextSize() ?? 2048;
+	const { isConnected } = useNetworkState();
+	const isCloudProvider = activeProvider?.type === "cloud";
+	const isOfflineCloud = isCloudProvider && !isConnected;
 
 	// Show warning when conversation will be truncated
 	const showTruncationWarning = useMemo(() => {
@@ -90,9 +99,7 @@ export default function ChatPage() {
 		streamingText,
 		sendMessage,
 		stopGeneration,
-		isCutOff,
 		continueMessage,
-		chatNotice,
 		clearInferenceCache,
 	} = useChatCompletion({
 		chatId: currentChatId,
@@ -101,14 +108,35 @@ export default function ChatPage() {
 		folderId: folderIdParam || null,
 	});
 
-	// Handle new chat - reset state without navigation animation, and clear caches
+	// Dismiss notice: set status to "done" so the notice disappears
+	const onDismissNotice = useCallback(() => {
+		if (!lastAssistantId) return;
+		if (
+			lastAssistantStatus === "error" ||
+			lastAssistantStatus === "length" ||
+			lastAssistantStatus === "cancelled"
+		) {
+			setMessageStatus(lastAssistantId, "done");
+		}
+	}, [lastAssistantId, lastAssistantStatus]);
+
+	// Continue: use in-memory context if available, otherwise send a user message
+	const handleContinue = useCallback(async () => {
+		if (continueMessage) {
+			await continueMessage();
+		} else {
+			await sendMessage("Continue from where you left off.");
+		}
+	}, [continueMessage, sendMessage]);
+
+	// Handle new chat
 	const handleNewChat = useCallback(() => {
 		clearInferenceCache();
 		handleNewChatState();
 		router.setParams({ id: undefined });
 	}, [handleNewChatState, clearInferenceCache, router]);
 
-	// GiftedChat render functions - with isFullPage=true
+	// GiftedChat render functions
 	const {
 		defaultContainerStyle,
 		renderBubble,
@@ -120,10 +148,10 @@ export default function ChatPage() {
 		isTyping: isAiTyping,
 		isNewChat: !currentChatId,
 		isFullPage: true,
-		isCutOff,
-		onContinue: continueMessage ?? undefined,
+		lastMessageStatus: lastAssistantStatus,
+		onContinue: handleContinue,
 		onStop: stopGeneration,
-		chatNotice,
+		onDismissNotice,
 	});
 
 	const handleSuggestionPress = useCallback((text: string) => {
@@ -135,7 +163,6 @@ export default function ChatPage() {
 		setMoveToFolderSheetOpen(true);
 	}, [setIsMenuOpen]);
 
-	// Get current chat's folder ID
 	const currentChatFolderId = currentChatId
 		? String(chatsTable[currentChatId]?.folderId || "")
 		: "";
@@ -144,14 +171,13 @@ export default function ChatPage() {
 		async (newMessages: IMessage[] = []) => {
 			if (newMessages.length === 0) return;
 			const userMessage = newMessages[0];
-			setInputText(""); // Clear input after sending
+			setInputText("");
 			await sendMessage(userMessage.text);
 		},
 		[sendMessage],
 	);
 
 	useEffect(() => {
-		// Clear inference cache on chat load (i.e. switching conversations)
 		clearInferenceCache();
 	}, [clearInferenceCache, currentChatId]);
 
@@ -161,6 +187,7 @@ export default function ChatPage() {
 			<SafeAreaView style={{ flex: 1 }} edges={["top", "left", "right"]}>
 				<View style={{ flex: 1 }}>
 					<ChatPageHeader
+						centerContent={<ProviderAndModelSelector />}
 						chatName={chatRow.name as string | undefined}
 						hasMessages={messages.length > 0}
 						onClose={handleClose}
@@ -172,6 +199,21 @@ export default function ChatPage() {
 						onDelete={handleDeleteChat}
 						onMoveToFolder={currentChatId ? handleMoveToFolder : undefined}
 					/>
+
+					{isOfflineCloud && <OfflineBanner />}
+
+					{setupError && !isOfflineCloud && (
+						<View
+							style={{
+								padding: 8,
+								backgroundColor: "rgba(255,60,60,0.15)",
+							}}
+						>
+							<Text style={{ fontSize: 12, textAlign: "center" }}>
+								Provider setup failed. Check settings.
+							</Text>
+						</View>
+					)}
 
 					{showTruncationWarning && (
 						<View
@@ -204,75 +246,67 @@ export default function ChatPage() {
 						<GiftedChat
 							key={currentChatId || "new-chat"}
 							messages={[
-								// Typing indicator as a message (when AI typing but no text yet)
 								...(isAiTyping && !streamingText
 									? [
 											{
 												_id: "typing-indicator",
 												text: "",
-												user: {
-													_id: 2,
-													name: "AI",
-												},
-											} as IMessage,
+												user: { _id: 2, name: "AI" },
+												providerId: activeProvider?.id,
+											} as unknown as IMessage,
 										]
 									: []),
-								// Streaming message (when AI has started responding, but NOT continuing)
 								...(isAiTyping && streamingText && !isContinuing
 									? [
 											{
 												_id: "streaming",
 												text: streamingText,
-												user: {
-													_id: 2,
-													name: "AI",
-												},
-											} as IMessage,
+												user: { _id: 2, name: "AI" },
+												providerId: activeProvider?.id,
+											} as unknown as IMessage,
 										]
 									: []),
-								// Cutoff notice with continue button
-								...(isCutOff && !isAiTyping
+								...(!isAiTyping &&
+								lastAssistantStatus &&
+								lastAssistantStatus !== "done"
 									? [
 											{
-												_id: "cutoff-notice",
+												_id: "status-notice",
 												text: "",
-												user: {
-													_id: 2,
-													name: "AI",
-												},
-											} as IMessage,
+												user: { _id: 2, name: "AI" },
+												providerId: activeProvider?.id,
+											} as unknown as IMessage,
 										]
 									: []),
-								// Chat notice (error or warning)
-								...(chatNotice && !isAiTyping
-									? [
-											{
-												_id: "chat-notice",
-												text: chatNotice.message,
-												user: {
-													_id: 2,
-													name: "AI",
-												},
-											} as IMessage,
-										]
-									: []),
-								// Regular messages (during continuation, append streaming text to first AI message)
 								...messages.map(
 									(message, index) =>
 										({
 											_id: message._id,
 											text:
-												isContinuing && streamingText && index === 0 && message.user._id === 2
+												isContinuing &&
+												streamingText &&
+												index === 0 &&
+												message.user._id === 2
 													? `${message.text}\n\n${streamingText}`
 													: message.text,
 											user: message.user,
-										}) as IMessage,
+											providerId: (
+												message as IMessage & {
+													providerId?: string;
+													modelId?: string;
+												}
+											).providerId,
+											modelId: (
+												message as IMessage & {
+													providerId?: string;
+													modelId?: string;
+												}
+											).modelId,
+										}) as unknown as IMessage,
 								),
 							]}
 							onSend={(msgs) => onSend(msgs)}
-							user={{
-								_id: 1,
-							}}
+							user={{ _id: 1 }}
 							renderAvatar={renderAvatar}
 							renderAvatarOnTop
 							alwaysShowSend
