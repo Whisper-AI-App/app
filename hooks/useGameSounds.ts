@@ -1,93 +1,48 @@
-import { Audio } from "expo-av";
-import { useCallback, useEffect, useRef } from "react";
-
-// Simple sound URLs - using free game sound effects
-// These are tiny base64 encoded WAV files for minimal latency
-const SOUNDS = {
-	flap: require("@/assets/audio/flap.wav"),
-	score: require("@/assets/audio/score.wav"),
-	hit: require("@/assets/audio/hit.wav"),
-};
+import { useAudioPlayer, setAudioModeAsync } from "expo-audio";
+import { useCallback, useEffect } from "react";
 
 export function useGameSounds() {
-	const soundsRef = useRef<{
-		flap: Audio.Sound | null;
-		score: Audio.Sound | null;
-		hit: Audio.Sound | null;
-	}>({
-		flap: null,
-		score: null,
-		hit: null,
-	});
+	const flapPlayer = useAudioPlayer(require("@/assets/audio/flap.wav"));
+	const scorePlayer = useAudioPlayer(require("@/assets/audio/score.wav"));
+	const hitPlayer = useAudioPlayer(require("@/assets/audio/hit.wav"));
 
-	const isLoadedRef = useRef(false);
-
-	// Load sounds on mount
 	useEffect(() => {
-		const loadSounds = async () => {
-			try {
-				// Configure audio mode for game sounds
-				await Audio.setAudioModeAsync({
-					playsInSilentModeIOS: true,
-					staysActiveInBackground: false,
-					shouldDuckAndroid: true,
-				});
+		setAudioModeAsync({
+			playsInSilentMode: true,
+			shouldPlayInBackground: false,
+		});
 
-				const [flapResult, scoreResult, hitResult] = await Promise.all([
-					Audio.Sound.createAsync(SOUNDS.flap, { volume: 0.5 }),
-					Audio.Sound.createAsync(SOUNDS.score, { volume: 0.6 }),
-					Audio.Sound.createAsync(SOUNDS.hit, { volume: 0.7 }),
-				]);
-
-				soundsRef.current.flap = flapResult.sound;
-				soundsRef.current.score = scoreResult.sound;
-				soundsRef.current.hit = hitResult.sound;
-				isLoadedRef.current = true;
-			} catch (error) {
-				console.warn("[useGameSounds] Failed to load sounds:", error);
-			}
-		};
-
-		loadSounds();
-
-		// Cleanup on unmount
-		return () => {
-			const sounds = soundsRef.current;
-			if (sounds.flap) sounds.flap.unloadAsync();
-			if (sounds.score) sounds.score.unloadAsync();
-			if (sounds.hit) sounds.hit.unloadAsync();
-		};
-	}, []);
+		flapPlayer.volume = 0.5;
+		scorePlayer.volume = 0.6;
+		hitPlayer.volume = 0.7;
+	}, [flapPlayer, scorePlayer, hitPlayer]);
 
 	const playFlap = useCallback(async () => {
-		if (!isLoadedRef.current || !soundsRef.current.flap) return;
 		try {
-			await soundsRef.current.flap.setPositionAsync(0);
-			await soundsRef.current.flap.playAsync();
+			await flapPlayer.seekTo(0);
+			flapPlayer.play();
 		} catch {
 			// Ignore playback errors
 		}
-	}, []);
+	}, [flapPlayer]);
 
 	const playScore = useCallback(async () => {
-		if (!isLoadedRef.current || !soundsRef.current.score) return;
 		try {
-			await soundsRef.current.score.setPositionAsync(0);
-			await soundsRef.current.score.playAsync();
+			await scorePlayer.seekTo(0);
+			scorePlayer.play();
 		} catch {
 			// Ignore playback errors
 		}
-	}, []);
+	}, [scorePlayer]);
 
 	const playHit = useCallback(async () => {
-		if (!isLoadedRef.current || !soundsRef.current.hit) return;
 		try {
-			await soundsRef.current.hit.setPositionAsync(0);
-			await soundsRef.current.hit.playAsync();
+			await hitPlayer.seekTo(0);
+			hitPlayer.play();
 		} catch {
 			// Ignore playback errors
 		}
-	}, []);
+	}, [hitPlayer]);
 
 	return {
 		playFlap,

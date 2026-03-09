@@ -1,5 +1,10 @@
-import { createMigrations } from "@nanocollective/json-up";
+import { createAsyncMigrations } from "@nanocollective/json-up";
 import { z } from "zod";
+import {
+	generateEncryptionKey,
+	loadEncryptionKey,
+} from "../encryption-key";
+import { setCredential } from "../../../actions/secure-credentials";
 
 /**
  * Type for TinyBase store state as JSON for json-up migrations.
@@ -18,7 +23,7 @@ export type StoreState = {
  * 2. Define the schema for validation after migration
  * 3. Implement the up function to transform the data
  */
-export const migrations = createMigrations()
+export const migrations = createAsyncMigrations()
 	.add({
 		version: 2, // version "1" was used in the pre-migration era, so we start at 2
 		schema: z.object({
@@ -435,6 +440,246 @@ export const migrations = createMigrations()
 			};
 		},
 	})
+	.add({
+		version: 4,
+		schema: z.object({
+			values: z.object({
+				version: z.string(),
+				name: z.string().optional(),
+				onboardedAt: z.string().optional(),
+				theme: z.string().optional(),
+				localAuthEnabled: z.boolean().optional(),
+				activeProviderId: z.string().optional(),
+				chat_background_type: z.string().optional(),
+				chat_background_uri: z.string().optional(),
+				chat_background_preset_id: z.string().optional(),
+				chat_background_blur: z.number().optional(),
+				chat_background_grain: z.number().optional(),
+				chat_background_opacity: z.number().optional(),
+				flappy_bird_high_score: z.number().optional(),
+				app_icon_variant: z.string().optional(),
+				encryptionMigratedAt: z.string().optional(),
+			}),
+			tables: z.object({
+				chats: z
+					.record(
+						z.string(),
+						z.object({
+							id: z.string(),
+							name: z.string(),
+							createdAt: z.string(),
+							folderId: z.string(),
+						}),
+					)
+					.optional()
+					.default({}),
+				messages: z
+					.record(
+						z.string(),
+						z.object({
+							id: z.string(),
+							chatId: z.string(),
+							contents: z.string(),
+							role: z.string(),
+							createdAt: z.string(),
+							providerId: z.string(),
+							modelId: z.string(),
+							status: z.string(),
+						}),
+					)
+					.optional()
+					.default({}),
+				folders: z
+					.record(
+						z.string(),
+						z.object({
+							id: z.string(),
+							name: z.string(),
+							createdAt: z.string(),
+						}),
+					)
+					.optional()
+					.default({}),
+				aiProviders: z
+					.record(
+						z.string(),
+						z.object({
+							id: z.string(),
+							status: z.string(),
+							error: z.string(),
+							selectedModelId: z.string(),
+							modelCard: z.string(),
+							modelCardId: z.string(),
+							configVersion: z.string(),
+							downloadedAt: z.string(),
+							filename: z.string(),
+							progressSizeGB: z.number(),
+							totalSizeGB: z.number(),
+							downloadError: z.string(),
+							resumableState: z.string(),
+							isPaused: z.boolean(),
+							fileRemoved: z.boolean(),
+							endpointUrl: z.string(),
+							protocol: z.string(),
+						}),
+					)
+					.optional()
+					.default({}),
+			}),
+		}),
+		up: async (data) => {
+			// v4: Generate encryption key, move credentials to secure store,
+			// heal aiProviders rows, add encryptionMigratedAt.
+
+			// Generate encryption key if not already present
+			const existingKey = await loadEncryptionKey();
+			if (!existingKey) {
+				await generateEncryptionKey();
+			}
+
+			// Heal aiProviders and move credentials to secure store
+			const aiProviders = Object.fromEntries(
+				await Promise.all(
+					Object.entries((data.tables.aiProviders ?? {}) as Record<string, Record<string, unknown>>).map(
+						async ([id, row]) => {
+							const apiKey =
+								typeof row.apiKey === "string" ? row.apiKey : "";
+							const oAuthCodeVerifier =
+								typeof row.oAuthCodeVerifier === "string"
+									? row.oAuthCodeVerifier
+									: "";
+
+							// Move credentials to secure store
+							if (apiKey) {
+								await setCredential(id, "apiKey", apiKey);
+							}
+							if (oAuthCodeVerifier) {
+								await setCredential(
+									id,
+									"oAuthCodeVerifier",
+									oAuthCodeVerifier,
+								);
+							}
+
+							return [
+								id,
+								{
+									id: typeof row.id === "string" ? row.id : id,
+									status:
+										typeof row.status === "string"
+											? row.status
+											: "",
+									error:
+										typeof row.error === "string"
+											? row.error
+											: "",
+									selectedModelId:
+										typeof row.selectedModelId === "string"
+											? row.selectedModelId
+											: "",
+									modelCard:
+										typeof row.modelCard === "string"
+											? row.modelCard
+											: "",
+									modelCardId:
+										typeof row.modelCardId === "string"
+											? row.modelCardId
+											: "",
+									configVersion:
+										typeof row.configVersion === "string"
+											? row.configVersion
+											: "",
+									downloadedAt:
+										typeof row.downloadedAt === "string"
+											? row.downloadedAt
+											: "",
+									filename:
+										typeof row.filename === "string"
+											? row.filename
+											: "",
+									progressSizeGB:
+										typeof row.progressSizeGB === "number"
+											? row.progressSizeGB
+											: 0,
+									totalSizeGB:
+										typeof row.totalSizeGB === "number"
+											? row.totalSizeGB
+											: 0,
+									downloadError:
+										typeof row.downloadError === "string"
+											? row.downloadError
+											: "",
+									resumableState:
+										typeof row.resumableState === "string"
+											? row.resumableState
+											: "",
+									isPaused:
+										typeof row.isPaused === "boolean"
+											? row.isPaused
+											: false,
+									fileRemoved:
+										typeof row.fileRemoved === "boolean"
+											? row.fileRemoved
+											: false,
+									endpointUrl:
+										typeof row.endpointUrl === "string"
+											? row.endpointUrl
+											: "",
+									protocol:
+										typeof row.protocol === "string"
+											? row.protocol
+											: "",
+								},
+							] as const;
+						},
+					),
+				),
+			);
+
+			return {
+				...data,
+				values: {
+					...data.values,
+					version: "4",
+					encryptionMigratedAt: new Date().toISOString(),
+				},
+				tables: {
+					chats: data.tables.chats ?? {},
+					// Heal messages: rows created after v3 may lack providerId/modelId/status
+					messages: Object.fromEntries(
+						Object.entries(data.tables.messages ?? {}).map(
+							([msgId, msg]) => [
+								msgId,
+								{
+									...msg,
+									providerId:
+										typeof (msg as Record<string, unknown>)
+											.providerId === "string"
+											? (msg as Record<string, unknown>)
+													.providerId
+											: "",
+									modelId:
+										typeof (msg as Record<string, unknown>)
+											.modelId === "string"
+											? (msg as Record<string, unknown>)
+													.modelId
+											: "",
+									status:
+										typeof (msg as Record<string, unknown>)
+											.status === "string"
+											? (msg as Record<string, unknown>)
+													.status
+											: "done",
+								},
+							],
+						),
+					),
+					folders: data.tables.folders ?? {},
+					aiProviders,
+				},
+			};
+		},
+	})
 	.build();
 
-export const CURRENT_SCHEMA_VERSION = migrations[migrations.length - 1].version; // Re-export for external use
+export const CURRENT_SCHEMA_VERSION = migrations[migrations.length - 1].version;

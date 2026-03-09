@@ -1,3 +1,5 @@
+import * as SecureStore from "expo-secure-store";
+import { getCredential } from "@/src/actions/secure-credentials";
 import { createTestStore, getStoreSnapshot } from "./helpers";
 
 // Mock expo-file-system (new API)
@@ -9,16 +11,19 @@ jest.mock("expo-file-system", () => ({
 	Paths: { document: "file:///mock/documents" },
 }));
 
-// Mock expo-file-system/legacy (used by migrations/index.ts)
-jest.mock("expo-file-system/legacy", () => ({
-	writeAsStringAsync: jest.fn().mockResolvedValue(undefined),
-}));
-
 // Mock main-store to avoid import side effects
 jest.mock("../../../stores/main/main-store", () => ({
 	mainStoreFilePath: "file:///mock/documents/whisper.json",
 }));
 
+jest.mock("expo-secure-store");
+jest.mock("expo-crypto");
+
+const { __resetStore } = SecureStore as typeof SecureStore & {
+	__resetStore: () => void;
+};
+
+import { migrateAsync } from "@nanocollective/json-up";
 import { runMigrations } from "../../../stores/main/migrations";
 import {
 	CURRENT_SCHEMA_VERSION,
@@ -28,6 +33,11 @@ import {
 	tablesSchemaMainStore,
 	valuesSchemaMainStore,
 } from "../../../stores/main/schema";
+
+beforeEach(() => {
+	__resetStore();
+	jest.clearAllMocks();
+});
 
 describe("migrations", () => {
 	describe("runMigrations", () => {
@@ -103,29 +113,6 @@ describe("migrations", () => {
 
 			const result = await runMigrations(store);
 			expect(result.success).toBe(true);
-		});
-
-		it("creates backup before running migrations", async () => {
-			const FileSystem = require("expo-file-system/legacy");
-			FileSystem.writeAsStringAsync.mockClear();
-
-			const store = createTestStore({
-				values: {},
-				tables: { chats: {}, messages: {}, folders: {} },
-			});
-
-			await runMigrations(store);
-
-			expect(FileSystem.writeAsStringAsync).toHaveBeenCalled();
-			const [backupPath, backupData] =
-				FileSystem.writeAsStringAsync.mock.calls[0];
-			expect(backupPath).toContain(".backup.json");
-
-			const parsed = JSON.parse(backupData);
-			expect(parsed).toHaveProperty("backupVersion");
-			expect(parsed).toHaveProperty("backupTimestamp");
-			expect(parsed).toHaveProperty("values");
-			expect(parsed).toHaveProperty("tables");
 		});
 
 		it("preserves data integrity through migration", async () => {
@@ -659,5 +646,181 @@ describe("V3 migration rollback", () => {
 		expect(result.migrationsRun).toBe(0);
 		expect(result.fromVersion).toBe(2);
 		expect(result.toVersion).toBe(2); // stays at original version on failure
+	});
+});
+
+// ─── V4 migration isolated tests ─────────────────────────────────────────────
+
+describe("V4 migration", () => {
+	/**
+	 * Build a minimal v3 state that the v4 migration will receive.
+	 */
+	function createV3State(
+		aiProviders: Record<string, Record<string, unknown>> = {},
+	) {
+		return {
+			_version: 3,
+			values: {
+				version: "3",
+				name: "Test",
+				onboardedAt: "2026-01-01T00:00:00.000Z",
+			},
+			tables: {
+				chats: {},
+				messages: {},
+				folders: {},
+				aiProviders,
+			},
+		};
+	}
+
+	function fullProviderRow(overrides: Record<string, unknown> = {}) {
+		return {
+			id: "test",
+			status: "ready",
+			error: "",
+			selectedModelId: "",
+			modelCard: "",
+			modelCardId: "",
+			configVersion: "",
+			downloadedAt: "",
+			filename: "",
+			progressSizeGB: 0,
+			totalSizeGB: 0,
+			downloadError: "",
+			resumableState: "",
+			isPaused: false,
+			fileRemoved: false,
+			apiKey: "",
+			oAuthCodeVerifier: "",
+			endpointUrl: "",
+			protocol: "",
+			...overrides,
+		};
+	}
+
+	it("generates an encryption key", async () => {
+		const state = createV3State();
+		await migrateAsync({ state, migrations });
+
+		const key = await SecureStore.getItemAsync("whisper_encryption_key");
+		expect(key).toBeTruthy();
+		expect(key).toHaveLength(64);
+	});
+
+	it("migrates API key from state to secure store", async () => {
+		const state = createV3State({
+			openrouter: fullProviderRow({
+				id: "openrouter",
+				apiKey: "sk-or-test-key",
+			}),
+		});
+
+		await migrateAsync({ state, migrations });
+
+		const credential = await getCredential("openrouter", "apiKey");
+		expect(credential).toBe("sk-or-test-key");
+	});
+
+	it("migrates oAuthCodeVerifier from state to secure store", async () => {
+		const state = createV3State({
+			openrouter: fullProviderRow({
+				id: "openrouter",
+				status: "configuring",
+				oAuthCodeVerifier: "verifier-123",
+			}),
+		});
+
+		await migrateAsync({ state, migrations });
+
+		const credential = await getCredential(
+			"openrouter",
+			"oAuthCodeVerifier",
+		);
+		expect(credential).toBe("verifier-123");
+	});
+
+	it("strips credential fields from migrated state", async () => {
+		const state = createV3State({
+			openrouter: fullProviderRow({
+				id: "openrouter",
+				apiKey: "sk-or-test-key",
+				oAuthCodeVerifier: "verifier-123",
+			}),
+		});
+
+		const result = await migrateAsync({ state, migrations });
+		const provider = (result as any).tables.aiProviders.openrouter;
+		expect(provider.apiKey).toBeUndefined();
+		expect(provider.oAuthCodeVerifier).toBeUndefined();
+	});
+
+	it("sets encryptionMigratedAt to ISO timestamp", async () => {
+		const state = createV3State();
+		const result = await migrateAsync({ state, migrations });
+
+		const migratedAt = (result as any).values.encryptionMigratedAt;
+		expect(migratedAt).toBeTruthy();
+		expect(new Date(migratedAt).toISOString()).toBe(migratedAt);
+	});
+
+	it("does not run v4 up() if state is already at v4", async () => {
+		// State already at v4 — no migrations should run, no key generated
+		const state = {
+			_version: 4,
+			values: {
+				version: "4",
+				encryptionMigratedAt: "2026-01-01T00:00:00.000Z",
+			},
+			tables: {
+				chats: {},
+				messages: {},
+				folders: {},
+				aiProviders: {},
+			},
+		};
+
+		await migrateAsync({ state, migrations });
+
+		const key = await SecureStore.getItemAsync("whisper_encryption_key");
+		expect(key).toBeNull();
+	});
+
+	it("handles state with no aiProviders", async () => {
+		const state = createV3State();
+		const result = await migrateAsync({ state, migrations });
+
+		const migratedAt = (result as any).values.encryptionMigratedAt;
+		expect(migratedAt).toBeTruthy();
+	});
+
+	it("migrates custom-provider credentials", async () => {
+		const state = createV3State({
+			"custom-provider": fullProviderRow({
+				id: "custom-provider",
+				apiKey: "sk-custom-key",
+				endpointUrl: "https://api.example.com/v1",
+				protocol: "openai",
+			}),
+		});
+
+		await migrateAsync({ state, migrations });
+
+		const credential = await getCredential("custom-provider", "apiKey");
+		expect(credential).toBe("sk-custom-key");
+
+		// Verify stripped from state
+		const result = await migrateAsync({
+			state: createV3State({
+				"custom-provider": fullProviderRow({
+					id: "custom-provider",
+					apiKey: "sk-custom-key-2",
+				}),
+			}),
+			migrations,
+		});
+		expect(
+			(result as any).tables.aiProviders["custom-provider"].apiKey,
+		).toBeUndefined();
 	});
 });

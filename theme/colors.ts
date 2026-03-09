@@ -150,7 +150,7 @@ const darkColors = {
 	indigo: "#5E5CE6",
 };
 
-export const Colors = {
+export const Colors: Record<string, typeof lightColors> = {
 	light: lightColors,
 	dark: darkColors,
 };

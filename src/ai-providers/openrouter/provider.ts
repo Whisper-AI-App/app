@@ -1,3 +1,7 @@
+import {
+	deleteProviderCredentials,
+	getCredential,
+} from "@/src/actions/secure-credentials";
 import { createOpenRouter } from "@openrouter/ai-sdk-provider";
 import { streamText } from "ai";
 import { fetch as expoFetch } from "expo/fetch";
@@ -19,10 +23,16 @@ let abortController: AbortController | null = null;
 let cachedModels: ProviderModel[] = [];
 
 export function createOpenRouterProvider(store: Store): AIProvider {
+	// Cache the API key in memory for synchronous access
+	let cachedApiKey = "";
+
+	async function refreshApiKey(): Promise<string> {
+		cachedApiKey = (await getCredential("openrouter", "apiKey")) ?? "";
+		return cachedApiKey;
+	}
+
 	function getApiKey(): string {
-		return (
-			(store.getCell("aiProviders", "openrouter", "apiKey") as string) || ""
-		);
+		return cachedApiKey;
 	}
 
 	function getSelectedModelId(): string {
@@ -65,8 +75,6 @@ export function createOpenRouterProvider(store: Store): AIProvider {
 				resumableState: "",
 				isPaused: false,
 				fileRemoved: false,
-				apiKey: "",
-				oAuthCodeVerifier: "",
 			});
 		},
 
@@ -75,10 +83,13 @@ export function createOpenRouterProvider(store: Store): AIProvider {
 				abortController.abort();
 				abortController = null;
 			}
+			await deleteProviderCredentials("openrouter");
+			cachedApiKey = "";
 			store.delRow("aiProviders", "openrouter");
 		},
 
 		async setup() {
+			await refreshApiKey();
 			const apiKey = getApiKey();
 			if (!apiKey) {
 				store.setCell("aiProviders", "openrouter", "status", "needs_setup");
@@ -117,6 +128,7 @@ export function createOpenRouterProvider(store: Store): AIProvider {
 		},
 
 		async models(search?: string) {
+			await refreshApiKey();
 			const apiKey = getApiKey();
 			if (!apiKey) return [];
 
@@ -193,6 +205,7 @@ export function createOpenRouterProvider(store: Store): AIProvider {
 			messages: CompletionMessage[],
 			onToken: (token: string) => void,
 		): Promise<CompletionResult> {
+			await refreshApiKey();
 			const apiKey = getApiKey();
 			const modelId = getSelectedModelId();
 
@@ -256,6 +269,7 @@ export function createOpenRouterProvider(store: Store): AIProvider {
 		},
 
 		isConfigured(): boolean {
+			// Uses cached key for synchronous check
 			const apiKey = getApiKey();
 			const modelId = getSelectedModelId();
 			return !!(apiKey && modelId);

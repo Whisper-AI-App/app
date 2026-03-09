@@ -48,12 +48,12 @@
     },
     {
       "author": "650 Industries, Inc.",
-      "description": "Contributing 24 open source libraries",
+      "description": "Contributing 25 open source libraries",
       "packages": [
-        "expo-av",
+        "expo-audio",
         "expo-clipboard",
         "expo-constants",
-        "+ 21 more"
+        "+ 22 more"
       ],
       "priority": 50,
       "section": "libraries"
@@ -171,12 +171,12 @@
     },
     {
       "author": "Other Libraries",
-      "description": "Contributing 10 open source libraries",
+      "description": "Contributing 11 open source libraries",
       "packages": [
-        "@mote-software/tinybase-persister-expo-file-system",
+        "@ai-sdk/anthropic",
+        "@ai-sdk/openai",
         "@nanocollective/json-up",
-        "@openrouter/ai-sdk-provider",
-        "+ 7 more"
+        "+ 8 more"
       ],
       "priority": 99,
       "section": "libraries"
@@ -236,12 +236,12 @@
     "libraries": [
       {
         "author": "650 Industries, Inc.",
-        "description": "Contributing 24 open source libraries",
+        "description": "Contributing 25 open source libraries",
         "packages": [
-          "expo-av",
+          "expo-audio",
           "expo-clipboard",
           "expo-constants",
-          "+ 21 more"
+          "+ 22 more"
         ],
         "priority": 50,
         "section": "libraries"
@@ -359,12 +359,12 @@
       },
       {
         "author": "Other Libraries",
-        "description": "Contributing 10 open source libraries",
+        "description": "Contributing 11 open source libraries",
         "packages": [
-          "@mote-software/tinybase-persister-expo-file-system",
+          "@ai-sdk/anthropic",
+          "@ai-sdk/openai",
           "@nanocollective/json-up",
-          "@openrouter/ai-sdk-provider",
-          "+ 7 more"
+          "+ 8 more"
         ],
         "priority": 99,
         "section": "libraries"

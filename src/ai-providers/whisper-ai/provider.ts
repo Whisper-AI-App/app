@@ -70,8 +70,6 @@ export function createWhisperAIProvider(store: Store): AIProvider {
 				resumableState: "",
 				isPaused: false,
 				fileRemoved: false,
-				apiKey: "",
-				oAuthCodeVerifier: "",
 			});
 		},
 

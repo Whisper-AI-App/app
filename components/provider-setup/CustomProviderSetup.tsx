@@ -6,6 +6,7 @@ import { Text } from "@/components/ui/text";
 import { View } from "@/components/ui/view";
 import { useAIProvider } from "@/contexts/AIProviderContext";
 import { useColor } from "@/hooks/useColor";
+import { getCredential, setCredential } from "@/src/actions/secure-credentials";
 import { Colors } from "@/theme/colors";
 import { useRouter } from "expo-router";
 import { fetch as expoFetch } from "expo/fetch";
@@ -103,7 +104,7 @@ export function CustomProviderSetup() {
 	const [modelCount, setModelCount] = useState(0);
 
 	const error = useCell("aiProviders", "custom-provider", "error") as string | undefined;
-	const apiKey = useCell("aiProviders", "custom-provider", "apiKey") as
+	const status = useCell("aiProviders", "custom-provider", "status") as
 		| string
 		| undefined;
 	const endpointUrl = useCell("aiProviders", "custom-provider", "endpointUrl") as
@@ -122,7 +123,10 @@ export function CustomProviderSetup() {
 	}, [protocol]);
 
 	const runStatusChecks = useCallback(async () => {
-		if (!apiKey || !endpointUrl) return;
+		if (status !== "ready" || !endpointUrl) return;
+
+		const storedKey = await getCredential("custom-provider", "apiKey");
+		if (!storedKey) return;
 
 		const baseUrl = endpointUrl.replace(/\/+$/, "");
 
@@ -131,7 +135,7 @@ export function CustomProviderSetup() {
 		setModelsStatus("checking");
 		try {
 			const response = await expoFetch(`${baseUrl}/models`, {
-				headers: { Authorization: `Bearer ${apiKey}` },
+				headers: { Authorization: `Bearer ${storedKey}` },
 			});
 			if (response.ok) {
 				setEndpointStatus("success");
@@ -155,19 +159,21 @@ export function CustomProviderSetup() {
 			setEndpointStatus("error");
 			setModelsStatus("error");
 		}
-	}, [apiKey, endpointUrl]);
+	}, [status, endpointUrl]);
 
 	useEffect(() => {
 		runStatusChecks();
 	}, [runStatusChecks]);
 
-	const handleSave = () => {
+	const handleSave = async () => {
 		if (!endpointInput.trim() || !keyInput.trim() || !store) return;
 
 		const baseUrl = endpointInput.trim().replace(/\/+$/, "");
 
+		// Store API key in secure storage instead of TinyBase
+		await setCredential("custom-provider", "apiKey", keyInput.trim());
+
 		store.setCell("aiProviders", "custom-provider", "endpointUrl", baseUrl);
-		store.setCell("aiProviders", "custom-provider", "apiKey", keyInput.trim());
 		store.setCell("aiProviders", "custom-provider", "protocol", protocolInput);
 		store.setCell("aiProviders", "custom-provider", "status", "ready");
 		store.setCell("aiProviders", "custom-provider", "error", "");
@@ -249,7 +255,7 @@ export function CustomProviderSetup() {
 							Connect to any Anthropic or OpenAI-compatible API provider.
 						</Text>
 
-						{!apiKey || !endpointUrl ? (
+						{status !== "ready" ? (
 							<View style={{ gap: 16, width: "100%", paddingTop: 48 }}>
 								{/* Protocol dropdown */}
 								<View>
