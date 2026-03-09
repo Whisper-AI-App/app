@@ -20,7 +20,7 @@ export function OpenRouterSetup() {
 	const error = useCell("aiProviders", "openrouter", "error") as
 		| string
 		| undefined;
-	const apiKey = useCell("aiProviders", "openrouter", "apiKey") as
+	const status = useCell("aiProviders", "openrouter", "status") as
 		| string
 		| undefined;
 
@@ -94,7 +94,7 @@ export function OpenRouterSetup() {
 						are sent to cloud providers.
 					</Text>
 
-					{!apiKey ? (
+					{status !== "ready" ? (
 						<View style={{ gap: 16, width: "100%", paddingTop: 256 }}>
 							<Button
 								onPress={handleConnect}

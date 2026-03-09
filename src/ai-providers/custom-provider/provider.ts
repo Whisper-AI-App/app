@@ -1,3 +1,7 @@
+import {
+	deleteProviderCredentials,
+	getCredential,
+} from "@/src/actions/secure-credentials";
 import { createAnthropic } from "@ai-sdk/anthropic";
 import { createOpenAI } from "@ai-sdk/openai";
 import { streamText } from "ai";
@@ -19,11 +23,15 @@ let abortController: AbortController | null = null;
 let cachedModels: ProviderModel[] = [];
 
 export function createCustomProvider(store: Store): AIProvider {
+	let cachedApiKey = "";
+
+	async function refreshApiKey(): Promise<string> {
+		cachedApiKey = (await getCredential("custom-provider", "apiKey")) ?? "";
+		return cachedApiKey;
+	}
+
 	function getApiKey(): string {
-		return (
-			(store.getCell("aiProviders", "custom-provider", "apiKey") as string) ||
-			""
-		);
+		return cachedApiKey;
 	}
 
 	function getEndpointUrl(): string {
@@ -92,8 +100,6 @@ export function createCustomProvider(store: Store): AIProvider {
 				resumableState: "",
 				isPaused: false,
 				fileRemoved: false,
-				apiKey: "",
-				oAuthCodeVerifier: "",
 				endpointUrl: "",
 				protocol: "openai",
 			});
@@ -104,10 +110,13 @@ export function createCustomProvider(store: Store): AIProvider {
 				abortController.abort();
 				abortController = null;
 			}
+			await deleteProviderCredentials("custom-provider");
+			cachedApiKey = "";
 			store.delRow("aiProviders", "custom-provider");
 		},
 
 		async setup() {
+			await refreshApiKey();
 			const apiKey = getApiKey();
 			const endpointUrl = getEndpointUrl();
 			if (!apiKey || !endpointUrl) {
@@ -127,6 +136,7 @@ export function createCustomProvider(store: Store): AIProvider {
 		},
 
 		async models(search?: string) {
+			await refreshApiKey();
 			const apiKey = getApiKey();
 			const endpointUrl = getEndpointUrl();
 			if (!apiKey || !endpointUrl) return [];
@@ -185,6 +195,7 @@ export function createCustomProvider(store: Store): AIProvider {
 			messages: CompletionMessage[],
 			onToken: (token: string) => void,
 		): Promise<CompletionResult> {
+			await refreshApiKey();
 			const apiKey = getApiKey();
 			const modelId = getSelectedModelId();
 			const endpointUrl = getEndpointUrl();

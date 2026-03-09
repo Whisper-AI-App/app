@@ -210,10 +210,32 @@ Models must be loaded before use. The context maintains a single LlamaContext in
 
 ## Testing & Development
 
-Currently no test runner configured. Linting via `npm run lint` using ESLint with Expo config.
+Tests live in `src/__tests__/`, mirroring the source structure:
+- `src/__tests__/actions/` — action function tests
+- `src/__tests__/stores/` — store, persister, and encryption tests
+- `src/__tests__/stores/migrations/migrations.test.ts` — all migration tests (v2→v3, v3→v4, schema sync, rollback)
+- `src/__tests__/stores/migrations/helpers.ts` — shared test helpers (`createTestStore`, `getStoreSnapshot`)
+- `src/__tests__/hooks/` — hook tests
+
+Mock conventions:
+- Root `__mocks__/` for Expo/node_modules auto-mocks (`expo-crypto`, `expo-secure-store`)
+- `src/__mocks__/` for app-level mocks (`main-store-mock.ts`)
+
+```bash
+# Run tests
+npm test
+
+# Lint
+npm run lint
+```
 
 When developing features, consider:
 - All state changes go through actions that mutate TinyBase store
 - UI components read from store via hooks and remain mostly stateless
 - Large downloads should use pause/resume pattern with state serialization
 - Model operations (load, completion) go through AIChatContext
+
+## Active Technologies
+- TypeScript 5.x (React Native / Expo SDK 52) + `expo-crypto` (~15.0.8, already installed), `expo-secure-store` (new), `expo-file-system` (~19.0.17, already installed), `tinybase` (6.6.1, already installed) (001-data-encryption)
+- TinyBase store &rarr; custom encrypted persister &rarr; `whisper.json` (AES-256-GCM encrypted bytes); `expo-secure-store` (hardware-backed keychain/keystore) for AES key + credentials (001-data-encryption)
+

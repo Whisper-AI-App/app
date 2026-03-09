@@ -1,7 +1,5 @@
-import { migrate } from "@nanocollective/json-up";
-import * as FileSystem from "expo-file-system/legacy";
+import { migrateAsync } from "@nanocollective/json-up";
 import type { Row, Store, Value } from "tinybase";
-import { mainStoreFilePath } from "../main-store";
 import {
 	CURRENT_SCHEMA_VERSION,
 	migrations,
@@ -67,23 +65,6 @@ function jsonToStore(store: Store, state: StoreState): void {
 }
 
 /**
- * Creates a backup file before running migrations.
- */
-async function createBackup(
-	store: Store,
-	currentVersion: number,
-): Promise<void> {
-	const backupPath = mainStoreFilePath.replace(".json", ".backup.json");
-	const backupData = {
-		values: store.getValues(),
-		tables: store.getTables(),
-		backupVersion: currentVersion,
-		backupTimestamp: new Date().toISOString(),
-	};
-	await FileSystem.writeAsStringAsync(backupPath, JSON.stringify(backupData));
-}
-
-/**
  * Creates a snapshot of the current store state for rollback.
  */
 function createSnapshot(store: Store): {
@@ -122,11 +103,10 @@ function restoreFromSnapshot(
  *
  * This function:
  * 1. Determines the current schema version (treating missing/legacy as 0)
- * 2. Creates a backup before any migrations run
- * 3. Takes an in-memory snapshot for rollback
- * 4. Runs migrations via json-up
- * 5. Applies the migrated state back to the store
- * 6. Rolls back on failure and returns an error
+ * 2. Takes an in-memory snapshot for rollback
+ * 3. Runs migrations via json-up
+ * 4. Applies the migrated state back to the store
+ * 5. Rolls back on failure and returns an error
  *
  * @param store The TinyBase store to migrate
  * @returns MigrationResult indicating success/failure and versions
@@ -134,14 +114,6 @@ function restoreFromSnapshot(
 export async function runMigrations(store: Store): Promise<MigrationResult> {
 	const state = storeToJson(store);
 	const fromVersion = state._version;
-
-	// Create backup before any migrations
-	try {
-		await createBackup(store, fromVersion);
-	} catch (error) {
-		console.warn("Failed to create backup:", error);
-		// Continue anyway - backup failure shouldn't block migrations
-	}
 
 	// Take in-memory snapshot for rollback
 	const snapshot = createSnapshot(store);
@@ -154,7 +126,7 @@ export async function runMigrations(store: Store): Promise<MigrationResult> {
 				: 0;
 
 		if (migrationsRun > 0) {
-			const result = migrate({ state, migrations });
+			const result = await migrateAsync({ state, migrations });
 			jsonToStore(store, result);
 		}
 

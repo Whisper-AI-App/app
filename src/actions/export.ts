@@ -1,6 +1,7 @@
 import * as FileSystem from "expo-file-system";
 import * as Sharing from "expo-sharing";
 import { mainStore } from "../stores/main/main-store";
+import { getProviderCredentials } from "./secure-credentials";
 
 export type ExportFormat = "markdown" | "json";
 
@@ -123,10 +124,12 @@ function convertToJson(chats: ChatExport[]): string {
 /**
  * Exports all chats and their messages to a file and shares it.
  * @param format - The export format: "markdown" or "json"
+ * @param includeSensitiveData - Whether to include API keys in the export
  * Returns the file URI if successful, or null if there are no chats to export.
  */
 export async function exportAllChats(
 	format: ExportFormat = "markdown",
+	includeSensitiveData = false,
 ): Promise<string | null> {
 	const chats = getAllChatsData();
 
@@ -154,23 +157,69 @@ export async function exportAllChats(
 			break;
 	}
 
+	// Append credentials if sensitive data toggle is on
+	if (includeSensitiveData) {
+		const providerIds = mainStore.getRowIds("aiProviders");
+		const credentialSections: string[] = [];
+
+		for (const providerId of providerIds) {
+			const creds = await getProviderCredentials(providerId);
+			if (Object.keys(creds).length > 0) {
+				if (format === "markdown") {
+					credentialSections.push(`## Provider Credentials: ${providerId}`);
+					for (const [field, value] of Object.entries(creds)) {
+						credentialSections.push(`- **${field}**: ${value}`);
+					}
+					credentialSections.push("");
+				} else {
+					// JSON: will be included as a separate section
+					credentialSections.push(
+						`"credentials_${providerId}": ${JSON.stringify(creds, null, 2)}`,
+					);
+				}
+			}
+		}
+
+		if (credentialSections.length > 0) {
+			if (format === "markdown") {
+				content += `\n---\n\n# Sensitive Data (API Keys)\n\n${credentialSections.join("\n")}\n`;
+			} else {
+				// For JSON, parse, add credentials, re-stringify
+				try {
+					const parsed = JSON.parse(content);
+					for (const providerId of providerIds) {
+						const creds = await getProviderCredentials(providerId);
+						if (Object.keys(creds).length > 0) {
+							parsed[`credentials_${providerId}`] = creds;
+						}
+					}
+					content = JSON.stringify(parsed, null, 2);
+				} catch {
+					// Fallback: append as comment
+				}
+			}
+		}
+	}
+
 	console.log(
 		`[exportAllChats] Export content (${format}):`,
 		content.length,
 		"characters",
 	);
 
+	let tempFile: FileSystem.File | null = null;
+
 	try {
-		// Create a unique filename
+		// Create a unique filename in cache directory
 		const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
 		const fileName = `whisper-export-${timestamp}.${extension}`;
 		const cacheDir = new FileSystem.Directory(FileSystem.Paths.cache);
-		const file = new FileSystem.File(cacheDir, fileName);
+		tempFile = new FileSystem.File(cacheDir, fileName);
 
 		// Write to file using new File API
-		await file.write(content);
+		await tempFile.write(content);
 
-		const fileUri = file.uri;
+		const fileUri = tempFile.uri;
 		console.log("[exportAllChats] File written to:", fileUri);
 
 		// Check if sharing is available
@@ -191,6 +240,17 @@ export async function exportAllChats(
 	} catch (error) {
 		console.error("[exportAllChats] Error exporting:", error);
 		throw error;
+	} finally {
+		// Clean up temp file after sharing completes or is cancelled
+		if (tempFile) {
+			try {
+				if (tempFile.exists) {
+					await tempFile.delete();
+				}
+			} catch {
+				// Non-critical: cache files are cleaned up by the OS eventually
+			}
+		}
 	}
 }
 

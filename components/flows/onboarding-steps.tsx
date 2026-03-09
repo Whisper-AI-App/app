@@ -18,7 +18,7 @@ export const onboardingSteps: OnboardingStep[] = [
 		id: "2",
 		title: "Privacy You Deserve",
 		description:
-			"Whisper never sends data to the cloud. It works even offline — your chats never leave your device.",
+			"Whisper never sends data to the cloud. It works even offline — your chats never leave your device. All your data is encrypted on-device so only you can read it.",
 		icon: (
 			<Icon
 				name={Bird}

@@ -1,3 +1,8 @@
+import {
+	deleteCredential,
+	getCredential,
+	setCredential,
+} from "@/src/actions/secure-credentials";
 import * as Crypto from "expo-crypto";
 import * as WebBrowser from "expo-web-browser";
 import type { Store } from "tinybase";
@@ -24,9 +29,8 @@ async function generateCodeChallenge(verifier: string): Promise<string> {
 		Crypto.CryptoDigestAlgorithm.SHA256,
 		encoded,
 	);
-	// digest returns hex string, convert to bytes then base64url
-	const bytes = hexToBytes(digest);
-	return bufferToBase64Url(bytes);
+	// digest returns ArrayBuffer, wrap as Uint8Array for base64url encoding
+	return bufferToBase64Url(new Uint8Array(digest));
 }
 
 function bufferToBase64Url(bytes: Uint8Array): string {
@@ -35,14 +39,6 @@ function bufferToBase64Url(bytes: Uint8Array): string {
 		binary += String.fromCharCode(byte);
 	}
 	return btoa(binary).replace(/\+/g, "-").replace(/\//g, "_").replace(/=/g, "");
-}
-
-function hexToBytes(hex: string): Uint8Array {
-	const bytes = new Uint8Array(hex.length / 2);
-	for (let i = 0; i < hex.length; i += 2) {
-		bytes[i / 2] = Number.parseInt(hex.substring(i, i + 2), 16);
-	}
-	return bytes;
 }
 
 /**
@@ -58,13 +54,8 @@ export async function startOAuth(store: Store): Promise<void> {
 	const codeVerifier = generateCodeVerifier();
 	const codeChallenge = await generateCodeChallenge(codeVerifier);
 
-	// Store code_verifier for exchange step
-	store.setCell(
-		"aiProviders",
-		"openrouter",
-		"oAuthCodeVerifier",
-		codeVerifier,
-	);
+	// Store code_verifier in secure store for exchange step
+	await setCredential("openrouter", "oAuthCodeVerifier", codeVerifier);
 	store.setCell("aiProviders", "openrouter", "status", "configuring");
 
 	const authUrl = `${OPENROUTER_AUTH_URL}?callback_url=${encodeURIComponent(CALLBACK_WEB_URL)}&code_challenge=${codeChallenge}&code_challenge_method=S256`;
@@ -120,11 +111,7 @@ export async function handleOAuthCallback(
  * Exchanges the authorization code for an API key
  */
 async function exchangeCodeForKey(store: Store, code: string): Promise<void> {
-	const codeVerifier = store.getCell(
-		"aiProviders",
-		"openrouter",
-		"oAuthCodeVerifier",
-	) as string;
+	const codeVerifier = await getCredential("openrouter", "oAuthCodeVerifier");
 
 	if (!codeVerifier) {
 		store.setCell(
@@ -154,9 +141,9 @@ async function exchangeCodeForKey(store: Store, code: string): Promise<void> {
 
 		const data = (await response.json()) as { key: string };
 
-		// Store API key and clean up
-		store.setCell("aiProviders", "openrouter", "apiKey", data.key);
-		store.setCell("aiProviders", "openrouter", "oAuthCodeVerifier", "");
+		// Store API key in secure store and clean up verifier
+		await setCredential("openrouter", "apiKey", data.key);
+		await deleteCredential("openrouter", "oAuthCodeVerifier");
 		store.setCell("aiProviders", "openrouter", "status", "ready");
 		store.setCell("aiProviders", "openrouter", "error", "");
 	} catch (error) {

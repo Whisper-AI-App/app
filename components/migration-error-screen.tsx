@@ -174,7 +174,7 @@ export function MigrationErrorScreen({
 				isVisible={backupErrorDialog.isVisible}
 				onClose={backupErrorDialog.close}
 				title="Backup Failed"
-				description={`Could not find or access a backup.`}
+				description={backupErrorMessage || "Could not save backup data."}
 				confirmText="Close"
 				onConfirm={backupErrorDialog.close}
 				showCancelButton={false}

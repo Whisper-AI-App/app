@@ -4,9 +4,25 @@ import {
 	seedMockMainStore,
 } from "../../__mocks__/main-store-mock";
 
+// Mock expo-crypto
+const mockDecryptedBytes = new TextEncoder().encode('{"decrypted":"data"}');
+const mockAesDecryptAsync = jest.fn().mockResolvedValue(mockDecryptedBytes);
+
+jest.mock("expo-crypto", () => ({
+	AESEncryptionKey: {
+		import: jest.fn().mockResolvedValue("mock-key"),
+	},
+	AESSealedData: {
+		fromCombined: jest.fn().mockReturnValue("mock-sealed"),
+	},
+	aesDecryptAsync: (...args: unknown[]) => mockAesDecryptAsync(...args),
+}));
+
 // Mock expo-file-system first (before store mock)
 const mockFileDelete = jest.fn();
 const mockFileWrite = jest.fn();
+const mockFileBytes = jest.fn();
+const mockFileText = jest.fn();
 let mockFileExists = true;
 
 jest.mock("expo-file-system", () => ({
@@ -21,6 +37,8 @@ jest.mock("expo-file-system", () => ({
 			},
 			delete: mockFileDelete,
 			write: mockFileWrite,
+			bytes: mockFileBytes,
+			text: mockFileText,
 			uri,
 		};
 	}),
@@ -30,20 +48,19 @@ jest.mock("expo-file-system", () => ({
 	Paths: { document: "file:///mock/documents", cache: "file:///mock/cache" },
 }));
 
-// Mock expo-file-system/legacy
-const mockGetInfoAsync = jest.fn();
-const mockReadAsStringAsync = jest.fn();
-
-jest.mock("expo-file-system/legacy", () => ({
-	getInfoAsync: (...args: unknown[]) => mockGetInfoAsync(...args),
-	readAsStringAsync: (...args: unknown[]) => mockReadAsStringAsync(...args),
-}));
-
 // Mock expo-sharing
 const mockShareAsync = jest.fn();
 
 jest.mock("expo-sharing", () => ({
 	shareAsync: (...args: unknown[]) => mockShareAsync(...args),
+}));
+
+// Mock encryption key loader
+const mockLoadEncryptionKey = jest.fn();
+
+jest.mock("../../stores/main/encryption-key", () => ({
+	ENCRYPTION_KEY_STORE_ID: "whisper_encryption_key",
+	loadEncryptionKey: () => mockLoadEncryptionKey(),
 }));
 
 // Mock initMainStore and getModelFileUri functions
@@ -71,9 +88,11 @@ describe("reset actions", () => {
 		mockInitMainStore.mockReset();
 		mockFileDelete.mockReset();
 		mockFileWrite.mockReset();
-		mockGetInfoAsync.mockReset();
-		mockReadAsStringAsync.mockReset();
+		mockFileBytes.mockReset();
+		mockFileText.mockReset();
 		mockShareAsync.mockReset();
+		mockLoadEncryptionKey.mockReset();
+		mockAesDecryptAsync.mockReset();
 		mockModelFileUri = undefined;
 		mockFileExists = true;
 	});
@@ -137,8 +156,8 @@ describe("reset actions", () => {
 
 			await resetEverything();
 
-			// 1 model file + 2 store files = 3 deletions
-			expect(mockFileDelete).toHaveBeenCalledTimes(3);
+			// 1 model file + 1 store file = 2 deletions
+			expect(mockFileDelete).toHaveBeenCalledTimes(2);
 		});
 
 		it("skips model file deletion when no model file uri", async () => {
@@ -148,8 +167,8 @@ describe("reset actions", () => {
 
 			await resetEverything();
 
-			// Only 2 store files deleted, no model file
-			expect(mockFileDelete).toHaveBeenCalledTimes(2);
+			// Only 1 store file deleted, no model file
+			expect(mockFileDelete).toHaveBeenCalledTimes(1);
 		});
 
 		it("skips file deletion when file does not exist", async () => {
@@ -177,14 +196,13 @@ describe("reset actions", () => {
 			expect(mockMainStore.delTables).toHaveBeenCalled();
 		});
 
-		it("deletes store files from disk", async () => {
+		it("deletes store file from disk", async () => {
 			mockModelFileUri = undefined;
 			mockFileDelete.mockResolvedValue(undefined);
 
 			await resetEverything();
 
-			// Should delete both the main store file and backup file
-			expect(mockFileDelete).toHaveBeenCalledTimes(2);
+			expect(mockFileDelete).toHaveBeenCalledTimes(1);
 		});
 	});
 
@@ -198,50 +216,47 @@ describe("reset actions", () => {
 			jest.useRealTimers();
 		});
 
-		it("uses backup file when it exists", async () => {
-			mockGetInfoAsync.mockResolvedValue({ exists: true });
-			mockReadAsStringAsync.mockResolvedValue('{"data":"backup"}');
-			mockFileWrite.mockResolvedValue(undefined);
+		it("decrypts file when encryption key exists", async () => {
+			mockLoadEncryptionKey.mockResolvedValue("aabbccdd".repeat(8));
+			mockFileBytes.mockResolvedValue(new Uint8Array([1, 2, 3]));
+			mockAesDecryptAsync.mockResolvedValue(
+				new TextEncoder().encode('{"decrypted":"data"}'),
+			);
 			mockShareAsync.mockResolvedValue(undefined);
 
 			await saveBackupData();
 
-			expect(mockGetInfoAsync).toHaveBeenCalledWith(
-				"file:///mock/documents/whisper.backup.json",
-			);
-			expect(mockReadAsStringAsync).toHaveBeenCalledWith(
-				"file:///mock/documents/whisper.backup.json",
-			);
+			expect(mockFileBytes).toHaveBeenCalled();
+			expect(mockAesDecryptAsync).toHaveBeenCalled();
+			expect(mockFileWrite).toHaveBeenCalledWith('{"decrypted":"data"}');
 		});
 
-		it("falls back to main store file when backup does not exist", async () => {
-			mockGetInfoAsync.mockResolvedValue({ exists: false });
-			mockReadAsStringAsync.mockResolvedValue('{"data":"main"}');
-			mockFileWrite.mockResolvedValue(undefined);
+		it("falls back to plain text when no encryption key", async () => {
+			mockLoadEncryptionKey.mockResolvedValue(null);
+			mockFileText.mockResolvedValue('{"plain":"data"}');
 			mockShareAsync.mockResolvedValue(undefined);
 
 			await saveBackupData();
 
-			expect(mockReadAsStringAsync).toHaveBeenCalledWith(
-				"file:///mock/documents/whisper.json",
-			);
+			expect(mockFileText).toHaveBeenCalled();
+			expect(mockFileWrite).toHaveBeenCalledWith('{"plain":"data"}');
 		});
 
-		it("writes content to a temp file with timestamped name", async () => {
-			mockGetInfoAsync.mockResolvedValue({ exists: false });
-			mockReadAsStringAsync.mockResolvedValue('{"store":"data"}');
-			mockFileWrite.mockResolvedValue(undefined);
+		it("falls back to plain text when decryption fails", async () => {
+			mockLoadEncryptionKey.mockResolvedValue("aabbccdd".repeat(8));
+			mockFileBytes.mockRejectedValue(new Error("decrypt error"));
+			mockFileText.mockResolvedValue('{"plain":"fallback"}');
 			mockShareAsync.mockResolvedValue(undefined);
 
 			await saveBackupData();
 
-			expect(mockFileWrite).toHaveBeenCalledWith('{"store":"data"}');
+			expect(mockFileText).toHaveBeenCalled();
+			expect(mockFileWrite).toHaveBeenCalledWith('{"plain":"fallback"}');
 		});
 
 		it("shares the temp file with correct options", async () => {
-			mockGetInfoAsync.mockResolvedValue({ exists: false });
-			mockReadAsStringAsync.mockResolvedValue('{"store":"data"}');
-			mockFileWrite.mockResolvedValue(undefined);
+			mockLoadEncryptionKey.mockResolvedValue(null);
+			mockFileText.mockResolvedValue('{"store":"data"}');
 			mockShareAsync.mockResolvedValue(undefined);
 
 			await saveBackupData();

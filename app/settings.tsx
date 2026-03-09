@@ -1,3 +1,4 @@
+import { ExportWarningSheet } from "@/components/export/ExportWarningSheet";
 import { Logo } from "@/components/logo";
 import { Button } from "@/components/ui/button";
 import { ModeToggle } from "@/components/ui/mode-toggle";
@@ -20,7 +21,7 @@ import { Colors } from "@/theme/colors";
 import { BORDER_RADIUS } from "@/theme/globals";
 import * as Haptics from "expo-haptics";
 import { useRouter } from "expo-router";
-import { ChevronLeft, ChevronRight } from "lucide-react-native";
+import { ChevronLeft, ChevronRight, Lock } from "lucide-react-native";
 import { useEffect, useRef, useState } from "react";
 import { Switch, TouchableOpacity, useColorScheme } from "react-native";
 import { ScrollView } from "react-native-gesture-handler";
@@ -45,6 +46,12 @@ export default function Settings() {
 		messageCount: 0,
 	});
 	const [exportFormat, setExportFormat] = useState<ExportFormat>("markdown");
+	const [showExportWarning, setShowExportWarning] = useState(false);
+
+	// Encryption status
+	const encryptionMigratedAt = useValue("encryptionMigratedAt") as
+		| string
+		| undefined;
 
 	// Local auth state
 	const localAuthEnabled = useValue("localAuthEnabled") as boolean | undefined;
@@ -146,19 +153,23 @@ export default function Settings() {
 		setChatsSummary(getChatsSummary());
 	}, []);
 
-	const handleExportChats = async () => {
+	const handleExportChats = () => {
 		if (chatsSummary.chatCount === 0) {
 			setExportMessage("No chats to export");
 			setTimeout(() => setExportMessage(null), 2000);
 			return;
 		}
+		setShowExportWarning(true);
+	};
 
+	const handleExportConfirm = async (includeSensitiveData: boolean) => {
+		setShowExportWarning(false);
 		setIsExporting(true);
 		setExportMessage(null);
 		Haptics.selectionAsync();
 
 		try {
-			const result = await exportAllChats(exportFormat);
+			const result = await exportAllChats(exportFormat, includeSensitiveData);
 			if (result) {
 				setExportMessage("Export complete!");
 			} else {
@@ -384,6 +395,30 @@ export default function Settings() {
 								Verifying...
 							</Text>
 						)}
+
+						{/* Encryption Status */}
+						{encryptionMigratedAt ? (
+							<View
+								style={{
+									flexDirection: "row",
+									alignItems: "center",
+									gap: 8,
+									marginTop: 16,
+									paddingVertical: 10,
+								}}
+							>
+								<Lock color={theme.green} size={16} strokeWidth={2} />
+								<Text
+									style={{
+										fontSize: 13,
+										color: theme.green,
+										fontWeight: "500",
+									}}
+								>
+									Your data is encrypted on this device
+								</Text>
+							</View>
+						) : null}
 					</View>
 
 					<Separator />
@@ -741,6 +776,12 @@ export default function Settings() {
 					</View>
 				</View>
 			</ScrollView>
+
+			<ExportWarningSheet
+				visible={showExportWarning}
+				onDismiss={() => setShowExportWarning(false)}
+				onConfirm={handleExportConfirm}
+			/>
 		</SafeAreaView>
 	);
 }

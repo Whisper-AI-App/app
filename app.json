@@ -7,7 +7,6 @@
 		"icon": "./assets/images/icon.png",
 		"scheme": "whisper",
 		"userInterfaceStyle": "automatic",
-		"newArchEnabled": true,
 		"ios": {
 			"supportsTablet": true,
 			"bundleIdentifier": "org.avatechnologies.whisper",
@@ -17,12 +16,12 @@
 			},
 			"entitlements": {
 				"com.apple.developer.kernel.increased-memory-limit": true,
-				"com.apple.developer.kernel.extended-virtual-addressing": true
+				"com.apple.developer.kernel.extended-virtual-addressing": true,
+				"com.apple.developer.default-data-protection": "NSFileProtectionComplete"
 			},
 			"appleTeamId": "6PT3Z9F32F"
 		},
 		"android": {
-			"edgeToEdgeEnabled": true,
 			"predictiveBackGestureEnabled": false,
 			"package": "org.avatechnologies.whisper",
 			"permissions": ["android.permission.READ_MEDIA_IMAGES"]
@@ -115,7 +114,8 @@
 						}
 					}
 				]
-			]
+			],
+			"expo-secure-store"
 		],
 		"experiments": {
 			"typedRoutes": true,

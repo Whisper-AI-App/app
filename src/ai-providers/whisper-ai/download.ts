@@ -262,8 +262,6 @@ export async function startDownload(
 			resumableState: "",
 			isPaused: false,
 			fileRemoved: false,
-			apiKey: "",
-			oAuthCodeVerifier: "",
 		});
 	}
 

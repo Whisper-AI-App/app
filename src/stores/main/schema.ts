@@ -24,6 +24,8 @@ export const valuesSchemaMainStore = {
 	flappy_bird_high_score: { type: "number" as const },
 	// App icon customization
 	app_icon_variant: { type: "string" as const },
+	// Encryption migration tracking
+	encryptionMigratedAt: { type: "string" as const },
 };
 
 export const tablesSchemaMainStore = {
@@ -65,9 +67,6 @@ export const tablesSchemaMainStore = {
 		resumableState: { type: "string" as const }, // Serialized download resumable
 		isPaused: { type: "boolean" as const },
 		fileRemoved: { type: "boolean" as const },
-		// OAuth state (i.e. OpenRouter)
-		apiKey: { type: "string" as const },
-		oAuthCodeVerifier: { type: "string" as const },
 		// endpoint URL
 		endpointUrl: { type: "string" as const },
 		// Protocol type (i.e. "anthropic")

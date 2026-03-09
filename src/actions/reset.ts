@@ -1,11 +1,21 @@
+import {
+	AESEncryptionKey,
+	AESSealedData,
+	aesDecryptAsync,
+} from "expo-crypto";
 import * as FileSystem from "expo-file-system";
-import * as FileSystemLegacy from "expo-file-system/legacy";
+import * as SecureStore from "expo-secure-store";
 import * as Sharing from "expo-sharing";
+import {
+	ENCRYPTION_KEY_STORE_ID,
+	loadEncryptionKey,
+} from "../stores/main/encryption-key";
 import {
 	getModelFileUri,
 	mainStore,
 	mainStoreFilePath,
 } from "../stores/main/main-store";
+import { deleteProviderCredentials } from "./secure-credentials";
 
 async function deleteFileIfExists(uri: string): Promise<void> {
 	const file = new FileSystem.File(uri);
@@ -27,32 +37,54 @@ export async function resetEverything() {
 		await deleteFileIfExists(modelFileUri);
 	}
 
-	// Delete store files from disk
+	// Delete store file from disk
 	await deleteFileIfExists(mainStoreFilePath);
-	await deleteFileIfExists(mainStoreFilePath.replace(".json", ".backup.json"));
+
+	// Delete encryption key and all provider credentials from secure store
+	await SecureStore.deleteItemAsync(ENCRYPTION_KEY_STORE_ID);
+	await deleteProviderCredentials("openrouter");
+	await deleteProviderCredentials("custom-provider");
 
 	mainStore.delValues();
 	mainStore.delTables();
 }
 
 /**
- * Shares the pre-migration backup (or the store file as fallback) as a JSON
- * file via the native share sheet.
+ * Reads the store file, decrypting if necessary, and returns the JSON string.
+ */
+async function readStoreContent(): Promise<string> {
+	const file = new FileSystem.File(mainStoreFilePath);
+	if (!file.exists) {
+		throw new Error("No store file found to back up.");
+	}
+
+	const keyHex = await loadEncryptionKey();
+	if (keyHex) {
+		try {
+			const bytes = await file.bytes();
+			const key = await AESEncryptionKey.import(keyHex, "hex");
+			const sealed = AESSealedData.fromCombined(bytes);
+			const decrypted = await aesDecryptAsync(sealed, key);
+			return new TextDecoder().decode(decrypted);
+		} catch {
+			// Fall through to plain text read
+		}
+	}
+
+	return await file.text();
+}
+
+/**
+ * Shares the store data as a decrypted JSON file via the native share sheet.
  */
 export async function saveBackupData(): Promise<void> {
-	const backupUri = mainStoreFilePath.replace(".json", ".backup.json");
-
-	const sourceUri = (await FileSystemLegacy.getInfoAsync(backupUri)).exists
-		? backupUri
-		: mainStoreFilePath;
-
-	const content = await FileSystemLegacy.readAsStringAsync(sourceUri);
+	const content = await readStoreContent();
 
 	const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
 	const fileName = `whisper-backup-${timestamp}.json`;
 	const cacheDir = new FileSystem.Directory(FileSystem.Paths.cache);
 	const tempFile = new FileSystem.File(cacheDir, fileName);
-	await tempFile.write(content);
+	tempFile.write(content);
 
 	await Sharing.shareAsync(tempFile.uri, {
 		mimeType: "application/json",
