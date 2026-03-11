@@ -65,7 +65,9 @@ export function createExpoFileSystemPersister(
 
 	const getPersisted = async () => {
 		try {
-			if (!file.exists) return undefined;
+			if (!file.exists) {
+				return undefined;
+			}
 
 			if (currentKeyHex !== null) {
 				// Try encrypted bytes first, fall back to plain JSON (pre-migration)
@@ -73,11 +75,13 @@ export function createExpoFileSystemPersister(
 					const bytes = await file.bytes();
 					const json = await decrypt(bytes);
 					return jsonParse(json);
-				} catch {
+				} catch (decryptErr) {
+					console.warn("[Persister] Decrypt failed, trying plain text fallback:", decryptErr);
 					try {
 						const text = await file.text();
 						return jsonParse(text);
 					} catch (fallbackError) {
+						console.error("[Persister] Plain text fallback also failed:", fallbackError);
 						onIgnoredError?.(fallbackError);
 						return undefined;
 					}
@@ -88,22 +92,37 @@ export function createExpoFileSystemPersister(
 			const text = await file.text();
 			return jsonParse(text);
 		} catch (error) {
+			console.error("[Persister] getPersisted top-level error:", error);
 			onIgnoredError?.(error);
 			return undefined;
 		}
 	};
 
+	let saveInProgress = false;
+
 	const setPersisted = async (
 		getContent: () => unknown,
 	): Promise<void> => {
-		const content = getContent();
-		const json = jsonStringify(content);
+		if (saveInProgress) {
+			console.warn("[Persister] Save already in progress, skipping");
+			return;
+		}
+		saveInProgress = true;
+		try {
+			const content = getContent();
+			const json = jsonStringify(content);
 
-		if (currentKeyHex !== null) {
-			const encrypted = await encrypt(json);
-			await file.write(encrypted);
-		} else {
-			await file.write(json);
+			if (currentKeyHex !== null) {
+				const encrypted = await encrypt(json);
+				await file.write(encrypted);
+			} else {
+				await file.write(json);
+			}
+		} catch (error) {
+			console.error("[Persister] setPersisted error:", error);
+			throw error;
+		} finally {
+			saveInProgress = false;
 		}
 	};
 

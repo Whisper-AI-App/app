@@ -86,17 +86,97 @@ function handleDownloadComplete(
 	result: { status: number } | null,
 ): void {
 	if (result?.status === 200 || result?.status === 206) {
+		const now = new Date().toISOString();
 		store.setCell(
 			"aiProviders",
 			"whisper-ai",
 			"downloadedAt",
-			new Date().toISOString(),
+			now,
 		);
 		store.setCell("aiProviders", "whisper-ai", "status", "ready");
 		cleanupDownloadState(store);
 		setActiveDownloadResumable(null);
+		console.info("[WhisperAI:Download] Download complete");
 	} else {
+		console.error("[WhisperAI:Download] Download failed with status:", result?.status);
 		throw new Error(`Download failed with status: ${result?.status}`);
+	}
+}
+
+/**
+ * Generates a filename for the mmproj file based on card metadata.
+ */
+function generateMmprojFileName(card: WhisperLLMCard): string {
+	const sanitizedName = card.name
+		.toLowerCase()
+		.replace(/[^a-z0-9]+/g, "-")
+		.replace(/^-+|-+$/g, "")
+		.substring(0, 50);
+	return `${sanitizedName}-mmproj.gguf`;
+}
+
+/**
+ * Downloads the mmproj file (phase 2 of model download for vision-capable models).
+ * Called after main model download completes.
+ */
+async function downloadMmproj(
+	store: Store,
+	card: WhisperLLMCard,
+): Promise<void> {
+	if (!card.multimodal?.mmproj?.sourceUrl) {
+		return;
+	}
+
+	const mmprojFilename = generateMmprojFileName(card);
+	const fileUri = `${new FileSystem.Directory(FileSystem.Paths.document).uri}/${mmprojFilename}`;
+
+	// Check if already downloaded
+	const existingMmproj = store.getCell(
+		"aiProviders",
+		"whisper-ai",
+		"mmprojFilename",
+	) as string | undefined;
+	if (existingMmproj === mmprojFilename) {
+		const file = new FileSystem.File(fileUri);
+		if (file.exists) {
+			return;
+		}
+	}
+
+	console.info("[WhisperAI:Download] Starting mmproj download (" + card.multimodal.mmproj.sizeGB + " GB)");
+	store.setCell("aiProviders", "whisper-ai", "status", "downloading_mmproj");
+	store.setCell("aiProviders", "whisper-ai", "mmprojFilename", mmprojFilename);
+	store.setCell("aiProviders", "whisper-ai", "progressSizeGB", 0);
+	store.setCell(
+		"aiProviders",
+		"whisper-ai",
+		"totalSizeGB",
+		card.multimodal.mmproj.sizeGB,
+	);
+
+	try {
+		const resumable = createDownloadResumable(
+			card.multimodal.mmproj.sourceUrl,
+			fileUri,
+			{},
+			createProgressCallback(store),
+		);
+
+		setActiveDownloadResumable(resumable);
+
+		const result = await resumable.downloadAsync();
+
+		if (checkIfPaused(store)) return;
+
+		if (result?.status === 200 || result?.status === 206) {
+			console.info("[WhisperAI:Download] mmproj download complete");
+			// mmproj download complete — now mark the whole download as done
+			return;
+		}
+		throw new Error(`mmproj download failed with status: ${result?.status}`);
+	} catch (error) {
+		console.error("[WhisperAI:Download] mmproj download error:", error);
+		handleDownloadError(store, error);
 	}
 }
 
@@ -207,10 +287,6 @@ export async function startDownload(
 		"resumableState",
 	) as string | undefined;
 
-	if (isPaused && resumableStateStr && !restart) {
-		return resumeDownload(store);
-	}
-
 	// Generate versioned filename with hash
 	const versionedFilename = generateModelFileName(card, configVersion);
 	const fileUri = `${new FileSystem.Directory(FileSystem.Paths.document).uri}/${versionedFilename}`;
@@ -220,6 +296,16 @@ export async function startDownload(
 		"whisper-ai",
 		"filename",
 	) as string | undefined;
+
+	// If model changed, clear stale download state before the resume check
+	if (existingFilename && existingFilename !== versionedFilename) {
+		cleanupDownloadState(store);
+		store.setCell("aiProviders", "whisper-ai", "progressSizeGB", 0);
+	}
+
+	if (isPaused && resumableStateStr && !restart) {
+		return resumeDownload(store);
+	}
 	const downloadedAt = store.getCell(
 		"aiProviders",
 		"whisper-ai",
@@ -279,7 +365,7 @@ export async function startDownload(
 	store.setCell("aiProviders", "whisper-ai", "downloadedAt", "");
 	store.setCell("aiProviders", "whisper-ai", "downloadError", "");
 	store.setCell("aiProviders", "whisper-ai", "isPaused", false);
-	store.setCell("aiProviders", "whisper-ai", "status", "configuring");
+	store.setCell("aiProviders", "whisper-ai", "status", "downloading");
 
 	const currentProgress = store.getCell(
 		"aiProviders",
@@ -291,6 +377,7 @@ export async function startDownload(
 	}
 
 	try {
+		console.info("[WhisperAI:Download] Starting download to " + versionedFilename);
 		const resumable = createDownloadResumable(
 			sourceUrl,
 			fileUri,
@@ -306,8 +393,19 @@ export async function startDownload(
 			return;
 		}
 
+		if (!(result?.status === 200 || result?.status === 206)) {
+			throw new Error(`Download failed with status: ${result?.status}`);
+		}
+
+		// Phase 2: Download mmproj if model card has multimodal vision support
+		if (card.multimodal?.mmproj?.sourceUrl) {
+			await downloadMmproj(store, card);
+			if (checkIfPaused(store)) return;
+		}
+
 		handleDownloadComplete(store, result ?? null);
 	} catch (error) {
+		console.error("[WhisperAI:Download] startDownload error:", error);
 		handleDownloadError(store, error);
 	}
 }

@@ -59,3 +59,6 @@ app-example
 
 # test coverage
 coverage/
+
+# bundled whisper model (too large for git, ~150MB)
+assets/models/*.bin

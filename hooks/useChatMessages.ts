@@ -3,8 +3,28 @@ import { useMemo } from "react";
 import type { IMessage } from "react-native-gifted-chat";
 import { useTable } from "tinybase/ui-react";
 
+export interface StoredAttachment {
+	id: string;
+	type: string;
+	uri: string;
+	mimeType: string;
+	fileName: string;
+	fileSize: number;
+	width: number;
+	height: number;
+	duration: number;
+	alt: string;
+	thumbnailUri: string;
+}
+
+export interface ChatMessage extends IMessage {
+	providerId?: string;
+	modelId?: string;
+	attachments?: StoredAttachment[];
+}
+
 export interface UseChatMessagesResult {
-	messages: IMessage[];
+	messages: ChatMessage[];
 	lastAssistantStatus: MessageStatus | null;
 	lastAssistantId: string | null;
 }
@@ -21,6 +41,7 @@ export function useChatMessages(
 	chatId: string | undefined,
 ): UseChatMessagesResult {
 	const messagesTable = useTable("messages");
+	const attachmentsTable = useTable("attachments");
 
 	return useMemo(() => {
 		if (!chatId)
@@ -30,24 +51,49 @@ export function useChatMessages(
 				lastAssistantId: null,
 			};
 
+		// Build a lookup of attachments by messageId
+		const attachmentsByMessage = new Map<string, StoredAttachment[]>();
+		for (const [, att] of Object.entries(attachmentsTable)) {
+			if (!att?.messageId) continue;
+			const msgId = att.messageId as string;
+			if (!attachmentsByMessage.has(msgId)) {
+				attachmentsByMessage.set(msgId, []);
+			}
+			attachmentsByMessage.get(msgId)!.push({
+				id: att.id as string,
+				type: att.type as string,
+				uri: att.uri as string,
+				mimeType: att.mimeType as string,
+				fileName: att.fileName as string,
+				fileSize: att.fileSize as number,
+				width: att.width as number,
+				height: att.height as number,
+				duration: att.duration as number,
+				alt: att.alt as string,
+				thumbnailUri: att.thumbnailUri as string,
+			});
+		}
+
 		const chatMessages = Object.entries(messagesTable)
 			.map(([, msg]) => {
 				if (msg?.chatId !== chatId) return null;
 
+				const msgId = msg.id as string;
 				return {
-					_id: msg.id as string,
+					_id: msgId,
 					text: msg.contents as string,
 					createdAt: new Date(msg.createdAt as string),
 					status: (msg.status as string) || "done",
 					providerId: (msg.providerId as string) || "",
 					modelId: (msg.modelId as string) || "",
+					attachments: attachmentsByMessage.get(msgId),
 					user: {
 						_id: msg.role === "user" ? 1 : 2,
 						name: msg.role === "user" ? "You" : "AI",
 					},
 				};
 			})
-			.filter(Boolean) as (IMessage & { status: string; providerId: string; modelId: string })[];
+			.filter(Boolean) as (ChatMessage & { status: string })[];
 
 		// Sort by date descending (GiftedChat expects newest first)
 		chatMessages.sort(
@@ -69,7 +115,7 @@ export function useChatMessages(
 		);
 
 		// Merge consecutive AI messages into a single bubble for display
-		const merged = filteredMessages.reduce<IMessage[]>((acc, msg) => {
+		const merged = filteredMessages.reduce<ChatMessage[]>((acc, msg) => {
 			const prev = acc[acc.length - 1];
 			if (prev && prev.user._id === 2 && msg.user._id === 2) {
 				// msg is older (array is newest-first), prepend its text before prev's
@@ -80,13 +126,14 @@ export function useChatMessages(
 				_id: msg._id,
 				text: msg.text,
 				createdAt: msg.createdAt,
-				providerId: (msg as IMessage & { providerId: string; modelId: string }).providerId,
-				modelId: (msg as IMessage & { providerId: string; modelId: string }).modelId,
+				providerId: msg.providerId,
+				modelId: msg.modelId,
+				attachments: msg.attachments,
 				user: msg.user,
-			} as IMessage);
+			});
 			return acc;
 		}, []);
 
 		return { messages: merged, lastAssistantStatus, lastAssistantId };
-	}, [chatId, messagesTable]);
+	}, [chatId, messagesTable, attachmentsTable]);
 }

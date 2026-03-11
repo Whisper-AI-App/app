@@ -10,6 +10,22 @@ const mockGetSystemMessage = jest.fn(() => "mock system message");
 const mockGetContextSize = jest.fn(() => 4096);
 const mockIsConfigured = jest.fn(() => true);
 
+const mockGetMultimodalCapabilities = jest.fn(() => ({
+	vision: false,
+	audio: false,
+	files: false,
+	constraints: {
+		maxImageWidth: 0,
+		maxImageHeight: 0,
+		maxFileSize: 0,
+		maxAudioDuration: 0,
+		supportedImageFormats: [],
+		supportedFileTypes: [],
+		audioFormat: "wav" as const,
+		audioSampleRate: 16000,
+	},
+}));
+
 const mockActiveProvider = {
 	id: "whisper-ai",
 	name: "Whisper AI",
@@ -19,6 +35,7 @@ const mockActiveProvider = {
 	getSystemMessage: mockGetSystemMessage,
 	getContextSize: mockGetContextSize,
 	isConfigured: mockIsConfigured,
+	getMultimodalCapabilities: mockGetMultimodalCapabilities,
 };
 
 jest.mock("@/contexts/AIProviderContext", () => ({

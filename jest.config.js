@@ -20,5 +20,6 @@ module.exports = {
 		"^@/(.*)$": "<rootDir>/$1",
 		"^@nanocollective/json-up$":
 			"<rootDir>/node_modules/@nanocollective/json-up/dist/index.js",
+		"\\.bin$": "<rootDir>/__mocks__/binary-asset.js",
 	},
 };

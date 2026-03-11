@@ -30,7 +30,11 @@ function formatModelId(modelId: string): string {
 	return parts[parts.length - 1];
 }
 
-export function ProviderAndModelSelector() {
+export function ProviderAndModelSelector({
+	shrink = false,
+}: {
+	shrink: boolean;
+}) {
 	const [open, setOpen] = useState(false);
 	const { activeProvider, providers, setActiveProvider } = useAIProvider();
 	const textMuted = useColor("textMuted");
@@ -43,6 +47,15 @@ export function ProviderAndModelSelector() {
 		activeProvider?.id ?? "",
 		"selectedModelId",
 	) as string | undefined;
+
+	const providerStatus = useCell(
+		"aiProviders",
+		activeProvider?.id ?? "",
+		"status",
+	) as string | undefined;
+
+	const isSuspended =
+		providerStatus === "transcribing" || providerStatus === "reloading";
 
 	const displayName = activeProvider?.name ?? "Select AI";
 	const appIconVariant = useValue("app_icon_variant") as
@@ -58,7 +71,8 @@ export function ProviderAndModelSelector() {
 	return (
 		<>
 			<TouchableOpacity
-				onPress={() => setOpen(true)}
+				onPress={() => !isSuspended && setOpen(true)}
+				disabled={isSuspended}
 				style={{
 					flexDirection: "row",
 					alignItems: "center",
@@ -67,6 +81,7 @@ export function ProviderAndModelSelector() {
 					paddingVertical: 6,
 					backgroundColor: "rgba(125,125,125,0.1)",
 					borderRadius: 20,
+					opacity: isSuspended ? 0.7 : 1,
 				}}
 				activeOpacity={0.7}
 			>
@@ -78,8 +93,29 @@ export function ProviderAndModelSelector() {
 					<Text style={{ fontSize: 14, fontWeight: "600" }} numberOfLines={1}>
 						{displayName}
 					</Text>
-					{selectedModelId ? (
-						<Text style={{ fontSize: 11, color: textMuted }} numberOfLines={1}>
+					{isSuspended ? (
+						<View
+							style={{ flexDirection: "row", alignItems: "center", gap: 4 }}
+						>
+							<ActivityIndicator size={9} color={textMuted} />
+							<Text
+								style={{ fontSize: 11, color: textMuted }}
+								numberOfLines={1}
+							>
+								{providerStatus === "transcribing"
+									? "Transcribing audio..."
+									: "Reloading model..."}
+							</Text>
+						</View>
+					) : selectedModelId ? (
+						<Text
+							style={{
+								fontSize: 11,
+								color: textMuted,
+								maxWidth: shrink ? 96 : undefined,
+							}}
+							numberOfLines={1}
+						>
 							{formatModelId(selectedModelId)}
 						</Text>
 					) : (
@@ -88,7 +124,9 @@ export function ProviderAndModelSelector() {
 						</Text>
 					)}
 				</View>
-				<ChevronDown color={textMuted} size={14} strokeWidth={2} />
+				{!isSuspended && (
+					<ChevronDown color={textMuted} size={14} strokeWidth={2} />
+				)}
 			</TouchableOpacity>
 
 			<TopSheet isVisible={open} onClose={() => setOpen(false)}>

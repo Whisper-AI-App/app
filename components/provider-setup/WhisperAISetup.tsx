@@ -16,7 +16,7 @@ import { fetchLatestRecommendedModel } from "@/src/ai-providers/whisper-ai/model
 import { mainStore } from "@/src/stores/main/main-store";
 import { useRouter } from "expo-router";
 import { ChevronLeft } from "lucide-react-native";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { ActivityIndicator, Modal } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useCell, useValue } from "tinybase/ui-react";
@@ -39,6 +39,7 @@ export function WhisperAISetup() {
 	);
 	const [configVersion, setConfigVersion] = useState<string>("1.0.0");
 	const [showGame, setShowGame] = useState(false);
+	const hasNavigatedRef = useRef(false);
 	const [initialDownloadedAt] = useState<string | undefined>(
 		() =>
 			mainStore.getCell("aiProviders", "whisper-ai", "downloadedAt") as
@@ -68,6 +69,9 @@ export function WhisperAISetup() {
 	const fileRemoved = useCell("aiProviders", "whisper-ai", "fileRemoved") as
 		| boolean
 		| undefined;
+	const providerStatus = useCell("aiProviders", "whisper-ai", "status") as
+		| string
+		| undefined;
 
 	// Fetch latest recommended model on mount
 	useEffect(() => {
@@ -91,22 +95,31 @@ export function WhisperAISetup() {
 
 	// When download completes, navigate back
 	useEffect(() => {
+		if (hasNavigatedRef.current) return;
 		if (downloadedAt && downloadedAt !== initialDownloadedAt) {
+			hasNavigatedRef.current = true;
 			setIsDownloading(false);
 
 			if (fileRemoved) {
 				mainStore.setCell("aiProviders", "whisper-ai", "fileRemoved", false);
 			}
 
-			setActiveProvider("whisper-ai");
-			router.back();
+			setActiveProvider("whisper-ai").then(() => {
+				if (router.canGoBack()) {
+					router.back();
+				} else {
+					router.replace("/dashboard");
+				}
+			}).catch((err) => {
+				console.error("[WhisperAISetup] setActiveProvider failed:", err);
+				router.replace("/dashboard");
+			});
 		}
 	}, [
 		downloadedAt,
 		initialDownloadedAt,
 		fileRemoved,
 		router,
-		setActiveProvider,
 	]);
 
 	useEffect(() => {
@@ -155,9 +168,20 @@ export function WhisperAISetup() {
 
 	const hasPartialDownload =
 		filename && (!downloadedAt || downloadedAt === initialDownloadedAt);
-	const totalSizeGB = modelCard.sizeGB;
+	const hasMmproj = !!modelCard.multimodal?.mmproj;
+	const isDownloadingMmproj = providerStatus === "downloading_mmproj";
+	const currentTotalSizeGB =
+		isDownloadingMmproj && modelCard.multimodal?.mmproj
+			? modelCard.multimodal.mmproj.sizeGB
+			: modelCard.sizeGB;
 	const progressValue =
-		totalSizeGB && progressSizeGB ? progressSizeGB / totalSizeGB : 0;
+		currentTotalSizeGB && progressSizeGB ? progressSizeGB / currentTotalSizeGB : 0;
+	const phaseLabel =
+		isDownloadingMmproj
+			? "Vision module"
+			: hasMmproj
+				? "Model weights"
+				: undefined;
 
 	return (
 		<View style={{ flex: 1 }}>
@@ -173,7 +197,7 @@ export function WhisperAISetup() {
 						padding: 16,
 					}}
 				>
-					{!isDownloading && (
+					{!isDownloading && router.canGoBack() && (
 						<Button onPress={() => router.back()} variant="ghost" size="icon">
 							<ChevronLeft
 								color="rgba(125,125,125,0.7)"
@@ -234,7 +258,7 @@ export function WhisperAISetup() {
 									opacity: 0.6,
 								}}
 							>
-								{modelCard.name} ({modelCard.sizeGB.toFixed(1)} GB)
+								{modelCard.name} ({(modelCard.sizeGB + (modelCard.multimodal?.mmproj?.sizeGB ?? 0)).toFixed(1)} GB)
 							</Text>
 						)}
 					</View>
@@ -254,6 +278,20 @@ export function WhisperAISetup() {
 					<View style={{ width: "100%", gap: 16, paddingVertical: 24 }}>
 						{hasPartialDownload && (
 							<View style={{ gap: 8, paddingHorizontal: 24 }}>
+								{phaseLabel && (
+									<Text
+										style={{
+											fontSize: 12,
+											opacity: 0.6,
+											marginBottom: 4,
+											textAlign: "center",
+										}}
+									>
+										{isDownloadingMmproj
+											? "Phase 2: Vision module"
+											: "Phase 1: Model weights"}
+									</Text>
+								)}
 								<View
 									style={{
 										flexDirection: "row",
@@ -266,7 +304,7 @@ export function WhisperAISetup() {
 									</Text>
 									<Text style={{ fontSize: 14, fontWeight: "600" }}>
 										{progressSizeGB?.toFixed(2) || 0} GB /{" "}
-										{totalSizeGB?.toFixed(2) || 0} GB (
+										{currentTotalSizeGB?.toFixed(2) || 0} GB (
 										{Math.round(progressValue * 100)}%)
 									</Text>
 								</View>
@@ -324,7 +362,7 @@ export function WhisperAISetup() {
 								>
 									{`Resume Download (${Number.parseFloat(
 										(
-											((progressSizeGB ?? 1) / (totalSizeGB ?? 1)) *
+											((progressSizeGB ?? 1) / (currentTotalSizeGB ?? 1)) *
 											100
 										).toString(),
 									).toFixed(1)}%)`}

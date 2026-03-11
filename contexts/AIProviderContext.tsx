@@ -1,5 +1,6 @@
 import { createAllProviders } from "@/src/ai-providers/registry";
 import type { AIProvider } from "@/src/ai-providers/types";
+import { DEFAULT_LOAD_CONFIG } from "@/src/ai-providers/types";
 import {
 	createContext,
 	type ReactNode,
@@ -62,13 +63,15 @@ export function AIProviderProvider({ children }: { children: ReactNode }) {
 			"status",
 		) as string | undefined;
 
-		// Only setup if stored status is "ready" (persisted from previous session)
-		// but runtime isn't configured yet, OR if status is "configuring"
+		// Setup if stored status indicates a previously-active provider ("ready" or
+		// "configuring" — the latter is a transient state that can be persisted if the
+		// app crashes/reloads mid-setup) but the runtime isn't configured yet.
 		if (
-			storedStatus === "ready" &&
+			(storedStatus === "ready" || storedStatus === "configuring") &&
 			!activeProvider.isConfigured() &&
 			setupAttemptedRef.current !== activeProvider.id
 		) {
+			console.info("[AIProvider] Starting setup for:", activeProvider.id);
 			setupAttemptedRef.current = activeProvider.id;
 			setIsSettingUp(true);
 			setSetupError(null);
@@ -76,9 +79,11 @@ export function AIProviderProvider({ children }: { children: ReactNode }) {
 			activeProvider
 				.setup()
 				.then(() => {
+					console.info("[AIProvider] Setup complete for:", activeProvider.id);
 					setIsSettingUp(false);
 				})
 				.catch((error) => {
+					console.error("[AIProvider] Setup FAILED for:", activeProvider.id, error);
 					setIsSettingUp(false);
 					setSetupError(
 						error instanceof Error ? error.message : "Setup failed",
@@ -101,6 +106,12 @@ export function AIProviderProvider({ children }: { children: ReactNode }) {
 						console.error(`[AIProvider] Teardown error for ${activeProviderId}:`, err);
 					}
 				}
+
+				// T073: Post-teardown settle delay — allow native mmap unmap to complete
+				// before budget checking for new provider setup
+				await new Promise((resolve) =>
+					setTimeout(resolve, DEFAULT_LOAD_CONFIG.postTeardownSettleMs),
+				);
 			}
 
 			// Set default model if provider has one and none is selected

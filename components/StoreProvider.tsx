@@ -75,7 +75,9 @@ export function StoreProvider({ children }: { children: ReactNode }) {
 					clearTimeout(debounceSaveTimerRef.current);
 				}
 				debounceSaveTimerRef.current = setTimeout(() => {
-					p.save();
+					p.save().catch((err) => {
+						console.error("[StoreProvider] Auto-save FAILED:", err);
+					});
 				}, 500);
 			});
 
@@ -84,6 +86,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
 			// is the sole writer, it only detects our own saves and reloads them —
 			// overwriting any in-memory changes that occurred since the last save.
 			initMainStore();
+			console.info("[StoreProvider] Initialization complete");
 		},
 	);
 

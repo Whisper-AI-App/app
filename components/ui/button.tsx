@@ -1,3 +1,9 @@
+import { Icon } from "@/components/ui/icon";
+import { ButtonSpinner, type SpinnerVariant } from "@/components/ui/spinner";
+import { Text } from "@/components/ui/text";
+import { useColorScheme } from "@/hooks/useColorScheme";
+import { useThemeColor } from "@/hooks/useThemeColor";
+import { CORNERS, FONT_SIZE, HEIGHT } from "@/theme/globals";
 import * as Haptics from "expo-haptics";
 import type { LucideProps } from "lucide-react-native";
 import { forwardRef } from "react";
@@ -15,12 +21,6 @@ import Animated, {
 	useSharedValue,
 	withSpring,
 } from "react-native-reanimated";
-import { Icon } from "@/components/ui/icon";
-import { ButtonSpinner, type SpinnerVariant } from "@/components/ui/spinner";
-import { Text } from "@/components/ui/text";
-import { useColorScheme } from "@/hooks/useColorScheme";
-import { useThemeColor } from "@/hooks/useThemeColor";
-import { CORNERS, FONT_SIZE, HEIGHT } from "@/theme/globals";
 
 export type ButtonVariant =
 	| "default"
@@ -31,7 +31,7 @@ export type ButtonVariant =
 	| "ghost"
 	| "link";
 
-export type ButtonSize = "default" | "sm" | "lg" | "icon";
+export type ButtonSize = "default" | "sm" | "lg" | "icon" | "icon-send";
 
 export interface ButtonProps extends Omit<TouchableOpacityProps, "style"> {
 	label?: string;
@@ -70,6 +70,7 @@ export const Button = forwardRef<View, ButtonProps>(
 	) => {
 		const colorScheme = useColorScheme();
 		const primaryColor = useThemeColor({}, "primary");
+		const backgroundColor = useThemeColor({}, "background");
 		const primaryForegroundColor = useThemeColor({}, "primaryForeground");
 		const secondaryColor = useThemeColor({}, "secondary");
 		const secondaryForegroundColor = useThemeColor({}, "secondaryForeground");
@@ -107,6 +108,13 @@ export const Button = forwardRef<View, ButtonProps>(
 						paddingHorizontal: 0,
 					});
 					break;
+				case "icon-send":
+					Object.assign(baseStyle, {
+						height: HEIGHT,
+						width: HEIGHT,
+						paddingHorizontal: 0,
+					});
+					break;
 				default:
 					Object.assign(baseStyle, { height: HEIGHT, paddingHorizontal: 32 });
 			}
@@ -130,7 +138,13 @@ export const Button = forwardRef<View, ButtonProps>(
 				case "secondary":
 					return { ...baseStyle, backgroundColor: secondaryColor };
 				case "ghost":
-					return { ...baseStyle, backgroundColor: "transparent" };
+					return {
+						...baseStyle,
+						backgroundColor:
+							colorScheme === "dark"
+								? "rgba(0,0,0,0.85)"
+								: "rgba(255,255,255,0.85)",
+					};
 				case "link":
 					return {
 						...baseStyle,
@@ -159,7 +173,10 @@ export const Button = forwardRef<View, ButtonProps>(
 				case "secondary":
 					return { ...baseTextStyle, color: secondaryForegroundColor };
 				case "ghost":
-					return { ...baseTextStyle, color: primaryColor };
+					return {
+						...baseTextStyle,
+						color: primaryColor,
+					};
 				case "link":
 					return {
 						...baseTextStyle,
@@ -199,6 +216,8 @@ export const Button = forwardRef<View, ButtonProps>(
 					return 24;
 				case "icon":
 					return 20;
+				case "icon-send":
+					return 18;
 				default:
 					return 18;
 			}
@@ -343,7 +362,7 @@ export const Button = forwardRef<View, ButtonProps>(
 				<Animated.View style={[animatedStyle, buttonStyle, styleWithoutFlex]}>
 					{loading ? (
 						<ButtonSpinner
-							size={size}
+							size={size === "icon-send" ? "icon" : size}
 							variant={loadingVariant}
 							color={contentColor}
 						/>
@@ -379,7 +398,7 @@ export const Button = forwardRef<View, ButtonProps>(
 			>
 				{loading ? (
 					<ButtonSpinner
-						size={size}
+						size={size === "icon-send" ? "icon" : size}
 						variant={loadingVariant}
 						color={contentColor}
 					/>

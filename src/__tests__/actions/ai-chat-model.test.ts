@@ -564,7 +564,7 @@ describe("ai-chat-model actions", () => {
 			seedWhisperAI({
 				isPaused: true,
 				resumableState: JSON.stringify(resumableState),
-				filename: "test.gguf",
+				filename: "test-model-v1.0.0-abc123.gguf",
 			});
 			mockDownloadAsync.mockResolvedValue({ status: 200 });
 
@@ -578,7 +578,7 @@ describe("ai-chat-model actions", () => {
 			// Should call resumeDownload flow, not fresh download
 			expect(mockCreateDownloadResumable).toHaveBeenCalledWith(
 				"https://example.com/test.gguf",
-				"file:///mock/documents/test.gguf",
+				"file:///mock/documents/test-model-v1.0.0-abc123.gguf",
 				{},
 				expect.any(Function),
 				"mock-resume-data",
