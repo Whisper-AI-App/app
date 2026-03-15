@@ -2,7 +2,6 @@ import {
 	mockMainStore,
 	resetMockMainStore,
 	seedMockMainStore,
-	getMockMainStoreData,
 } from "../../__mocks__/main-store-mock";
 
 // Mock the store module

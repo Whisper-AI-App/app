@@ -10,11 +10,12 @@ import type { Store } from "tinybase";
 import type {
 	AIProvider,
 	CompletionMessage,
+	CompletionMessagePart,
 	CompletionResult,
 	MultimodalCapabilities,
 	ProviderModel,
 } from "../types";
-import { DEFAULT_CONSTRAINTS, NO_MULTIMODAL } from "../types";
+import { DEFAULT_CONSTRAINTS, } from "../types";
 import { convertMessagesForAISDK } from "../message-converter";
 import { getCapabilityStatus, dispatch } from "../../memory/state";
 import { initSTT } from "../../stt";
@@ -218,7 +219,7 @@ export function createCustomProvider(store: Store): AIProvider {
 			try {
 				// T071: STT budget coordination — ensure whisper.rn is loaded before audio processing
 				const hasAudioParts = messages.some(
-					(m) => Array.isArray(m.content) && m.content.some((p: any) => p.type === "audio"),
+					(m) => Array.isArray(m.content) && m.content.some((p: CompletionMessagePart) => p.type === "audio"),
 				);
 				if (hasAudioParts) {
 					const sttStatus = getCapabilityStatus("stt");

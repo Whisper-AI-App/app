@@ -3,7 +3,7 @@ import type { PendingAttachment } from "@/src/ai-providers/types";
 import { Colors } from "@/theme/colors";
 import { Image } from "expo-image";
 import { Cloud, FileText, X } from "lucide-react-native";
-import React from "react";
+import type React from "react";
 import {
 	ScrollView,
 	StyleSheet,

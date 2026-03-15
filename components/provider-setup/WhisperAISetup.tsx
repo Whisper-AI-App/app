@@ -19,6 +19,7 @@ import { ChevronLeft } from "lucide-react-native";
 import { useEffect, useRef, useState } from "react";
 import { ActivityIndicator, Modal } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import type { Store } from "tinybase";
 import { useCell, useValue } from "tinybase/ui-react";
 import type { WhisperLLMCard } from "whisper-llm-cards";
 
@@ -143,7 +144,7 @@ export function WhisperAISetup() {
 
 		try {
 			await startDownload(
-				mainStore as any,
+				mainStore as unknown as Store,
 				modelCard,
 				modelCardId,
 				configVersion,
@@ -158,7 +159,7 @@ export function WhisperAISetup() {
 
 	const handlePauseDownload = async () => {
 		try {
-			await pauseDownload(mainStore as any);
+			await pauseDownload(mainStore as unknown as Store);
 			setIsDownloading(false);
 		} catch (err) {
 			console.error(err);

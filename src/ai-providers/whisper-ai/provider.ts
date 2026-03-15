@@ -62,7 +62,7 @@ let currentContextSize = DEFAULT_CONTEXT_SIZE;
 let setupPromise: Promise<void> | null = null;
 let resolvedMultimodalCaps: MultimodalCapabilities = NO_MULTIMODAL;
 // Stored model card constraints for on-demand vision loading
-let storedConstraints: MultimodalConstraints = { ...DEFAULT_CONSTRAINTS };
+let _storedConstraints: MultimodalConstraints = { ...DEFAULT_CONSTRAINTS };
 let storedCardWantsVision = false;
 let storedMmprojUri: string | null = null;
 let storedImageMinTokens: number | undefined;
@@ -300,7 +300,7 @@ export function createWhisperAIProvider(store: Store): AIProvider {
 			storedMmprojUri = null;
 			storedImageMinTokens = undefined;
 			storedImageMaxTokens = undefined;
-			storedConstraints = { ...DEFAULT_CONSTRAINTS };
+			_storedConstraints = { ...DEFAULT_CONSTRAINTS };
 			resetState();
 			stateUnsubscribe?.();
 			stateUnsubscribe = null;
@@ -513,7 +513,7 @@ export function createWhisperAIProvider(store: Store): AIProvider {
 
 					// Enable native llama.cpp logging to capture crash details
 					await toggleNativeLog(true);
-					const nativeLogSub = addNativeLogListener((level, text) => {
+					const _nativeLogSub = addNativeLogListener((level, text) => {
 						console.info(`[llama.cpp:${level}] ${text.trimEnd()}`);
 					});
 
@@ -544,7 +544,7 @@ export function createWhisperAIProvider(store: Store): AIProvider {
 							ctx_shift: ctxShift,
 						});
 						console.info(
-							`[WhisperAI:Setup] initLlama() succeeded. Context ID: ${(llamaContext as any)?.id ?? "unknown"}, model loaded: ${!!llamaContext}`,
+							`[WhisperAI:Setup] initLlama() succeeded. Context ID: ${(llamaContext as LlamaContext & { id?: unknown })?.id ?? "unknown"}, model loaded: ${!!llamaContext}`,
 						);
 					} catch (loadError) {
 						console.info(
@@ -572,7 +572,7 @@ export function createWhisperAIProvider(store: Store): AIProvider {
 								ctx_shift: ctxShift,
 							});
 							console.info(
-								`[WhisperAI:Setup] initLlama() CPU-only retry succeeded. Context ID: ${(llamaContext as any)?.id ?? "unknown"}`,
+								`[WhisperAI:Setup] initLlama() CPU-only retry succeeded. Context ID: ${(llamaContext as LlamaContext & { id?: unknown })?.id ?? "unknown"}`,
 							);
 						} else {
 							throw loadError;
@@ -658,7 +658,7 @@ export function createWhisperAIProvider(store: Store): AIProvider {
 					}
 
 					// Store vision config for on-demand loading (T066)
-					storedConstraints = resolvedConstraints;
+					_storedConstraints = resolvedConstraints;
 					storedCardWantsVision = cardWantsVision;
 					storedImageMaxTokens = resolvedConstraints.imageMaxTokens
 						? Number(resolvedConstraints.imageMaxTokens)
@@ -952,7 +952,7 @@ export function createWhisperAIProvider(store: Store): AIProvider {
 			storedMmprojUri = null;
 			storedImageMinTokens = undefined;
 			storedImageMaxTokens = undefined;
-			storedConstraints = { ...DEFAULT_CONSTRAINTS };
+			_storedConstraints = { ...DEFAULT_CONSTRAINTS };
 			stateUnsubscribe?.();
 			stateUnsubscribe = null;
 			setReleaseMultimodalFn(null);

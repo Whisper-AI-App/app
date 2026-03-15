@@ -5,7 +5,6 @@ import { ModeToggle } from "@/components/ui/mode-toggle";
 import { Separator } from "@/components/ui/separator";
 import { Text } from "@/components/ui/text";
 import { View } from "@/components/ui/view";
-import { useAIProvider } from "@/contexts/AIProviderContext";
 import {
 	type ExportFormat,
 	exportAllChats,
@@ -26,7 +25,7 @@ import { useEffect, useRef, useState } from "react";
 import { Switch, TouchableOpacity, useColorScheme } from "react-native";
 import { ScrollView } from "react-native-gesture-handler";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { useTable, useValue } from "tinybase/ui-react";
+import { useValue } from "tinybase/ui-react";
 
 export default function Settings() {
 	const colorScheme = useColorScheme() ?? "light";
@@ -66,8 +65,6 @@ export default function Settings() {
 		boolean | null
 	>(null);
 
-	const { providers, activeProvider } = useAIProvider();
-	const providerRows = useTable("aiProviders");
 
 	// Easter egg state
 	const [logoTapCount, setLogoTapCount] = useState(0);

@@ -51,13 +51,15 @@ export function createExpoFileSystemPersister(
 	let currentKeyHex = encryptionKeyHex;
 
 	async function encrypt(plaintext: string): Promise<Uint8Array> {
-		const key = await AESEncryptionKey.import(currentKeyHex!, "hex");
+		if (!currentKeyHex) throw new Error("Encryption key not available");
+		const key = await AESEncryptionKey.import(currentKeyHex, "hex");
 		const sealed = await aesEncryptAsync(encoder.encode(plaintext), key);
 		return await sealed.combined();
 	}
 
 	async function decrypt(data: Uint8Array): Promise<string> {
-		const key = await AESEncryptionKey.import(currentKeyHex!, "hex");
+		if (!currentKeyHex) throw new Error("Encryption key not available");
+		const key = await AESEncryptionKey.import(currentKeyHex, "hex");
 		const sealed = AESSealedData.fromCombined(data);
 		const decrypted = await aesDecryptAsync(sealed, key);
 		return decoder.decode(decrypted);

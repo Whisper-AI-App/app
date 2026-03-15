@@ -1,6 +1,6 @@
-const https = require("https");
-const fs = require("fs");
-const path = require("path");
+const https = require("node:https");
+const fs = require("node:fs");
+const path = require("node:path");
 
 const MODEL_URL =
 	"https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-base.bin";

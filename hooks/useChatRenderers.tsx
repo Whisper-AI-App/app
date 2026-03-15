@@ -19,7 +19,7 @@ import { Image } from "expo-image";
 import { SendHorizonal, Square } from "lucide-react-native";
 import { useCallback, useEffect } from "react";
 import { Dimensions } from "react-native";
-import { Bubble } from "react-native-gifted-chat";
+import { Bubble, type IMessage } from "react-native-gifted-chat";
 import Animated, {
 	useAnimatedStyle,
 	useSharedValue,
@@ -417,13 +417,10 @@ export function useChatRenderers({
 	);
 
 	const renderAvatar = useCallback(
-		// eslint-disable-next-line @typescript-eslint/no-explicit-any
-		(props: { position: "left" | "right"; currentMessage?: any }) => {
+		(props: { position: "left" | "right"; currentMessage?: IMessage & { providerId?: string } }) => {
 			if (props.position === "right") return null;
 
-			const msgProviderId = props.currentMessage?.providerId as
-				| string
-				| undefined;
+			const msgProviderId = props.currentMessage?.providerId;
 			const isWhisper = !msgProviderId || msgProviderId === "whisper-ai";
 
 			let avatarSource = appIconPreset?.image;

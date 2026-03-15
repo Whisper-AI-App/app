@@ -161,6 +161,23 @@ export default function ChatPage() {
 
 	const [isTranscribing, setIsTranscribing] = useState(false);
 
+	// AI completion orchestration
+	const {
+		isAiTyping,
+		isProcessingMedia,
+		isContinuing,
+		streamingText,
+		sendMessage,
+		stopGeneration,
+		continueMessage,
+		clearInferenceCache,
+	} = useChatCompletion({
+		chatId: currentChatId,
+		messages,
+		onChatCreated: setCurrentChatId,
+		folderId: folderIdParam || null,
+	});
+
 	const handleSendRecording = useCallback(async () => {
 		const uri = await stopRecording();
 		if (!uri) return;
@@ -260,23 +277,6 @@ export default function ChatPage() {
 		const totalChars = messages.reduce((sum, m) => sum + m.text.length, 0);
 		return wouldTruncate(totalChars, contextSize);
 	}, [messages, contextSize]);
-
-	// AI completion orchestration
-	const {
-		isAiTyping,
-		isProcessingMedia,
-		isContinuing,
-		streamingText,
-		sendMessage,
-		stopGeneration,
-		continueMessage,
-		clearInferenceCache,
-	} = useChatCompletion({
-		chatId: currentChatId,
-		messages,
-		onChatCreated: setCurrentChatId,
-		folderId: folderIdParam || null,
-	});
 
 	// Dismiss notice: set status to "done" so the notice disappears
 	const onDismissNotice = useCallback(() => {

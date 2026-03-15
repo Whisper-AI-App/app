@@ -2,7 +2,8 @@ import { useColorScheme } from "@/hooks/useColorScheme";
 import { Colors } from "@/theme/colors";
 import { Image } from "expo-image";
 import { X } from "lucide-react-native";
-import React, { useCallback } from "react";
+import type React from "react";
+import { useCallback } from "react";
 import {
 	Dimensions,
 	Modal,
@@ -38,7 +39,7 @@ export const ImageViewer: React.FC<ImageViewerProps> = ({
 	onClose,
 }) => {
 	const colorScheme = useColorScheme() ?? "light";
-	const theme = Colors[colorScheme];
+	const _theme = Colors[colorScheme];
 	const insets = useSafeAreaInsets();
 
 	const scale = useSharedValue(1);

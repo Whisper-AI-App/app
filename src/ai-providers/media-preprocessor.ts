@@ -1,6 +1,5 @@
 import * as FileSystem from "expo-file-system";
 import * as ImageManipulator from "expo-image-manipulator";
-import { v4 as uuid } from "uuid";
 import type {
 	PendingAttachment,
 	ProcessedAttachment,

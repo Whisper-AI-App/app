@@ -384,7 +384,7 @@ describe("useChatCompletion", () => {
 			setupCompletion("...continued text", normalResult);
 
 			await act(async () => {
-				await result.current.continueMessage!();
+				await result.current.continueMessage?.();
 			});
 
 			expect(mockUpsertMessage).toHaveBeenCalledWith(
@@ -415,7 +415,7 @@ describe("useChatCompletion", () => {
 			setupCompletion("more text", normalResult);
 
 			await act(async () => {
-				await result.current.continueMessage!();
+				await result.current.continueMessage?.();
 			});
 
 			const completionCall = mockCompletion.mock.calls[0];
@@ -448,7 +448,7 @@ describe("useChatCompletion", () => {
 			setupCompletion("done", normalResult);
 
 			await act(async () => {
-				await result.current.continueMessage!();
+				await result.current.continueMessage?.();
 			});
 
 			expect(result.current.continueMessage).toBeNull();
@@ -469,7 +469,7 @@ describe("useChatCompletion", () => {
 			setupCompletion("still partial...", cutOffResult);
 
 			await act(async () => {
-				await result.current.continueMessage!();
+				await result.current.continueMessage?.();
 			});
 
 			expect(result.current.continueMessage).not.toBeNull();
@@ -491,7 +491,7 @@ describe("useChatCompletion", () => {
 			mockCompletion.mockRejectedValueOnce(new Error("crash"));
 
 			await act(async () => {
-				await result.current.continueMessage!();
+				await result.current.continueMessage?.();
 			});
 
 			// Should save empty AI message with error status
@@ -525,7 +525,7 @@ describe("useChatCompletion", () => {
 			setupCompletion("continued but cancelled", cancelledResult);
 
 			await act(async () => {
-				await result.current.continueMessage!();
+				await result.current.continueMessage?.();
 			});
 
 			expect(mockUpsertMessage).toHaveBeenCalledWith(

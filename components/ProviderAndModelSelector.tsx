@@ -38,7 +38,7 @@ export function ProviderAndModelSelector({
 	const [open, setOpen] = useState(false);
 	const { activeProvider, providers, setActiveProvider } = useAIProvider();
 	const textMuted = useColor("textMuted");
-	const primary = useColor("primary");
+	const _primary = useColor("primary");
 	const destructive = useColor("destructive");
 	const router = useRouter();
 

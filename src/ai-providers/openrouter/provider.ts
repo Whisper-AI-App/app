@@ -18,7 +18,6 @@ import { DEFAULT_CONSTRAINTS, NO_MULTIMODAL } from "../types";
 import { convertMessagesForAISDK } from "../message-converter";
 import { handleOAuthCallback, startOAuth } from "./oauth";
 import { getCapabilityStatus, dispatch } from "../../memory/state";
-import { checkBudget } from "../../memory/budget";
 import { initSTT } from "../../stt";
 
 const OPENROUTER_MODELS_URL = "https://openrouter.ai/api/v1/models";
@@ -269,7 +268,7 @@ export function createOpenRouterProvider(store: Store): AIProvider {
 				// T070: STT budget coordination — ensure whisper.rn is loaded before audio processing
 				if (!supportsNativeAudio) {
 					const hasAudioParts = messages.some(
-						(m) => Array.isArray(m.content) && m.content.some((p: any) => p.type === "audio"),
+						(m) => Array.isArray(m.content) && m.content.some((p: CompletionMessagePart) => p.type === "audio"),
 					);
 					if (hasAudioParts) {
 						const sttStatus = getCapabilityStatus("stt");

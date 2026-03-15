@@ -59,7 +59,7 @@ export function useChatMessages(
 			if (!attachmentsByMessage.has(msgId)) {
 				attachmentsByMessage.set(msgId, []);
 			}
-			attachmentsByMessage.get(msgId)!.push({
+			attachmentsByMessage.get(msgId)?.push({
 				id: att.id as string,
 				type: att.type as string,
 				uri: att.uri as string,

@@ -173,7 +173,7 @@ export function useChatCompletion(
 									}
 								}
 
-								if (transcription && transcription.trim()) {
+								if (transcription?.trim()) {
 									parts.push({ type: "text", text: transcription });
 									enrichAltText(att.id, transcription);
 								} else {

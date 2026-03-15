@@ -85,6 +85,7 @@ jest.mock("../../utils/generate-model-filename", () => ({
 }));
 
 // Import after mocks
+import type { Store } from "tinybase";
 import {
 	pauseDownload,
 	setActiveDownloadResumable,
@@ -153,7 +154,7 @@ describe("Download navigation behavior", () => {
 			});
 
 			// Act: Pause the download
-			await pauseDownload(mockMainStore as any);
+			await pauseDownload(mockMainStore as unknown as Store);
 
 			// Assert: isPaused should be true
 			expect(mockMainStore.setCell).toHaveBeenCalledWith(
@@ -185,7 +186,7 @@ describe("Download navigation behavior", () => {
 			setActiveDownloadResumable(null);
 
 			// Act: Try to pause (should be no-op)
-			await pauseDownload(mockMainStore as any);
+			await pauseDownload(mockMainStore as unknown as Store);
 
 			// Assert: No store modifications
 			expect(mockMainStore.setCell).not.toHaveBeenCalled();
@@ -203,7 +204,7 @@ describe("Download navigation behavior", () => {
 			mockDownloadAsync.mockResolvedValue({ status: 200 });
 
 			await startDownload(
-				mockMainStore as any,
+				mockMainStore as unknown as Store,
 				testCard,
 				"test-card-id",
 				"1.0.0",
@@ -224,7 +225,7 @@ describe("Download navigation behavior", () => {
 			jest.setSystemTime(new Date("2024-01-15T10:30:00.000Z"));
 
 			await startDownload(
-				mockMainStore as any,
+				mockMainStore as unknown as Store,
 				testCard,
 				"test-card-id",
 				"1.0.0",
@@ -256,7 +257,7 @@ describe("Download navigation behavior", () => {
 			});
 
 			await startDownload(
-				mockMainStore as any,
+				mockMainStore as unknown as Store,
 				testCard,
 				"test-card-id",
 				"1.0.0",
@@ -279,7 +280,7 @@ describe("Download navigation behavior", () => {
 
 			try {
 				await startDownload(
-					mockMainStore as any,
+					mockMainStore as unknown as Store,
 					testCard,
 					"test-card-id",
 					"1.0.0",
@@ -316,7 +317,7 @@ describe("Download navigation behavior", () => {
 
 			// Start the download (don't await - it never resolves)
 			startDownload(
-				mockMainStore as any,
+				mockMainStore as unknown as Store,
 				testCard,
 				"test-card-id",
 				"1.0.0",
@@ -348,7 +349,7 @@ describe("Download navigation behavior", () => {
 			mockDownloadAsync.mockResolvedValue({ status: 200 });
 
 			await startDownload(
-				mockMainStore as any,
+				mockMainStore as unknown as Store,
 				testCard,
 				"test-card-id",
 				"1.0.0",

@@ -143,7 +143,7 @@ async function downloadMmproj(
 		}
 	}
 
-	console.info("[WhisperAI:Download] Starting mmproj download (" + card.multimodal.mmproj.sizeGB + " GB)");
+	console.info(`[WhisperAI:Download] Starting mmproj download (${card.multimodal.mmproj.sizeGB} GB)`);
 	store.setCell("aiProviders", "whisper-ai", "status", "downloading_mmproj");
 	store.setCell("aiProviders", "whisper-ai", "mmprojFilename", mmprojFilename);
 	store.setCell("aiProviders", "whisper-ai", "progressSizeGB", 0);
@@ -377,7 +377,7 @@ export async function startDownload(
 	}
 
 	try {
-		console.info("[WhisperAI:Download] Starting download to " + versionedFilename);
+		console.info(`[WhisperAI:Download] Starting download to ${versionedFilename}`);
 		const resumable = createDownloadResumable(
 			sourceUrl,
 			fileUri,

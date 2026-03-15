@@ -34,7 +34,7 @@ const AIProviderContext = createContext<AIProviderContextType | undefined>(
 );
 
 export function AIProviderProvider({ children }: { children: ReactNode }) {
-	const store = useStore() as Store;
+	const store = useStore() as unknown as Store;
 	const activeProviderId = useValue("activeProviderId") as string | undefined;
 
 	const [isSettingUp, setIsSettingUp] = useState(false);
