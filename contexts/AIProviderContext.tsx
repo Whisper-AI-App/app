@@ -11,7 +11,7 @@ import {
 	useRef,
 	useState,
 } from "react";
-import { useStore, useValue } from "tinybase/ui-react";
+import { useCell, useStore, useValue } from "tinybase/ui-react";
 import type { Store } from "tinybase";
 
 type AIProviderContextType = {
@@ -40,6 +40,13 @@ export function AIProviderProvider({ children }: { children: ReactNode }) {
 	const [isSettingUp, setIsSettingUp] = useState(false);
 	const [setupError, setSetupError] = useState<string | null>(null);
 	const setupAttemptedRef = useRef<string | null>(null);
+	const prevDownloadedAtRef = useRef<Record<string, string | undefined>>({});
+
+	const downloadedAt = useCell(
+		"aiProviders",
+		activeProviderId ?? "",
+		"downloadedAt",
+	) as string | undefined;
 
 	// Create all provider instances (memoized on store reference)
 	const providers = useMemo(() => {
@@ -91,6 +98,44 @@ export function AIProviderProvider({ children }: { children: ReactNode }) {
 				});
 		}
 	}, [activeProvider, store]);
+
+	// Reload provider when a new model download completes while already configured
+	useEffect(() => {
+		if (!activeProvider || !store || !activeProviderId) return;
+
+		const prev = prevDownloadedAtRef.current[activeProviderId];
+		prevDownloadedAtRef.current[activeProviderId] = downloadedAt;
+
+		// Only act on genuine changes (not initial mount)
+		if (prev === undefined || prev === downloadedAt || !downloadedAt) return;
+
+		// Nothing loaded yet — existing setup effect handles it
+		if (!activeProvider.isConfigured()) return;
+
+		console.info("[AIProvider] New model downloaded, reloading:", activeProviderId);
+		setupAttemptedRef.current = null;
+		setIsSettingUp(true);
+		setSetupError(null);
+
+		activeProvider
+			.teardown()
+			.then(
+				() =>
+					new Promise<void>((resolve) =>
+						setTimeout(resolve, DEFAULT_LOAD_CONFIG.postTeardownSettleMs),
+					),
+			)
+			.then(() => activeProvider.setup())
+			.then(() => {
+				console.info("[AIProvider] Reload complete for:", activeProviderId);
+				setIsSettingUp(false);
+			})
+			.catch((error) => {
+				console.error("[AIProvider] Reload failed for:", activeProviderId, error);
+				setIsSettingUp(false);
+				setSetupError(error instanceof Error ? error.message : "Reload failed");
+			});
+	}, [downloadedAt, activeProvider, activeProviderId, store]);
 
 	const setActiveProvider = useCallback(
 		async (id: string) => {
