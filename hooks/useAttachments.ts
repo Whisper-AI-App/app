@@ -2,7 +2,7 @@ import { useCallback, useState } from "react";
 import { v4 as uuidv4 } from "uuid";
 import type { PendingAttachment } from "@/src/ai-providers/types";
 
-const MAX_IMAGE_FILE_ATTACHMENTS = 5;
+const MAX_IMAGE_FILE_ATTACHMENTS = 1;
 const MAX_AUDIO_ATTACHMENTS = 1;
 
 export interface UseAttachmentsReturn {

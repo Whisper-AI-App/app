@@ -140,10 +140,7 @@ export const Button = forwardRef<View, ButtonProps>(
 				case "ghost":
 					return {
 						...baseStyle,
-						backgroundColor:
-							colorScheme === "dark"
-								? "rgba(0,0,0,0.85)"
-								: "rgba(255,255,255,0.85)",
+						backgroundColor: "transparent",
 					};
 				case "link":
 					return {

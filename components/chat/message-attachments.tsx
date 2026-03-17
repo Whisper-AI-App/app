@@ -84,9 +84,9 @@ const AudioPlayerWidget: React.FC<{
 		<TouchableOpacity
 			onPress={handleTogglePlay}
 			activeOpacity={0.7}
-			style={[styles.audioCard, { backgroundColor: `${theme.card}80` }]}
+			style={[styles.audioCard, { backgroundColor: theme.card }]}
 		>
-			<View style={[styles.audioPlayButton, { backgroundColor: `${theme.primary}20` }]}>
+			<View style={[styles.audioPlayButton, { backgroundColor: `${theme.primary}18` }]}>
 				{isPlaying ? (
 					<Pause size={14} color={theme.primary} fill={theme.primary} />
 				) : (
@@ -98,7 +98,7 @@ const AudioPlayerWidget: React.FC<{
 					<View
 						style={[
 							styles.audioProgressBar,
-							{ backgroundColor: `${theme.textMuted}30` },
+							{ backgroundColor: `${theme.textMuted}40` },
 						]}
 					>
 						<View
@@ -134,7 +134,7 @@ export const MessageAttachments: React.FC<MessageAttachmentsProps> = ({
 		<View style={styles.container}>
 			{attachments.map((att) => {
 				if (att.type === "image") {
-					const imageUri = att.thumbnailUri || att.uri;
+					const imageUri = att.uri || att.thumbnailUri;
 					return (
 						<TouchableOpacity
 							key={att.id}

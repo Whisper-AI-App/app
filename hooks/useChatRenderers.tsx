@@ -68,7 +68,7 @@ export function useChatRenderers({
 	}, [keyboardHeight, keyboardAnimationDuration]);
 
 	const animatedToolbarStyle = useAnimatedStyle(() => ({
-		bottom:
+		paddingBottom:
 			BASE_BOTTOM +
 			keyboardOffset.value +
 			(keyboardOffset.value > BASE_BOTTOM ? -28 : 0),
@@ -231,6 +231,19 @@ export function useChatRenderers({
 								marginRight: 8,
 							},
 						}}
+						renderCustomView={() => {
+							// GiftedChat skips renderMessageText when text is empty.
+							// renderCustomView is always called, so we use it to render
+							// attachments for image-only messages (no text).
+							if (message.text || !hasAttachments || !messageAttachments) return null;
+							return (
+								<MessageAttachments
+									attachments={messageAttachments}
+									onImagePress={onImagePress}
+									isCloudMessage={isCloudMessage}
+								/>
+							);
+						}}
 						renderMessageText={
 							isSystemMessage
 								? () => (
@@ -331,8 +344,8 @@ export function useChatRenderers({
 							position: "absolute",
 							left: 0,
 							right: 0,
+							bottom: 0,
 							zIndex: 100,
-							paddingBottom: process.env.EXPO_OS === "android" ? 32 : 8,
 							backgroundColor: backgroundColor,
 						},
 						animatedToolbarStyle,
