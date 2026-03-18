@@ -3,8 +3,8 @@ import { Colors } from "@/theme/colors";
 import { ArrowUp, Trash2 } from "lucide-react-native";
 import { type FC, useEffect, useRef } from "react";
 import { Animated, StyleSheet, TouchableOpacity } from "react-native";
-import { View } from "../ui/view";
 import { Text } from "../ui/text";
+import { View } from "../ui/view";
 
 interface AudioRecorderOverlayProps {
 	isRecording: boolean;
@@ -44,7 +44,9 @@ function WaveformDots() {
 		);
 		Animated.stagger(120, pulses).start();
 		return () => {
-			pulses.forEach((p) => { p.stop(); });
+			pulses.forEach((p) => {
+				p.stop();
+			});
 		};
 	}, [animations]);
 
@@ -101,7 +103,7 @@ export const AudioRecorderOverlay: FC<AudioRecorderOverlayProps> = ({
 		<View
 			style={[
 				styles.container,
-				{ backgroundColor: `${theme.card}F0` },
+				{ backgroundColor: `${theme.card}F0`, marginTop: 16 },
 			]}
 		>
 			{/* Row 1: timer + waveform */}
