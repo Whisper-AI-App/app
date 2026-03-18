@@ -201,15 +201,13 @@ export const MessageAttachments: React.FC<MessageAttachmentsProps> = ({
 
 const styles = StyleSheet.create({
 	container: {
-		flexDirection: "row",
-		flexWrap: "wrap",
 		gap: 6,
 		paddingHorizontal: 8,
 		paddingVertical: 4,
 	},
 	imageThumbnail: {
-		width: 160,
-		height: 120,
+		width: "100%",
+		aspectRatio: 4 / 3,
 		borderRadius: 12,
 	},
 	cloudBadge: {
@@ -229,7 +227,7 @@ const styles = StyleSheet.create({
 		paddingHorizontal: 12,
 		paddingVertical: 10,
 		borderRadius: 12,
-		maxWidth: 200,
+		width: "100%",
 	},
 	fileInfo: {
 		flex: 1,
@@ -249,7 +247,7 @@ const styles = StyleSheet.create({
 		paddingHorizontal: 12,
 		paddingVertical: 10,
 		borderRadius: 12,
-		minWidth: 180,
+		width: "100%",
 	},
 	audioPlayButton: {
 		width: 32,
