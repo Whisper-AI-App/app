@@ -62,3 +62,4 @@ coverage/
 
 # bundled whisper model (too large for git, ~150MB)
 assets/models/*.bin
+modules/**/android/build
