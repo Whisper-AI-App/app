@@ -11,12 +11,13 @@ import { Colors } from "@/theme/colors";
 import { useRouter } from "expo-router";
 import { fetch as expoFetch } from "expo/fetch";
 import { ChevronDown, ChevronLeft } from "lucide-react-native";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
 	Keyboard,
 	KeyboardAvoidingView,
 	Platform,
 	Pressable,
+	Switch,
 	type TextInput,
 	TouchableOpacity,
 	useColorScheme,
@@ -114,6 +115,28 @@ export function CustomProviderSetup() {
 		| "openai"
 		| "anthropic"
 		| undefined;
+	const modelCard = useCell("aiProviders", "custom-provider", "modelCard") as
+		| string
+		| undefined;
+
+	const capabilityConfig = useMemo(() => {
+		try {
+			return modelCard ? JSON.parse(modelCard) as { vision?: boolean; audio?: boolean; files?: boolean } : {};
+		} catch {
+			return {};
+		}
+	}, [modelCard]);
+
+	const setCapability = useCallback((key: "vision" | "audio" | "files", value: boolean) => {
+		if (!store) return;
+		const current = { ...capabilityConfig, [key]: value };
+		store.setCell("aiProviders", "custom-provider", "modelCard", JSON.stringify(current));
+		// Bump so chat.tsx re-renders and picks up the new capability
+		store.setCell(
+			"aiProviders", "custom-provider", "capabilitiesVersion",
+			((store.getCell("aiProviders", "custom-provider", "capabilitiesVersion") as number) ?? 0) + 1,
+		);
+	}, [store, capabilityConfig]);
 
 	// Set initial protocol from store
 	useEffect(() => {
@@ -496,6 +519,35 @@ export function CustomProviderSetup() {
 														: ""}
 										</Text>
 									</View>
+								</View>
+
+								{/* Multimodal capability toggles */}
+								<View style={{ gap: 2 }}>
+									<Text style={{ fontSize: 14, color: textMuted, marginBottom: 4 }}>
+										Model Capabilities
+									</Text>
+									{(["vision", "audio", "files"] as const).map((cap) => (
+										<View
+											key={cap}
+											style={{
+												flexDirection: "row",
+												alignItems: "center",
+												justifyContent: "space-between",
+												paddingVertical: 8,
+												paddingHorizontal: 12,
+												backgroundColor: background,
+												borderRadius: 12,
+											}}
+										>
+											<Text style={{ fontSize: 14 }}>
+												{cap === "files" ? "File Upload" : cap === "vision" ? "Vision (Images)" : "Audio"}
+											</Text>
+											<Switch
+												value={capabilityConfig[cap] ?? false}
+												onValueChange={(v) => setCapability(cap, v)}
+											/>
+										</View>
+									))}
 								</View>
 
 								<Button onPress={handleDone} style={{ width: "100%" }}>

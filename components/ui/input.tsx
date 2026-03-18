@@ -70,7 +70,7 @@ export const Input = forwardRef<TextInput, InputProps>(
 		// Variant styles
 		const getVariantStyle = (): ViewStyle => {
 			const baseStyle: ViewStyle = {
-				borderRadius: isTextarea ? BORDER_RADIUS : CORNERS,
+				borderRadius: 18,
 				flexDirection: isTextarea ? "column" : "row",
 				alignItems: isTextarea ? "stretch" : "center",
 				minHeight: isTextarea ? undefined : HEIGHT,
@@ -82,6 +82,8 @@ export const Input = forwardRef<TextInput, InputProps>(
 				case "chat":
 					return {
 						...baseStyle,
+						paddingVertical: isTextarea ? 6 : 0,
+						paddingHorizontal: 10,
 						borderWidth: 1,
 						borderColor: "rgba(100,100,100,0.2)",
 						backgroundColor: isLiquidGlassAvailable()
@@ -117,12 +119,16 @@ export const Input = forwardRef<TextInput, InputProps>(
 			textAlignVertical: isTextarea ? "top" : "center",
 		});
 
-		const handleFocus = (e: Parameters<NonNullable<TextInputProps["onFocus"]>>[0]) => {
+		const handleFocus = (
+			e: Parameters<NonNullable<TextInputProps["onFocus"]>>[0],
+		) => {
 			setIsFocused(true);
 			onFocus?.(e);
 		};
 
-		const handleBlur = (e: Parameters<NonNullable<TextInputProps["onBlur"]>>[0]) => {
+		const handleBlur = (
+			e: Parameters<NonNullable<TextInputProps["onBlur"]>>[0],
+		) => {
 			setIsFocused(false);
 			onBlur?.(e);
 		};
@@ -337,7 +343,8 @@ export const GroupedInput = ({
 	const errors = childrenArray
 		.filter(
 			(child): child is ReactElement<{ error?: string }> =>
-				React.isValidElement(child) && !!(child.props as { error?: string }).error,
+				React.isValidElement(child) &&
+				!!(child.props as { error?: string }).error,
 		)
 		.map((child) => child.props.error);
 
@@ -443,12 +450,16 @@ export const GroupedInputItem = forwardRef<TextInput, GroupedInputItemProps>(
 
 		const isTextarea = type === "textarea" || props.multiline;
 
-		const handleFocus = (e: Parameters<NonNullable<TextInputProps["onFocus"]>>[0]) => {
+		const handleFocus = (
+			e: Parameters<NonNullable<TextInputProps["onFocus"]>>[0],
+		) => {
 			setIsFocused(true);
 			onFocus?.(e);
 		};
 
-		const handleBlur = (e: Parameters<NonNullable<TextInputProps["onBlur"]>>[0]) => {
+		const handleBlur = (
+			e: Parameters<NonNullable<TextInputProps["onBlur"]>>[0],
+		) => {
 			setIsFocused(false);
 			onBlur?.(e);
 		};

@@ -238,4 +238,9 @@ When developing features, consider:
 ## Active Technologies
 - TypeScript 5.x (React Native / Expo SDK 52) + `expo-crypto` (~15.0.8, already installed), `expo-secure-store` (new), `expo-file-system` (~19.0.17, already installed), `tinybase` (6.6.1, already installed) (001-data-encryption)
 - TinyBase store &rarr; custom encrypted persister &rarr; `whisper.json` (AES-256-GCM encrypted bytes); `expo-secure-store` (hardware-backed keychain/keystore) for AES key + credentials (001-data-encryption)
+- TypeScript 5.x (React Native / Expo SDK 55) (001-multimodal-input)
+- TinyBase store → encrypted `whisper.json` (metadata) + filesystem (media files in sandboxed document directory) (001-multimodal-input)
 
+
+## Recent Changes
+- 001-multimodal-input: Added TypeScript 5.x (React Native / Expo SDK 55)

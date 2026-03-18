@@ -1,14 +1,22 @@
 import { useAIProvider } from "@/contexts/AIProviderContext";
+import { saveAttachments } from "@/src/actions/attachment";
 import { upsertChat } from "@/src/actions/chat";
 import { upsertMessage } from "@/src/actions/message";
+import { defaultPreprocessMedia } from "@/src/ai-providers/media-preprocessor";
+import type {
+	CompletionMessage,
+	CompletionMessagePart,
+	CompletionResult,
+	PendingAttachment,
+	ProcessedAttachment,
+	TextMessagePart,
+} from "@/src/ai-providers/types";
+import { getTranscription } from "@/src/stt";
+import { enrichAltText } from "@/src/utils/alt-text";
 import type {
 	UseChatCompletionOptions,
 	UseChatCompletionReturn,
 } from "@/src/types/chat";
-import type {
-	CompletionMessage,
-	CompletionResult,
-} from "@/src/ai-providers/types";
 import { truncateMessages } from "@/src/utils/context-window";
 import * as Haptics from "expo-haptics";
 import { useCallback, useRef, useState } from "react";
@@ -28,9 +36,11 @@ export function useChatCompletion(
 	const { chatId, messages, onChatCreated, folderId } = options;
 
 	const [isAiTyping, setIsAiTyping] = useState(false);
+	const [isProcessingMedia, setIsProcessingMedia] = useState(false);
 	const [isContinuing, setIsContinuing] = useState(false);
 	const [streamingText, setStreamingText] = useState("");
 	const [hasContinueContext, setHasContinueContext] = useState(false);
+	const isSendingRef = useRef(false);
 
 	const { activeProvider } = useAIProvider();
 	const store = useStore();
@@ -79,228 +89,345 @@ export function useChatCompletion(
 	};
 
 	const sendMessage = useCallback(
-		async (text: string) => {
-			if (!text.trim()) return;
+		async (text: string, pendingAttachments?: PendingAttachment[]) => {
+			if (!text.trim() && (!pendingAttachments || pendingAttachments.length === 0)) return;
 
-			// Reset state for new message
-			setIsContinuing(false);
-			setHasContinueContext(false);
-			continueStateRef.current = null;
+			// Prevent concurrent sends (double-tap, etc.)
+			if (isSendingRef.current) return;
+			isSendingRef.current = true;
 
-			let activeChatId = chatId;
+			try {
+				// Reset state for new message
+				setIsContinuing(false);
+				setHasContinueContext(false);
+				continueStateRef.current = null;
 
-			// Create new chat if this is the first message
-			if (!activeChatId) {
-				activeChatId = uuidv4();
-				const chatName = text.slice(0, 50);
-				upsertChat(activeChatId, chatName, folderId);
-				onChatCreated?.(activeChatId);
-				await activeProvider?.clearCache?.();
-			}
+				let activeChatId = chatId;
 
-			// Save user message
-			const userMessageId = uuidv4();
-			const modelId = getModelId();
-			upsertMessage(
-				userMessageId,
-				activeChatId,
-				text,
-				"user",
-				activeProvider?.id,
-				modelId,
-				"done",
-			);
-
-			// Get AI response
-			if (activeProvider?.isConfigured()) {
-				setIsAiTyping(true);
-				setStreamingText("");
-
-				// Start periodic haptic feedback
-				let hapticInterval: ReturnType<typeof setInterval> | null = null;
-				if (process.env.EXPO_OS === "ios") {
-					Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-					hapticInterval = setInterval(() => {
-						Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-					}, 600);
+				// Create new chat if this is the first message
+				if (!activeChatId) {
+					activeChatId = uuidv4();
+					const chatName = text.slice(0, 50) || "Voice message";
+					upsertChat(activeChatId, chatName, folderId);
+					onChatCreated?.(activeChatId);
+					await activeProvider?.clearCache?.();
 				}
 
-				try {
-					// Prepare conversation history
-					const conversationMessages: CompletionMessage[] = messages.map(
-						(msg) => ({
-							role:
-								msg.user._id === 1
-									? ("user" as const)
-									: ("assistant" as const),
-							content: msg.text,
-						}),
+				const userMessageId = uuidv4();
+				const modelId = getModelId();
+
+				// ── Phase 1: Pre-process media (transcription, image resize) ──
+				let userContent: string | CompletionMessagePart[] = text;
+				let displayText = text;
+				let processedAttachments: ProcessedAttachment[] = [];
+
+				if (pendingAttachments && pendingAttachments.length > 0 && activeProvider) {
+					// Only show processing indicator when audio needs transcription at send-time
+					// (i.e. no pre-computed transcription from eager STT)
+					const needsLiveTranscription = pendingAttachments.some(
+						(a) => a.type === "audio" && !a.transcription,
 					);
+					if (needsLiveTranscription) {
+						setIsProcessingMedia(true);
+					}
+					try {
+						const capabilities = activeProvider.getMultimodalCapabilities();
+						const preprocessFn = activeProvider.preprocessMedia ?? defaultPreprocessMedia;
+						const processed = await preprocessFn(pendingAttachments, capabilities);
+						processedAttachments = processed;
 
-					// Add the new user message
-					conversationMessages.unshift({
-						role: "user" as const,
-						content: text,
-					});
+						// Build multimodal content parts
+						const parts: CompletionMessagePart[] = [];
+						if (text.trim()) {
+							parts.push({ type: "text", text });
+						}
 
-					// Reverse to chronological order for AI
-					conversationMessages.reverse();
-
-					let aiResponseText = "";
-
-					// Get system message from provider
-					const systemMessage =
-						activeProvider.getSystemMessage(conversationMessages);
-
-					// Apply sliding context window
-					const contextSize = activeProvider.getContextSize();
-					const truncatedMessages = truncateMessages(
-						systemMessage,
-						conversationMessages,
-						contextSize,
-					);
-
-					const completionMessages: CompletionMessage[] = [
-						{ role: "system", content: systemMessage },
-						...truncatedMessages,
-					];
-
-					// Initial completion
-					const { result, fullText } = await runCompletion(
-						completionMessages,
-						aiResponseText,
-						(token) => {
-							setStreamingText((prev) => prev + token);
-						},
-					);
-					aiResponseText = fullText;
-
-					// Save initial AI response
-					let lastResult = result;
-					if (aiResponseText) {
-						const aiMessageId = uuidv4();
-						upsertMessage(
-							aiMessageId,
-							activeChatId,
-							aiResponseText,
-							"assistant",
-							activeProvider.id,
-							modelId,
-							"done",
-						);
-						setStreamingText("");
-
-						// Auto-continue loop
-						let continueCount = 0;
-						let accumulatedText = aiResponseText;
-
-						while (
-							lastResult &&
-							isResponseCutOff(lastResult) &&
-							continueCount < MAX_AUTO_CONTINUES
-						) {
-							continueCount++;
-							setStreamingText("");
-
-							const autoContinueMessages: CompletionMessage[] = [
-								{ role: "system", content: systemMessage },
-								...truncatedMessages,
-								{ role: "assistant", content: accumulatedText },
-								{
-									role: "system",
-									content:
-										"Your last response was cut off. Output ONLY the remaining text from the exact cutoff point. Do not restart or add preamble.",
-								},
-							];
-
-							let newText = "";
-							lastResult = await activeProvider.completion(
-								autoContinueMessages,
-								(token) => {
-									newText += token;
-									setStreamingText((prev) => prev + token);
-								},
-							);
-
-							if (newText) {
-								const newMsgId = uuidv4();
-								upsertMessage(
-									newMsgId,
-									activeChatId,
-									newText,
-									"assistant",
-									activeProvider.id,
-									modelId,
-									"done",
-								);
-								setStreamingText("");
-								accumulatedText = accumulatedText + newText;
+						// Match processed attachments back to pending to find pre-computed transcriptions
+						const transcriptionById = new Map<string, string>();
+						for (const pa of pendingAttachments) {
+							if (pa.transcription) {
+								transcriptionById.set(pa.id, pa.transcription);
 							}
 						}
 
-						// Determine final status based on finish reason
-						if (lastResult && isResponseCutOff(lastResult)) {
-							// Update the last AI message status to "length"
-							upsertMessage(
-								aiMessageId,
-								activeChatId,
-								accumulatedText === aiResponseText ? aiResponseText : accumulatedText,
-								"assistant",
-								activeProvider.id,
-								modelId,
-								"length",
-							);
-							setHasContinueContext(true);
-							continueStateRef.current = {
-								activeChatId,
-								conversationMessages: truncatedMessages,
-								systemMessage,
-								accumulatedText,
-							};
-						} else if (lastResult?.finishReason === "cancelled") {
-							upsertMessage(
-								aiMessageId,
-								activeChatId,
-								accumulatedText === aiResponseText ? aiResponseText : accumulatedText,
-								"assistant",
-								activeProvider.id,
-								modelId,
-								"cancelled",
-							);
-							setHasContinueContext(true);
-							continueStateRef.current = {
-								activeChatId,
-								conversationMessages: truncatedMessages,
-								systemMessage,
-								accumulatedText,
-							};
+						for (const att of processed) {
+							if (att.type === "image") {
+								if (capabilities.vision) {
+									parts.push({
+										type: "image",
+										uri: att.uri,
+										mimeType: att.mimeType,
+										alt: att.alt,
+									});
+								} else {
+									parts.push({ type: "text", text: `[${att.alt}]` });
+								}
+							} else if (att.type === "audio") {
+								// Use pre-computed transcription if available, otherwise transcribe now
+								let transcription = transcriptionById.get(att.id) ?? "";
+								if (!transcription) {
+									try {
+										transcription = await getTranscription(att.uri);
+									} catch (sttError) {
+										console.warn("[useChatCompletion] STT transcription failed:", sttError);
+									}
+								}
+
+								if (transcription?.trim()) {
+									parts.push({ type: "text", text: transcription });
+									enrichAltText(att.id, transcription);
+								} else {
+									console.warn("[useChatCompletion] STT returned empty for:", att.uri);
+									const durationInfo = att.duration
+										? `${Math.round(att.duration)}s`
+										: "unknown duration";
+									parts.push({
+										type: "audio",
+										uri: att.uri,
+										format: att.mimeType.includes("mp3") ? "mp3" : "wav",
+										alt: `Voice message (${durationInfo}). Automatic transcription was not available.`,
+									});
+								}
+							} else if (att.type === "file") {
+								if (capabilities.files) {
+									parts.push({
+										type: "file",
+										uri: att.uri,
+										mimeType: att.mimeType,
+										fileName: att.fileName,
+										alt: att.alt,
+									});
+								} else {
+									parts.push({ type: "text", text: `[${att.alt}]` });
+								}
+							}
 						}
-					} else {
-						setStreamingText("");
-					}
-				} catch (error) {
-					console.error("[useChatCompletion] AI completion error:", error);
-					setStreamingText("");
-					// Create empty AI message with error status
-					const errorMsgId = uuidv4();
-					upsertMessage(
-						errorMsgId,
-						activeChatId,
-						"",
-						"assistant",
-						activeProvider.id,
-						modelId,
-						"error",
-					);
-				} finally {
-					if (hapticInterval) {
-						clearInterval(hapticInterval);
-					}
-					setIsAiTyping(false);
-					if (process.env.EXPO_OS === "ios") {
-						Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Rigid);
+
+						if (parts.length > 0) {
+							userContent = parts;
+						}
+
+						// Derive display text for the message bubble
+						if (!text.trim()) {
+							const derived = parts
+								.filter((p): p is TextMessagePart => p.type === "text")
+								.map((p) => p.text)
+								.join("\n");
+							if (derived) {
+								displayText = derived;
+							}
+						}
+					} catch (error) {
+						console.warn("[useChatCompletion] Preprocessing failed, sending text only:", error);
+					} finally {
+						setIsProcessingMedia(false);
 					}
 				}
+
+				// ── Phase 2: Save user message (with final display text) ──
+				upsertMessage(
+					userMessageId,
+					activeChatId,
+					displayText,
+					"user",
+					activeProvider?.id,
+					modelId,
+					"done",
+				);
+
+				if (processedAttachments.length > 0) {
+					await saveAttachments(userMessageId, processedAttachments);
+				}
+
+				// ── Phase 3: AI completion ──
+				if (activeProvider?.isConfigured()) {
+					setIsAiTyping(true);
+					setStreamingText("");
+
+					let hapticInterval: ReturnType<typeof setInterval> | null = null;
+					if (process.env.EXPO_OS === "ios") {
+						Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+						hapticInterval = setInterval(() => {
+							Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+						}, 600);
+					}
+
+					try {
+						// Prepare conversation history
+						const conversationMessages: CompletionMessage[] = messages.map(
+							(msg) => ({
+								role:
+									msg.user._id === 1
+										? ("user" as const)
+										: ("assistant" as const),
+								content: msg.text,
+							}),
+						);
+
+						conversationMessages.unshift({
+							role: "user" as const,
+							content: userContent,
+						});
+
+						// Reverse to chronological order for AI
+						conversationMessages.reverse();
+
+						let aiResponseText = "";
+
+						const systemMessage =
+							activeProvider.getSystemMessage(conversationMessages);
+
+						const contextSize = activeProvider.getContextSize();
+						const capabilities = activeProvider.getMultimodalCapabilities();
+						const truncatedMessages = truncateMessages(
+							systemMessage,
+							conversationMessages,
+							contextSize,
+							capabilities.constraints.imageMaxTokens,
+						);
+
+						const completionMessages: CompletionMessage[] = [
+							{ role: "system", content: systemMessage },
+							...truncatedMessages,
+						];
+
+						// Initial completion
+						const { result, fullText } = await runCompletion(
+							completionMessages,
+							aiResponseText,
+							(token) => {
+								setStreamingText((prev) => prev + token);
+							},
+						);
+						aiResponseText = fullText;
+
+						// Save initial AI response
+						let lastResult = result;
+						if (aiResponseText) {
+							const aiMessageId = uuidv4();
+							upsertMessage(
+								aiMessageId,
+								activeChatId,
+								aiResponseText,
+								"assistant",
+								activeProvider.id,
+								modelId,
+								"done",
+							);
+							setStreamingText("");
+
+							// Auto-continue loop
+							let continueCount = 0;
+							let accumulatedText = aiResponseText;
+
+							while (
+								lastResult &&
+								isResponseCutOff(lastResult) &&
+								continueCount < MAX_AUTO_CONTINUES
+							) {
+								continueCount++;
+								setStreamingText("");
+
+								const autoContinueMessages: CompletionMessage[] = [
+									{ role: "system", content: systemMessage },
+									...truncatedMessages,
+									{ role: "assistant", content: accumulatedText },
+									{
+										role: "system",
+										content:
+											"Your last response was cut off. Output ONLY the remaining text from the exact cutoff point. Do not restart or add preamble.",
+									},
+								];
+
+								let newText = "";
+								lastResult = await activeProvider.completion(
+									autoContinueMessages,
+									(token) => {
+										newText += token;
+										setStreamingText((prev) => prev + token);
+									},
+								);
+
+								if (newText) {
+									const newMsgId = uuidv4();
+									upsertMessage(
+										newMsgId,
+										activeChatId,
+										newText,
+										"assistant",
+										activeProvider.id,
+										modelId,
+										"done",
+									);
+									setStreamingText("");
+									accumulatedText = accumulatedText + newText;
+								}
+							}
+
+							// Determine final status based on finish reason
+							if (lastResult && isResponseCutOff(lastResult)) {
+								upsertMessage(
+									aiMessageId,
+									activeChatId,
+									accumulatedText === aiResponseText ? aiResponseText : accumulatedText,
+									"assistant",
+									activeProvider.id,
+									modelId,
+									"length",
+								);
+								setHasContinueContext(true);
+								continueStateRef.current = {
+									activeChatId,
+									conversationMessages: truncatedMessages,
+									systemMessage,
+									accumulatedText,
+								};
+							} else if (lastResult?.finishReason === "cancelled") {
+								upsertMessage(
+									aiMessageId,
+									activeChatId,
+									accumulatedText === aiResponseText ? aiResponseText : accumulatedText,
+									"assistant",
+									activeProvider.id,
+									modelId,
+									"cancelled",
+								);
+								setHasContinueContext(true);
+								continueStateRef.current = {
+									activeChatId,
+									conversationMessages: truncatedMessages,
+									systemMessage,
+									accumulatedText,
+								};
+							}
+						} else {
+							setStreamingText("");
+						}
+					} catch (error) {
+						console.error("[useChatCompletion] AI completion error:", error);
+						setStreamingText("");
+						const errorMsgId = uuidv4();
+						upsertMessage(
+							errorMsgId,
+							activeChatId,
+							"",
+							"assistant",
+							activeProvider.id,
+							modelId,
+							"error",
+						);
+					} finally {
+						if (hapticInterval) {
+							clearInterval(hapticInterval);
+						}
+						setIsAiTyping(false);
+						if (process.env.EXPO_OS === "ios") {
+							Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Rigid);
+						}
+					}
+				}
+			} finally {
+				isSendingRef.current = false;
 			}
 		},
 		[chatId, messages, activeProvider, onChatCreated, folderId, store],
@@ -422,6 +549,7 @@ export function useChatCompletion(
 
 	return {
 		isAiTyping,
+		isProcessingMedia,
 		isContinuing,
 		streamingText,
 		sendMessage,

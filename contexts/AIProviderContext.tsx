@@ -1,5 +1,6 @@
 import { createAllProviders } from "@/src/ai-providers/registry";
 import type { AIProvider } from "@/src/ai-providers/types";
+import { DEFAULT_LOAD_CONFIG } from "@/src/ai-providers/types";
 import {
 	createContext,
 	type ReactNode,
@@ -10,7 +11,7 @@ import {
 	useRef,
 	useState,
 } from "react";
-import { useStore, useValue } from "tinybase/ui-react";
+import { useCell, useStore, useValue } from "tinybase/ui-react";
 import type { Store } from "tinybase";
 
 type AIProviderContextType = {
@@ -33,12 +34,19 @@ const AIProviderContext = createContext<AIProviderContextType | undefined>(
 );
 
 export function AIProviderProvider({ children }: { children: ReactNode }) {
-	const store = useStore() as Store;
+	const store = useStore() as unknown as Store;
 	const activeProviderId = useValue("activeProviderId") as string | undefined;
 
 	const [isSettingUp, setIsSettingUp] = useState(false);
 	const [setupError, setSetupError] = useState<string | null>(null);
 	const setupAttemptedRef = useRef<string | null>(null);
+	const prevDownloadedAtRef = useRef<Record<string, string | undefined>>({});
+
+	const downloadedAt = useCell(
+		"aiProviders",
+		activeProviderId ?? "",
+		"downloadedAt",
+	) as string | undefined;
 
 	// Create all provider instances (memoized on store reference)
 	const providers = useMemo(() => {
@@ -62,13 +70,15 @@ export function AIProviderProvider({ children }: { children: ReactNode }) {
 			"status",
 		) as string | undefined;
 
-		// Only setup if stored status is "ready" (persisted from previous session)
-		// but runtime isn't configured yet, OR if status is "configuring"
+		// Setup if stored status indicates a previously-active provider ("ready" or
+		// "configuring" — the latter is a transient state that can be persisted if the
+		// app crashes/reloads mid-setup) but the runtime isn't configured yet.
 		if (
-			storedStatus === "ready" &&
+			(storedStatus === "ready" || storedStatus === "configuring") &&
 			!activeProvider.isConfigured() &&
 			setupAttemptedRef.current !== activeProvider.id
 		) {
+			console.info("[AIProvider] Starting setup for:", activeProvider.id);
 			setupAttemptedRef.current = activeProvider.id;
 			setIsSettingUp(true);
 			setSetupError(null);
@@ -76,9 +86,11 @@ export function AIProviderProvider({ children }: { children: ReactNode }) {
 			activeProvider
 				.setup()
 				.then(() => {
+					console.info("[AIProvider] Setup complete for:", activeProvider.id);
 					setIsSettingUp(false);
 				})
 				.catch((error) => {
+					console.error("[AIProvider] Setup FAILED for:", activeProvider.id, error);
 					setIsSettingUp(false);
 					setSetupError(
 						error instanceof Error ? error.message : "Setup failed",
@@ -86,6 +98,44 @@ export function AIProviderProvider({ children }: { children: ReactNode }) {
 				});
 		}
 	}, [activeProvider, store]);
+
+	// Reload provider when a new model download completes while already configured
+	useEffect(() => {
+		if (!activeProvider || !store || !activeProviderId) return;
+
+		const prev = prevDownloadedAtRef.current[activeProviderId];
+		prevDownloadedAtRef.current[activeProviderId] = downloadedAt;
+
+		// Only act on genuine changes (not initial mount)
+		if (prev === undefined || prev === downloadedAt || !downloadedAt) return;
+
+		// Nothing loaded yet — existing setup effect handles it
+		if (!activeProvider.isConfigured()) return;
+
+		console.info("[AIProvider] New model downloaded, reloading:", activeProviderId);
+		setupAttemptedRef.current = null;
+		setIsSettingUp(true);
+		setSetupError(null);
+
+		activeProvider
+			.teardown()
+			.then(
+				() =>
+					new Promise<void>((resolve) =>
+						setTimeout(resolve, DEFAULT_LOAD_CONFIG.postTeardownSettleMs),
+					),
+			)
+			.then(() => activeProvider.setup())
+			.then(() => {
+				console.info("[AIProvider] Reload complete for:", activeProviderId);
+				setIsSettingUp(false);
+			})
+			.catch((error) => {
+				console.error("[AIProvider] Reload failed for:", activeProviderId, error);
+				setIsSettingUp(false);
+				setSetupError(error instanceof Error ? error.message : "Reload failed");
+			});
+	}, [downloadedAt, activeProvider, activeProviderId, store]);
 
 	const setActiveProvider = useCallback(
 		async (id: string) => {
@@ -101,6 +151,12 @@ export function AIProviderProvider({ children }: { children: ReactNode }) {
 						console.error(`[AIProvider] Teardown error for ${activeProviderId}:`, err);
 					}
 				}
+
+				// T073: Post-teardown settle delay — allow native mmap unmap to complete
+				// before budget checking for new provider setup
+				await new Promise((resolve) =>
+					setTimeout(resolve, DEFAULT_LOAD_CONFIG.postTeardownSettleMs),
+				);
 			}
 
 			// Set default model if provider has one and none is selected

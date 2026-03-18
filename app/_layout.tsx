@@ -40,8 +40,7 @@ export default function RootLayout() {
 									<ErrorBoundary>
 										<Stack screenOptions={{ headerShown: false }}>
 											<Stack.Screen name="index" />
-											<Stack.Screen name="download" />
-											<Stack.Screen name="dashboard" />
+												<Stack.Screen name="dashboard" />
 											<Stack.Screen name="settings" />
 											<Stack.Screen name="chat" />
 											<Stack.Screen name="game" />

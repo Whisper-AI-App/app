@@ -141,6 +141,7 @@ jest.mock("../../utils/generate-model-filename", () => ({
 	validateModelFileName: jest.fn(() => true),
 }));
 
+import type { Store } from "tinybase";
 import * as whisperLLMCards from "whisper-llm-cards";
 // Import the functions under test AFTER mocks
 import { DEFAULT_AI_CHAT_MODEL } from "../../ai-providers/whisper-ai/constants";
@@ -255,13 +256,13 @@ describe("ai-chat-model actions", () => {
 				modelCard: JSON.stringify(card),
 			});
 
-			const result = getStoredModelCard(mockMainStore as any);
+			const result = getStoredModelCard(mockMainStore as unknown as Store);
 
 			expect(result).toEqual(card);
 		});
 
 		it("returns null when no card stored", () => {
-			const result = getStoredModelCard(mockMainStore as any);
+			const result = getStoredModelCard(mockMainStore as unknown as Store);
 
 			expect(result).toBeNull();
 		});
@@ -271,7 +272,7 @@ describe("ai-chat-model actions", () => {
 				modelCard: "invalid json {{{",
 			});
 
-			const result = getStoredModelCard(mockMainStore as any);
+			const result = getStoredModelCard(mockMainStore as unknown as Store);
 
 			expect(result).toBeNull();
 		});
@@ -281,7 +282,7 @@ describe("ai-chat-model actions", () => {
 				modelCard: "",
 			});
 
-			const result = getStoredModelCard(mockMainStore as any);
+			const result = getStoredModelCard(mockMainStore as unknown as Store);
 
 			expect(result).toBeNull();
 		});
@@ -302,7 +303,7 @@ describe("ai-chat-model actions", () => {
 				},
 			};
 
-			updateModelCard(mockMainStore as any, card, "new-card-id", "2.0.0");
+			updateModelCard(mockMainStore as unknown as Store, card, "new-card-id", "2.0.0");
 
 			expect(mockMainStore.setCell).toHaveBeenCalledWith(
 				"aiProviders",
@@ -394,7 +395,7 @@ describe("ai-chat-model actions", () => {
 			});
 			(validateModelFileName as jest.Mock).mockReturnValue(true);
 
-			const result = await checkForModelUpdates(mockMainStore as any);
+			const result = await checkForModelUpdates(mockMainStore as unknown as Store);
 
 			expect(result.hasUpdate).toBe(false);
 			expect(result.requiresDownload).toBe(false);
@@ -409,7 +410,7 @@ describe("ai-chat-model actions", () => {
 			});
 			(validateModelFileName as jest.Mock).mockReturnValue(true);
 
-			const result = await checkForModelUpdates(mockMainStore as any);
+			const result = await checkForModelUpdates(mockMainStore as unknown as Store);
 
 			expect(result.hasUpdate).toBe(true);
 			expect(result.currentVersion).toBe("0.9.0");
@@ -425,7 +426,7 @@ describe("ai-chat-model actions", () => {
 			});
 			(validateModelFileName as jest.Mock).mockReturnValue(false);
 
-			const result = await checkForModelUpdates(mockMainStore as any);
+			const result = await checkForModelUpdates(mockMainStore as unknown as Store);
 
 			expect(result.hasUpdate).toBe(true);
 			expect(result.requiresDownload).toBe(true);
@@ -445,7 +446,7 @@ describe("ai-chat-model actions", () => {
 			});
 			(validateModelFileName as jest.Mock).mockReturnValue(true);
 
-			const result = await checkForModelUpdates(mockMainStore as any);
+			const result = await checkForModelUpdates(mockMainStore as unknown as Store);
 
 			expect(result.hasUpdate).toBe(true);
 			// Same sourceUrl means no download required
@@ -455,7 +456,7 @@ describe("ai-chat-model actions", () => {
 
 	describe("pauseDownload", () => {
 		it("returns early when no active download", async () => {
-			await pauseDownload(mockMainStore as any);
+			await pauseDownload(mockMainStore as unknown as Store);
 
 			expect(mockPauseAsync).not.toHaveBeenCalled();
 			expect(mockMainStore.setCell).not.toHaveBeenCalled();
@@ -464,7 +465,7 @@ describe("ai-chat-model actions", () => {
 
 	describe("resumeDownload", () => {
 		it("returns early when no saved resumable state", async () => {
-			await resumeDownload(mockMainStore as any);
+			await resumeDownload(mockMainStore as unknown as Store);
 
 			expect(mockCreateDownloadResumable).not.toHaveBeenCalled();
 		});
@@ -481,7 +482,7 @@ describe("ai-chat-model actions", () => {
 			});
 			mockDownloadAsync.mockResolvedValue({ status: 200 });
 
-			await resumeDownload(mockMainStore as any);
+			await resumeDownload(mockMainStore as unknown as Store);
 
 			expect(mockCreateDownloadResumable).toHaveBeenCalledWith(
 				"https://example.com/model.gguf",
@@ -518,7 +519,7 @@ describe("ai-chat-model actions", () => {
 			mockFileExistsValue = false;
 
 			await startDownload(
-				mockMainStore as any,
+				mockMainStore as unknown as Store,
 				testCard,
 				"test-card-id",
 				"1.0.0",
@@ -546,7 +547,7 @@ describe("ai-chat-model actions", () => {
 			});
 
 			await startDownload(
-				mockMainStore as any,
+				mockMainStore as unknown as Store,
 				testCard,
 				"test-card-id",
 				"1.0.0",
@@ -564,12 +565,12 @@ describe("ai-chat-model actions", () => {
 			seedWhisperAI({
 				isPaused: true,
 				resumableState: JSON.stringify(resumableState),
-				filename: "test.gguf",
+				filename: "test-model-v1.0.0-abc123.gguf",
 			});
 			mockDownloadAsync.mockResolvedValue({ status: 200 });
 
 			await startDownload(
-				mockMainStore as any,
+				mockMainStore as unknown as Store,
 				testCard,
 				"test-card-id",
 				"1.0.0",
@@ -578,7 +579,7 @@ describe("ai-chat-model actions", () => {
 			// Should call resumeDownload flow, not fresh download
 			expect(mockCreateDownloadResumable).toHaveBeenCalledWith(
 				"https://example.com/test.gguf",
-				"file:///mock/documents/test.gguf",
+				"file:///mock/documents/test-model-v1.0.0-abc123.gguf",
 				{},
 				expect.any(Function),
 				"mock-resume-data",
@@ -598,7 +599,7 @@ describe("ai-chat-model actions", () => {
 			mockDownloadAsync.mockResolvedValue({ status: 200 });
 
 			await startDownload(
-				mockMainStore as any,
+				mockMainStore as unknown as Store,
 				testCard,
 				"test-card-id",
 				"1.0.0",
@@ -619,7 +620,7 @@ describe("ai-chat-model actions", () => {
 			mockFileExistsValue = false;
 
 			await startDownload(
-				mockMainStore as any,
+				mockMainStore as unknown as Store,
 				testCard,
 				"test-card-id",
 				"1.0.0",
@@ -638,7 +639,7 @@ describe("ai-chat-model actions", () => {
 			mockFileExistsValue = false;
 
 			await startDownload(
-				mockMainStore as any,
+				mockMainStore as unknown as Store,
 				testCard,
 				"test-card-id",
 				"1.0.0",
