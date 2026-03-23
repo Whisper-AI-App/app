@@ -12,7 +12,9 @@
 			"bundleIdentifier": "org.avatechnologies.whisper",
 			"infoPlist": {
 				"ITSAppUsesNonExemptEncryption": false,
-				"NSPhotoLibraryUsageDescription": "Whisper needs access to your photos to set a custom chat background."
+				"NSPhotoLibraryUsageDescription": "Whisper needs access to your photos to attach images in chat.",
+				"NSCameraUsageDescription": "Whisper needs camera access to take photos for chat.",
+				"NSMicrophoneUsageDescription": "Whisper needs microphone access to record audio messages."
 			},
 			"entitlements": {
 				"com.apple.developer.kernel.increased-memory-limit": true,
@@ -24,7 +26,11 @@
 		"android": {
 			"predictiveBackGestureEnabled": false,
 			"package": "org.avatechnologies.whisper",
-			"permissions": ["android.permission.READ_MEDIA_IMAGES"]
+			"permissions": [
+				"android.permission.READ_MEDIA_IMAGES",
+				"android.permission.CAMERA",
+				"android.permission.RECORD_AUDIO"
+			]
 		},
 		"web": {
 			"output": "static",
@@ -35,9 +41,11 @@
 			[
 				"expo-image-picker",
 				{
-					"photosPermission": "Whisper needs access to your photos to set a custom chat background."
+					"photosPermission": "Whisper needs access to your photos to attach images in chat.",
+					"cameraPermission": "Whisper needs camera access to take photos for chat."
 				}
 			],
+			"expo-document-picker",
 			[
 				"expo-splash-screen",
 				{

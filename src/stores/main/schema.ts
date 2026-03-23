@@ -67,9 +67,28 @@ export const tablesSchemaMainStore = {
 		resumableState: { type: "string" as const }, // Serialized download resumable
 		isPaused: { type: "boolean" as const },
 		fileRemoved: { type: "boolean" as const },
+		// mmproj (vision module) download state
+		mmprojFilename: { type: "string" as const },
 		// endpoint URL
 		endpointUrl: { type: "string" as const },
 		// Protocol type (i.e. "anthropic")
 		protocol: { type: "string" as const },
+		// Bumped when multimodal capabilities change (triggers reactive UI updates)
+		capabilitiesVersion: { type: "number" as const },
+	},
+	attachments: {
+		id: { type: "string" as const },
+		messageId: { type: "string" as const },
+		type: { type: "string" as const }, // "image" | "file" | "audio"
+		uri: { type: "string" as const },
+		mimeType: { type: "string" as const },
+		fileName: { type: "string" as const },
+		fileSize: { type: "number" as const },
+		width: { type: "number" as const },
+		height: { type: "number" as const },
+		duration: { type: "number" as const },
+		alt: { type: "string" as const },
+		thumbnailUri: { type: "string" as const },
+		createdAt: { type: "string" as const },
 	},
 } as const;

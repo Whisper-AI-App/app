@@ -22,7 +22,7 @@ interface MigrationErrorScreenProps {
  * Provides options to retry (reload app) or reset all data.
  */
 export function MigrationErrorScreen({
-	error,
+	error: _error,
 	onReset,
 }: MigrationErrorScreenProps) {
 	const colorScheme = useColorScheme() ?? "light";

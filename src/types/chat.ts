@@ -17,6 +17,7 @@ export interface ChatRenderersProps {
 	onContinue?: (() => Promise<void>) | null;
 	onStop?: () => void;
 	onDismissNotice?: () => void;
+	onImagePress?: (uri: string) => void;
 }
 
 export interface UseChatStateOptions {
@@ -48,12 +49,12 @@ export interface UseChatCompletionOptions {
 
 export interface UseChatCompletionReturn {
 	isAiTyping: boolean;
+	isProcessingMedia: boolean;
 	isContinuing: boolean;
 	streamingText: string;
-	sendMessage: (text: string) => Promise<void>;
+	sendMessage: (text: string, attachments?: import("@/src/ai-providers/types").PendingAttachment[]) => Promise<void>;
 	stopGeneration: () => void;
 	continueMessage: (() => Promise<void>) | null;
-	// Main feature
 	clearInferenceCache: () => Promise<void>;
 }
 

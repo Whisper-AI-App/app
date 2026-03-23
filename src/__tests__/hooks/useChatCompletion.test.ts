@@ -10,6 +10,22 @@ const mockGetSystemMessage = jest.fn(() => "mock system message");
 const mockGetContextSize = jest.fn(() => 4096);
 const mockIsConfigured = jest.fn(() => true);
 
+const mockGetMultimodalCapabilities = jest.fn(() => ({
+	vision: false,
+	audio: false,
+	files: false,
+	constraints: {
+		maxImageWidth: 0,
+		maxImageHeight: 0,
+		maxFileSize: 0,
+		maxAudioDuration: 0,
+		supportedImageFormats: [],
+		supportedFileTypes: [],
+		audioFormat: "wav" as const,
+		audioSampleRate: 16000,
+	},
+}));
+
 const mockActiveProvider = {
 	id: "whisper-ai",
 	name: "Whisper AI",
@@ -19,6 +35,7 @@ const mockActiveProvider = {
 	getSystemMessage: mockGetSystemMessage,
 	getContextSize: mockGetContextSize,
 	isConfigured: mockIsConfigured,
+	getMultimodalCapabilities: mockGetMultimodalCapabilities,
 };
 
 jest.mock("@/contexts/AIProviderContext", () => ({
@@ -367,7 +384,7 @@ describe("useChatCompletion", () => {
 			setupCompletion("...continued text", normalResult);
 
 			await act(async () => {
-				await result.current.continueMessage!();
+				await result.current.continueMessage?.();
 			});
 
 			expect(mockUpsertMessage).toHaveBeenCalledWith(
@@ -398,7 +415,7 @@ describe("useChatCompletion", () => {
 			setupCompletion("more text", normalResult);
 
 			await act(async () => {
-				await result.current.continueMessage!();
+				await result.current.continueMessage?.();
 			});
 
 			const completionCall = mockCompletion.mock.calls[0];
@@ -431,7 +448,7 @@ describe("useChatCompletion", () => {
 			setupCompletion("done", normalResult);
 
 			await act(async () => {
-				await result.current.continueMessage!();
+				await result.current.continueMessage?.();
 			});
 
 			expect(result.current.continueMessage).toBeNull();
@@ -452,7 +469,7 @@ describe("useChatCompletion", () => {
 			setupCompletion("still partial...", cutOffResult);
 
 			await act(async () => {
-				await result.current.continueMessage!();
+				await result.current.continueMessage?.();
 			});
 
 			expect(result.current.continueMessage).not.toBeNull();
@@ -474,7 +491,7 @@ describe("useChatCompletion", () => {
 			mockCompletion.mockRejectedValueOnce(new Error("crash"));
 
 			await act(async () => {
-				await result.current.continueMessage!();
+				await result.current.continueMessage?.();
 			});
 
 			// Should save empty AI message with error status
@@ -508,7 +525,7 @@ describe("useChatCompletion", () => {
 			setupCompletion("continued but cancelled", cancelledResult);
 
 			await act(async () => {
-				await result.current.continueMessage!();
+				await result.current.continueMessage?.();
 			});
 
 			expect(mockUpsertMessage).toHaveBeenCalledWith(

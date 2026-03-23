@@ -51,13 +51,15 @@ export function createExpoFileSystemPersister(
 	let currentKeyHex = encryptionKeyHex;
 
 	async function encrypt(plaintext: string): Promise<Uint8Array> {
-		const key = await AESEncryptionKey.import(currentKeyHex!, "hex");
+		if (!currentKeyHex) throw new Error("Encryption key not available");
+		const key = await AESEncryptionKey.import(currentKeyHex, "hex");
 		const sealed = await aesEncryptAsync(encoder.encode(plaintext), key);
 		return await sealed.combined();
 	}
 
 	async function decrypt(data: Uint8Array): Promise<string> {
-		const key = await AESEncryptionKey.import(currentKeyHex!, "hex");
+		if (!currentKeyHex) throw new Error("Encryption key not available");
+		const key = await AESEncryptionKey.import(currentKeyHex, "hex");
 		const sealed = AESSealedData.fromCombined(data);
 		const decrypted = await aesDecryptAsync(sealed, key);
 		return decoder.decode(decrypted);
@@ -65,7 +67,9 @@ export function createExpoFileSystemPersister(
 
 	const getPersisted = async () => {
 		try {
-			if (!file.exists) return undefined;
+			if (!file.exists) {
+				return undefined;
+			}
 
 			if (currentKeyHex !== null) {
 				// Try encrypted bytes first, fall back to plain JSON (pre-migration)
@@ -73,11 +77,13 @@ export function createExpoFileSystemPersister(
 					const bytes = await file.bytes();
 					const json = await decrypt(bytes);
 					return jsonParse(json);
-				} catch {
+				} catch (decryptErr) {
+					console.warn("[Persister] Decrypt failed, trying plain text fallback:", decryptErr);
 					try {
 						const text = await file.text();
 						return jsonParse(text);
 					} catch (fallbackError) {
+						console.error("[Persister] Plain text fallback also failed:", fallbackError);
 						onIgnoredError?.(fallbackError);
 						return undefined;
 					}
@@ -88,22 +94,37 @@ export function createExpoFileSystemPersister(
 			const text = await file.text();
 			return jsonParse(text);
 		} catch (error) {
+			console.error("[Persister] getPersisted top-level error:", error);
 			onIgnoredError?.(error);
 			return undefined;
 		}
 	};
 
+	let saveInProgress = false;
+
 	const setPersisted = async (
 		getContent: () => unknown,
 	): Promise<void> => {
-		const content = getContent();
-		const json = jsonStringify(content);
+		if (saveInProgress) {
+			console.warn("[Persister] Save already in progress, skipping");
+			return;
+		}
+		saveInProgress = true;
+		try {
+			const content = getContent();
+			const json = jsonStringify(content);
 
-		if (currentKeyHex !== null) {
-			const encrypted = await encrypt(json);
-			await file.write(encrypted);
-		} else {
-			await file.write(json);
+			if (currentKeyHex !== null) {
+				const encrypted = await encrypt(json);
+				await file.write(encrypted);
+			} else {
+				await file.write(json);
+			}
+		} catch (error) {
+			console.error("[Persister] setPersisted error:", error);
+			throw error;
+		} finally {
+			saveInProgress = false;
 		}
 	};
 
