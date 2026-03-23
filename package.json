@@ -34,7 +34,7 @@
 		"@nanocollective/json-up": "^0.2.0",
 		"@openrouter/ai-sdk-provider": "^2.2.3",
 		"@react-navigation/native": "^7.1.8",
-		"@shopify/react-native-skia": "2.4.18",
+		"@shopify/react-native-skia": "2.5.3",
 		"ai": "^6.0.103",
 		"expo": "~55.0.5",
 		"expo-alternate-app-icons": "^7.0.0",
