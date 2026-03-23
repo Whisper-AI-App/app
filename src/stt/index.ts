@@ -10,8 +10,8 @@ let initPromise: Promise<void> | null = null;
 let contextId: number | null = null;
 let jobCounter = 0;
 
-// Whisper-base model size in GB (bundled asset, ~150MB)
-const WHISPER_MODEL_SIZE_GB = 0.15;
+// Whisper-tiny model size in GB (bundled asset, ~75MB)
+const WHISPER_MODEL_SIZE_GB = 0.075;
 
 /**
  * Get the current STT service status.
@@ -55,7 +55,7 @@ export async function initSTT(): Promise<void> {
 			// Load whisper model from bundled asset
 			const [asset] = await Asset.loadAsync(
 				// eslint-disable-next-line @typescript-eslint/no-require-imports
-				require("../../assets/models/ggml-base.bin"),
+				require("../../assets/models/ggml-tiny.bin"),
 			);
 
 			if (!asset.localUri) {
@@ -121,7 +121,7 @@ export async function getTranscription(audioUri: string): Promise<string> {
 	const jobId = ++jobCounter;
 	const text = await whisperSTT.transcribe(contextId, jobId, audioUri);
 
-	// On low-memory devices, release STT immediately to reclaim ~150MB for chat inference.
+	// On low-memory devices, release STT immediately to reclaim ~75MB for chat inference.
 	// This prevents the whisper model from competing with llama.rn for scarce RAM,
 	// which would otherwise cause noticeably slower token generation.
 	const tier = getDeviceTierStrategy();
@@ -137,7 +137,7 @@ export async function getTranscription(audioUri: string): Promise<string> {
 
 /**
  * Release the whisper context (Tier 1 memory pressure response).
- * Frees ~150MB of RAM. Can be reloaded on demand.
+ * Frees ~75MB of RAM. Can be reloaded on demand.
  */
 export async function releaseSTT(): Promise<void> {
 	if (contextId !== null) {

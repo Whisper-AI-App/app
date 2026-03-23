@@ -5,7 +5,7 @@ const contexts = new Map<number, WhisperContext>();
 
 /**
  * Initialize whisper.rn with a model file.
- * The model should be a GGML whisper model (e.g. ggml-base.bin).
+ * The model should be a GGML whisper model (e.g. ggml-tiny.bin).
  * Returns the contextId needed for subsequent calls.
  */
 export async function initWhisper(modelPath: string): Promise<number> {
@@ -55,7 +55,7 @@ export async function transcribe(contextId: number, _jobId: number, audioUri: st
 }
 
 /**
- * Release the whisper context and free memory (~150MB).
+ * Release the whisper context and free memory (~75MB).
  * @param contextId - The context handle from initWhisper()
  */
 export async function release(contextId: number): Promise<void> {

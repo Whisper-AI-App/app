@@ -3,11 +3,11 @@ const fs = require("node:fs");
 const path = require("node:path");
 
 const MODEL_URL =
-	"https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-base.bin";
+	"https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-tiny.bin";
 const MODEL_DIR = path.join(__dirname, "..", "assets", "models");
-const MODEL_PATH = path.join(MODEL_DIR, "ggml-base.bin");
-// Expected size: ~141MB (ggml-base.bin from whisper.cpp)
-const MIN_SIZE_BYTES = 140_000_000;
+const MODEL_PATH = path.join(MODEL_DIR, "ggml-tiny.bin");
+// Expected size: ~75MB (ggml-tiny.bin from whisper.cpp)
+const MIN_SIZE_BYTES = 74_000_000;
 
 function download(url, dest) {
 	return new Promise((resolve, reject) => {
@@ -69,18 +69,18 @@ async function main() {
 		const stat = fs.statSync(MODEL_PATH);
 		if (stat.size >= MIN_SIZE_BYTES) {
 			console.log(
-				"[whisper-model] ggml-base.bin already exists, skipping download.",
+				"[whisper-model] ggml-tiny.bin already exists, skipping download.",
 			);
 			return;
 		}
 		console.log(
-			"[whisper-model] ggml-base.bin exists but looks incomplete, re-downloading...",
+			"[whisper-model] ggml-tiny.bin exists but looks incomplete, re-downloading...",
 		);
 	}
 
 	fs.mkdirSync(MODEL_DIR, { recursive: true });
 
-	console.log("[whisper-model] Downloading ggml-base.bin (~141MB)...");
+	console.log("[whisper-model] Downloading ggml-tiny.bin (~75MB)...");
 	await download(MODEL_URL, MODEL_PATH);
 
 	const stat = fs.statSync(MODEL_PATH);
@@ -92,7 +92,7 @@ async function main() {
 	}
 
 	console.log(
-		`[whisper-model] Downloaded ggml-base.bin (${(stat.size / 1e6).toFixed(1)}MB)`,
+		`[whisper-model] Downloaded ggml-tiny.bin (${(stat.size / 1e6).toFixed(1)}MB)`,
 	);
 
 	process.exit(0);

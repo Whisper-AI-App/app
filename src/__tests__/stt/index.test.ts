@@ -48,7 +48,7 @@ describe("STT Service", () => {
 	describe("initSTT", () => {
 		it("performs budget check before loading", async () => {
 			await initSTT();
-			expect(mockCheckBudget).toHaveBeenCalledWith(0.15, 0);
+			expect(mockCheckBudget).toHaveBeenCalledWith(0.075, 0);
 		});
 
 		it("throws when budget is denied", async () => {

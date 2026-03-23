@@ -11,10 +11,10 @@ describe("whisper-stt", () => {
 
 	describe("initWhisper", () => {
 		it("should initialize whisper context and return contextId", async () => {
-			const contextId = await initWhisper("/path/to/ggml-base.bin");
+			const contextId = await initWhisper("/path/to/ggml-tiny.bin");
 
 			expect(mockInitWhisper).toHaveBeenCalledWith({
-				filePath: "/path/to/ggml-base.bin",
+				filePath: "/path/to/ggml-tiny.bin",
 				isBundleAsset: false,
 				useFlashAttn: false,
 				useGpu: true,

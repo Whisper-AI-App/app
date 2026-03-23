@@ -13,7 +13,7 @@ jest.mock("../../stt/whisper-stt", () => ({
 jest.mock("expo-asset", () => ({
 	Asset: {
 		loadAsync: jest.fn().mockResolvedValue([
-			{ localUri: "/local/path/ggml-base.bin" },
+			{ localUri: "/local/path/ggml-tiny.bin" },
 		]),
 	},
 }));
@@ -50,7 +50,7 @@ describe("STT service", () => {
 		it("should load whisper model from bundled asset and initialize", async () => {
 			await initSTT();
 
-			expect(mockInit).toHaveBeenCalledWith("/local/path/ggml-base.bin");
+			expect(mockInit).toHaveBeenCalledWith("/local/path/ggml-tiny.bin");
 			expect(isAvailable()).toBe(true);
 			expect(getSTTStatus()).toBe("ready");
 		});
@@ -89,7 +89,7 @@ describe("STT service", () => {
 			// Calling getTranscription should trigger lazy re-init
 			await getTranscription("/path/to/audio.wav");
 
-			expect(mockInit).toHaveBeenCalledWith("/local/path/ggml-base.bin");
+			expect(mockInit).toHaveBeenCalledWith("/local/path/ggml-tiny.bin");
 			expect(mockTranscribe).toHaveBeenCalledWith(99, expect.any(Number), "/path/to/audio.wav");
 		});
 	});
