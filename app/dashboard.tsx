@@ -39,6 +39,7 @@ import {
 	withSpring,
 } from "react-native-reanimated";
 import { SafeAreaView } from "react-native-safe-area-context";
+import type { Store } from "tinybase";
 import {
 	useCell,
 	useRowIds,
@@ -224,7 +225,7 @@ export default function Dashboard() {
 
 		const checkForUpdates = async () => {
 			try {
-				const info = await checkForModelUpdates(mainStore as any);
+				const info = await checkForModelUpdates(mainStore as unknown as Store);
 				if (info.hasUpdate) {
 					setUpdateInfo(info);
 					setUpdateAvailable(true);

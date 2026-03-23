@@ -31,7 +31,7 @@ export function ModelUpdateNotification({
 
 	const handleUpdate = () => {
 		onClose();
-		router.replace("/download");
+		router.replace("/provider-setup/whisper-ai");
 	};
 
 	return (

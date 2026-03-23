@@ -10,9 +10,15 @@ import type { Store } from "tinybase";
 import type {
 	AIProvider,
 	CompletionMessage,
+	CompletionMessagePart,
 	CompletionResult,
+	MultimodalCapabilities,
 	ProviderModel,
 } from "../types";
+import { DEFAULT_CONSTRAINTS, } from "../types";
+import { convertMessagesForAISDK } from "../message-converter";
+import { getCapabilityStatus, dispatch } from "../../memory/state";
+import { initSTT } from "../../stt";
 
 export type Protocol = "openai" | "anthropic";
 
@@ -211,6 +217,26 @@ export function createCustomProvider(store: Store): AIProvider {
 			let content = "";
 
 			try {
+				// T071: STT budget coordination — ensure whisper.rn is loaded before audio processing
+				const hasAudioParts = messages.some(
+					(m) => Array.isArray(m.content) && m.content.some((p: CompletionMessagePart) => p.type === "audio"),
+				);
+				if (hasAudioParts) {
+					const sttStatus = getCapabilityStatus("stt");
+					if (sttStatus === "unloaded" || sttStatus === "budget_denied") {
+						dispatch("stt", sttStatus === "budget_denied" ? { type: "RETRY" } : { type: "USER_REQUEST" });
+						try {
+							await initSTT();
+							dispatch("stt", { type: "LOAD_SUCCESS" });
+						} catch {
+							dispatch("stt", { type: "LOAD_FAIL_BUDGET" });
+							// STT not available — audio will fall through to alt-text
+						}
+					}
+				}
+
+				// Convert multimodal content parts to AI SDK format
+				const convertedMessages = await convertMessagesForAISDK(messages);
 				const baseURL = `${endpointUrl.replace(/\/+$/, "")}/`;
 
 				if (protocol === "anthropic") {
@@ -223,7 +249,7 @@ export function createCustomProvider(store: Store): AIProvider {
 
 					const result = streamText({
 						model: anthropic(modelId),
-						messages,
+						messages: convertedMessages,
 						abortSignal: localAbortController.signal,
 					});
 
@@ -253,7 +279,7 @@ export function createCustomProvider(store: Store): AIProvider {
 
 					const result = streamText({
 						model: openai(modelId),
-						messages,
+						messages: convertedMessages,
 						abortSignal: localAbortController.signal,
 					});
 
@@ -312,6 +338,37 @@ export function createCustomProvider(store: Store): AIProvider {
 				}
 			}
 			return DEFAULT_CLOUD_CONTEXT_SIZE;
+		},
+
+		getMultimodalCapabilities(): MultimodalCapabilities {
+			// Read user-configured capability toggles from the modelCard field
+			const raw = store.getCell("aiProviders", "custom-provider", "modelCard") as string;
+
+			let vision = false;
+			let files = false;
+
+			if (raw) {
+				try {
+					const config = JSON.parse(raw) as {
+						vision?: boolean;
+						audio?: boolean;
+						files?: boolean;
+					};
+					vision = config.vision ?? false;
+					files = config.files ?? false;
+				} catch {
+					// Invalid config — vision/files stay false
+				}
+			}
+
+			// Audio is always available — whisper.rn (bundled) provides
+			// universal transcription as fallback for any endpoint
+			return {
+				vision,
+				audio: true,
+				files,
+				constraints: DEFAULT_CONSTRAINTS,
+			};
 		},
 
 		async teardown() {

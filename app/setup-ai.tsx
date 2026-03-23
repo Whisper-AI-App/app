@@ -20,6 +20,7 @@ import { useState } from "react";
 import { useColorScheme } from "react-native";
 import { ScrollView } from "react-native-gesture-handler";
 import { SafeAreaView } from "react-native-safe-area-context";
+import type { Store } from "tinybase";
 import { useCell, useValue } from "tinybase/ui-react";
 
 export default function SetupAI() {
@@ -40,7 +41,7 @@ export default function SetupAI() {
 	const downloadedAt = useCell("aiProviders", "whisper-ai", "downloadedAt") as
 		| string
 		| undefined;
-	const modelCard = getStoredModelCard(mainStore as any);
+	const modelCard = getStoredModelCard(mainStore as unknown as Store);
 
 	const [checkingForUpdates, setCheckingForUpdates] = useState(false);
 	const [showUpToDate, setShowUpToDate] = useState(false);
@@ -88,7 +89,7 @@ export default function SetupAI() {
 
 		setCheckingForUpdates(true);
 		try {
-			const result = await checkForModelUpdates(mainStore as any);
+			const result = await checkForModelUpdates(mainStore as unknown as Store);
 			if (result.hasUpdate) {
 				setUpdateInfo(result);
 				setShowUpdateNotification(true);

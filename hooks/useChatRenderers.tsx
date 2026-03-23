@@ -1,5 +1,6 @@
 import { ChatNotice } from "@/components/chat/chat-notice";
 import { CopyMessageButton } from "@/components/chat/copy-message-button";
+import { MessageAttachments } from "@/components/chat/message-attachments";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Markdown } from "@/components/ui/markdown";
@@ -7,6 +8,7 @@ import { Text } from "@/components/ui/text";
 import { TypingIndicator } from "@/components/ui/typing-indicator";
 import { View } from "@/components/ui/view";
 import { useAIProvider } from "@/contexts/AIProviderContext";
+import type { StoredAttachment } from "@/hooks/useChatMessages";
 import { useColorScheme } from "@/hooks/useColorScheme";
 import { useKeyboardHeight } from "@/hooks/useKeyboardHeight";
 import type { AppIconVariant } from "@/src/data/app-icon-presets";
@@ -17,7 +19,7 @@ import { Image } from "expo-image";
 import { SendHorizonal, Square } from "lucide-react-native";
 import { useCallback, useEffect } from "react";
 import { Dimensions } from "react-native";
-import { Bubble } from "react-native-gifted-chat";
+import { Bubble, type IMessage } from "react-native-gifted-chat";
 import Animated, {
 	useAnimatedStyle,
 	useSharedValue,
@@ -42,9 +44,11 @@ export function useChatRenderers({
 	onContinue,
 	onStop,
 	onDismissNotice,
+	onImagePress,
 }: ChatRenderersProps & { isFullPage?: boolean }) {
 	const colorScheme = useColorScheme() ?? "light";
 	const theme = Colors[colorScheme];
+	const backgroundColor = theme.background;
 	const appIconVariant = useValue("app_icon_variant") as
 		| AppIconVariant
 		| undefined;
@@ -64,7 +68,7 @@ export function useChatRenderers({
 	}, [keyboardHeight, keyboardAnimationDuration]);
 
 	const animatedToolbarStyle = useAnimatedStyle(() => ({
-		bottom:
+		paddingBottom:
 			BASE_BOTTOM +
 			keyboardOffset.value +
 			(keyboardOffset.value > BASE_BOTTOM ? -28 : 0),
@@ -155,8 +159,15 @@ export function useChatRenderers({
 				? providers.find((p) => p.id === msgProviderId)
 				: null;
 			const providerName = msgProvider?.name;
-			const modelId =
-				(message as { modelId?: string })?.modelId || "";
+			const modelId = (message as { modelId?: string })?.modelId || "";
+			const isCloudMessage = msgProvider?.type === "cloud";
+
+			// Get attachments from the message object
+			const messageAttachments = (
+				message as { attachments?: StoredAttachment[] }
+			)?.attachments;
+			const hasAttachments =
+				messageAttachments && messageAttachments.length > 0;
 
 			return (
 				<View>
@@ -220,21 +231,48 @@ export function useChatRenderers({
 								marginRight: 8,
 							},
 						}}
+						renderCustomView={() => {
+							// GiftedChat skips renderMessageText when text is empty.
+							// renderCustomView is always called, so we use it to render
+							// attachments for image-only messages (no text).
+							if (message.text || !hasAttachments || !messageAttachments) return null;
+							return (
+								<MessageAttachments
+									attachments={messageAttachments}
+									onImagePress={onImagePress}
+									isCloudMessage={isCloudMessage}
+								/>
+							);
+						}}
 						renderMessageText={
 							isSystemMessage
 								? () => (
 										<View style={{ flexShrink: 1, maxWidth: "100%" }}>
+											{hasAttachments && (
+												<MessageAttachments
+													attachments={messageAttachments}
+													onImagePress={onImagePress}
+													isCloudMessage={isCloudMessage}
+												/>
+											)}
 											<Markdown>{message.text}</Markdown>
 											{showCopyButton && (
 												<CopyMessageButton text={message.text} />
 											)}
 										</View>
 									)
-								: isUserMessage && showCopyButton
+								: isUserMessage
 									? (messageTextProps: {
 											currentMessage?: { text?: string };
 										}) => (
 											<View style={{ flexShrink: 1, maxWidth: "100%" }}>
+												{hasAttachments && (
+													<MessageAttachments
+														attachments={messageAttachments}
+														onImagePress={onImagePress}
+														isCloudMessage={isCloudMessage}
+													/>
+												)}
 												<Text
 													style={{
 														color: theme.background,
@@ -248,7 +286,12 @@ export function useChatRenderers({
 												>
 													{messageTextProps.currentMessage?.text}
 												</Text>
-												<CopyMessageButton text={message.text} variant="user" />
+												{showCopyButton && (
+													<CopyMessageButton
+														text={message.text}
+														variant="user"
+													/>
+												)}
 											</View>
 										)
 									: undefined
@@ -264,6 +307,7 @@ export function useChatRenderers({
 			lastMessageStatus,
 			onContinue,
 			onDismissNotice,
+			onImagePress,
 			providers,
 		],
 	);
@@ -280,10 +324,18 @@ export function useChatRenderers({
 			text,
 			onChangeText,
 			onSend,
+			canSend,
+			leftAccessory,
+			rightAccessory,
+			topAccessory,
 		}: {
 			text: string;
 			onChangeText: (text: string) => void;
 			onSend: () => void;
+			canSend?: boolean;
+			leftAccessory?: React.ReactNode;
+			rightAccessory?: React.ReactNode;
+			topAccessory?: React.ReactNode;
 		}) => {
 			return (
 				<Animated.View
@@ -292,54 +344,84 @@ export function useChatRenderers({
 							position: "absolute",
 							left: 0,
 							right: 0,
+							bottom: 0,
 							zIndex: 100,
-							paddingTop: 8,
-							paddingBottom: process.env.EXPO_OS === "android" ? 32 : 8,
-							paddingHorizontal: 8,
-							flexDirection: "row",
-							alignItems: "flex-end",
-							opacity: isTyping ? 0.6 : 1,
-							gap: 8,
+							backgroundColor: backgroundColor,
 						},
 						animatedToolbarStyle,
 					]}
 				>
-					<View style={{ flex: 1 }}>
-						<Input
-							key={`chat-input-${isTyping}`}
-							variant="chat"
-							accessible
-							value={text}
-							onChangeText={onChangeText}
-							multiline={true}
-							inputStyle={{}}
-							autoFocus={isNewChat}
-							onFocus={() => setIsInputFocused(true)}
-							onBlur={() => setIsInputFocused(false)}
-							editable={!isTyping}
-							enablesReturnKeyAutomatically
-							underlineColorAndroid="transparent"
-							placeholder={isTyping ? "AI is typing..." : "Type a message..."}
-						/>
-					</View>
-
-					<View>
-						{isTyping && onStop ? (
-							<Button
-								variant="default"
-								icon={Square}
-								onPress={onStop}
-								size="icon"
+					{topAccessory}
+					<View
+						style={{
+							flexDirection: "row",
+							alignItems: "flex-end",
+							paddingTop: 8,
+							paddingHorizontal: 8,
+							gap: 6,
+						}}
+					>
+						{leftAccessory}
+						<View
+							style={{
+								flex: 1,
+								paddingBottom: 2,
+								paddingLeft: leftAccessory ? 6 : undefined,
+							}}
+						>
+							<Input
+								key={`chat-input-${isTyping}`}
+								variant="chat"
+								accessible
+								value={text}
+								onChangeText={onChangeText}
+								multiline={true}
+								inputStyle={{}}
+								autoFocus={isNewChat}
+								onFocus={() => setIsInputFocused(true)}
+								onBlur={() => setIsInputFocused(false)}
+								editable={!isTyping}
+								enablesReturnKeyAutomatically
+								underlineColorAndroid="transparent"
+								placeholder={isTyping ? "AI is typing..." : "Type a message..."}
 							/>
-						) : (
-							<Button
-								variant="default"
-								icon={SendHorizonal}
-								disabled={!text || isTyping}
-								onPress={onSend}
-								size="icon"
-							/>
-						)}
+						</View>
+						<View
+							style={{
+								flexDirection: "row",
+								gap: 0,
+							}}
+						>
+							{isTyping && onStop ? (
+								<Button
+									variant="default"
+									icon={Square}
+									onPress={onStop}
+									size="icon-send"
+									style={{
+										width: 36,
+										height: 36,
+										marginBottom: 2,
+										marginRight: 8,
+									}}
+								/>
+							) : (canSend ?? !!text) ? (
+								<Button
+									variant="default"
+									icon={SendHorizonal}
+									onPress={onSend}
+									size="icon-send"
+									style={{
+										width: 36,
+										height: 36,
+										marginBottom: 2,
+										marginRight: 8,
+									}}
+								/>
+							) : (
+								rightAccessory
+							)}
+						</View>
 					</View>
 				</Animated.View>
 			);
@@ -348,11 +430,10 @@ export function useChatRenderers({
 	);
 
 	const renderAvatar = useCallback(
-		// eslint-disable-next-line @typescript-eslint/no-explicit-any
-		(props: { position: "left" | "right"; currentMessage?: any }) => {
+		(props: { position: "left" | "right"; currentMessage?: IMessage & { providerId?: string } }) => {
 			if (props.position === "right") return null;
 
-			const msgProviderId = props.currentMessage?.providerId as string | undefined;
+			const msgProviderId = props.currentMessage?.providerId;
 			const isWhisper = !msgProviderId || msgProviderId === "whisper-ai";
 
 			let avatarSource = appIconPreset?.image;
@@ -377,6 +458,7 @@ export function useChatRenderers({
 
 	const defaultContainerStyle = {
 		paddingHorizontal: 8,
+		paddingBottom: 64,
 	};
 
 	return {

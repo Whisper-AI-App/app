@@ -48,12 +48,12 @@
     },
     {
       "author": "650 Industries, Inc.",
-      "description": "Contributing 25 open source libraries",
+      "description": "Contributing 26 open source libraries",
       "packages": [
         "expo-audio",
         "expo-clipboard",
         "expo-constants",
-        "+ 22 more"
+        "+ 23 more"
       ],
       "priority": 50,
       "section": "libraries"
@@ -115,6 +115,16 @@
         "react-native-safe-area-context"
       ],
       "url": "https://github.com/AppAndFlow/react-native-safe-area-context#readme",
+      "priority": 50,
+      "section": "libraries"
+    },
+    {
+      "author": "Jhen-Jie Hong",
+      "description": "Creator of whisper.rn",
+      "packages": [
+        "whisper.rn"
+      ],
+      "url": "https://github.com/mybigday/whisper.rn#readme",
       "priority": 50,
       "section": "libraries"
     },
@@ -236,12 +246,12 @@
     "libraries": [
       {
         "author": "650 Industries, Inc.",
-        "description": "Contributing 25 open source libraries",
+        "description": "Contributing 26 open source libraries",
         "packages": [
           "expo-audio",
           "expo-clipboard",
           "expo-constants",
-          "+ 22 more"
+          "+ 23 more"
         ],
         "priority": 50,
         "section": "libraries"
@@ -303,6 +313,16 @@
           "react-native-safe-area-context"
         ],
         "url": "https://github.com/AppAndFlow/react-native-safe-area-context#readme",
+        "priority": 50,
+        "section": "libraries"
+      },
+      {
+        "author": "Jhen-Jie Hong",
+        "description": "Creator of whisper.rn",
+        "packages": [
+          "whisper.rn"
+        ],
+        "url": "https://github.com/mybigday/whisper.rn#readme",
         "priority": 50,
         "section": "libraries"
       },

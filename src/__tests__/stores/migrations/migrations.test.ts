@@ -24,6 +24,15 @@ const { __resetStore } = SecureStore as typeof SecureStore & {
 };
 
 import { migrateAsync } from "@nanocollective/json-up";
+
+/** Shape returned by migrateAsync for test assertions */
+type MigrationResult = {
+	values: Record<string, unknown>;
+	tables: Record<
+		string,
+		Record<string, Record<string, unknown>>
+	>;
+};
 import { runMigrations } from "../../../stores/main/migrations";
 import {
 	CURRENT_SCHEMA_VERSION,
@@ -750,7 +759,7 @@ describe("V4 migration", () => {
 		});
 
 		const result = await migrateAsync({ state, migrations });
-		const provider = (result as any).tables.aiProviders.openrouter;
+		const provider = (result as MigrationResult).tables.aiProviders.openrouter;
 		expect(provider.apiKey).toBeUndefined();
 		expect(provider.oAuthCodeVerifier).toBeUndefined();
 	});
@@ -759,7 +768,7 @@ describe("V4 migration", () => {
 		const state = createV3State();
 		const result = await migrateAsync({ state, migrations });
 
-		const migratedAt = (result as any).values.encryptionMigratedAt;
+		const migratedAt = (result as MigrationResult).values.encryptionMigratedAt;
 		expect(migratedAt).toBeTruthy();
 		expect(new Date(migratedAt).toISOString()).toBe(migratedAt);
 	});
@@ -790,7 +799,7 @@ describe("V4 migration", () => {
 		const state = createV3State();
 		const result = await migrateAsync({ state, migrations });
 
-		const migratedAt = (result as any).values.encryptionMigratedAt;
+		const migratedAt = (result as MigrationResult).values.encryptionMigratedAt;
 		expect(migratedAt).toBeTruthy();
 	});
 
@@ -820,7 +829,7 @@ describe("V4 migration", () => {
 			migrations,
 		});
 		expect(
-			(result as any).tables.aiProviders["custom-provider"].apiKey,
+			(result as MigrationResult).tables.aiProviders["custom-provider"].apiKey,
 		).toBeUndefined();
 	});
 });

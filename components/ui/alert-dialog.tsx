@@ -14,7 +14,7 @@ import {
   StyleSheet,
   TouchableWithoutFeedback,
   View,
-  ViewStyle,
+  type ViewStyle,
 } from 'react-native';
 import Animated, {
   runOnJS,
