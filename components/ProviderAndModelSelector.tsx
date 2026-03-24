@@ -85,10 +85,21 @@ export function ProviderAndModelSelector({
 				}}
 				activeOpacity={0.7}
 			>
-				<Image
-					source={avatarSource}
-					style={{ width: 16, height: 16, borderRadius: 8 }}
-				/>
+				<View
+					style={{
+						width: 24,
+						height: 24,
+						borderRadius: 12,
+						backgroundColor: "white",
+						alignItems: "center",
+						justifyContent: "center",
+					}}
+				>
+					<Image
+						source={avatarSource}
+						style={{ width: 16, height: 16, borderRadius: 8 }}
+					/>
+				</View>
 				<View>
 					<Text style={{ fontSize: 14, fontWeight: "600" }} numberOfLines={1}>
 						{displayName}
@@ -324,10 +335,21 @@ function LocalProviderItem({
 			}}
 			activeOpacity={0.7}
 		>
-			<Image
-				source={avatarSource}
-				style={{ width: 22, height: 22, borderRadius: 11 }}
-			/>
+			<View
+				style={{
+					width: 32,
+					height: 32,
+					borderRadius: 16,
+					backgroundColor: "white",
+					alignItems: "center",
+					justifyContent: "center",
+				}}
+			>
+				<Image
+					source={avatarSource}
+					style={{ width: 22, height: 22, borderRadius: 11 }}
+				/>
+			</View>
 			<View style={{ flex: 1 }}>
 				<Text style={{ fontWeight: "600", fontSize: 15 }}>{provider.name}</Text>
 				<Text
@@ -463,10 +485,21 @@ function CloudProviderSection({
 					paddingHorizontal: 4,
 				}}
 			>
-				<Image
-					source={provider.avatar}
-					style={{ width: 18, height: 18, borderRadius: 9 }}
-				/>
+				<View
+					style={{
+						width: 26,
+						height: 26,
+						borderRadius: 13,
+						backgroundColor: "white",
+						alignItems: "center",
+						justifyContent: "center",
+					}}
+				>
+					<Image
+						source={provider.avatar}
+						style={{ width: 18, height: 18, borderRadius: 9 }}
+					/>
+				</View>
 				<Text
 					style={{
 						fontSize: 12,

@@ -63,10 +63,21 @@ export function ProviderSetupCard({
 					marginBottom: 8,
 				}}
 			>
-				<Image
-					source={avatarSource}
-					style={{ width: 22, height: 22, borderRadius: 11 }}
-				/>
+				<View
+					style={{
+						width: 32,
+						height: 32,
+						borderRadius: 16,
+						backgroundColor: "white",
+						alignItems: "center",
+						justifyContent: "center",
+					}}
+				>
+					<Image
+						source={avatarSource}
+						style={{ width: 22, height: 22, borderRadius: 11 }}
+					/>
+				</View>
 				<Text
 					style={{
 						fontSize: 17,
