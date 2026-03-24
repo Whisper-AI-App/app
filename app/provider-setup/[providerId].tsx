@@ -1,4 +1,5 @@
 import { CustomProviderSetup } from "@/components/provider-setup/CustomProviderSetup";
+import { OpenAISetup } from "@/components/provider-setup/OpenAISetup";
 import { OpenRouterSetup } from "@/components/provider-setup/OpenRouterSetup";
 import { WhisperAISetup } from "@/components/provider-setup/WhisperAISetup";
 import { Text } from "@/components/ui/text";
@@ -10,6 +11,7 @@ export default function ProviderSetup() {
 
 	if (providerId === "whisper-ai") return <WhisperAISetup />;
 	if (providerId === "openrouter") return <OpenRouterSetup />;
+	if (providerId === "openai") return <OpenAISetup />;
 	if (providerId === "custom-provider") return <CustomProviderSetup />;
 
 	return (
