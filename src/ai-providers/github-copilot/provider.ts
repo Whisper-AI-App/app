@@ -117,7 +117,8 @@ export function createGitHubCopilotProvider(store: Store): AIProvider {
 				return;
 			}
 
-			// Verify the OAuth token works by fetching a Copilot API token
+			// Clear any stale cached token before verifying
+			clearCopilotTokenCache();
 			const copilotToken = await getCopilotApiToken();
 			if (!copilotToken) {
 				store.setCell(

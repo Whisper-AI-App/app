@@ -185,6 +185,8 @@ export async function pollForAuthorization(
 			};
 
 			if (data.access_token) {
+				// Clear any stale Copilot API token from a previous account
+				cachedCopilotToken = null;
 				// Store the long-lived GitHub OAuth token
 				await setCredential(
 					"github-copilot",
