@@ -877,6 +877,7 @@ describe("V6 migration", () => {
 			resumableState: "",
 			isPaused: false,
 			fileRemoved: false,
+			mmprojFilename: "",
 			endpointUrl: "",
 			protocol: "",
 			capabilitiesVersion: 0,
@@ -894,7 +895,7 @@ describe("V6 migration", () => {
 		expect(provider.downloadQueue).toBe("");
 	});
 
-	it("does not overwrite existing downloadQueue", async () => {
+	it("always initializes downloadQueue to empty string", async () => {
 		const state = createV5State({
 			huggingface: fullProviderRow({
 				id: "huggingface",
@@ -904,7 +905,7 @@ describe("V6 migration", () => {
 		const result = await migrateAsync({ state, migrations });
 
 		const provider = (result as MigrationResult).tables.aiProviders.huggingface;
-		expect(provider.downloadQueue).toBe('["model1","model2"]');
+		expect(provider.downloadQueue).toBe("");
 	});
 
 	it("backfills mmprojFilename on aiProviders", async () => {
@@ -925,7 +926,7 @@ describe("V6 migration", () => {
 		expect((result as MigrationResult).tables.hfModels).toEqual({});
 	});
 
-	it("backfills contextLength on existing hfModels rows", async () => {
+	it("discards pre-existing hfModels data in favor of empty table", async () => {
 		const state = {
 			...createV5State({}),
 			tables: {
@@ -935,62 +936,12 @@ describe("V6 migration", () => {
 						id: "repo__file.gguf",
 						repoId: "author/repo",
 						filename: "file.gguf",
-						displayName: "Test Model",
-						fileSizeBytes: 1000000,
-						parametersB: 1,
-						quantization: "Q4_K_M",
-						pipelineTag: "text-generation",
-						sha256: "",
-						localFilename: "hf-test.gguf",
-						downloadedAt: "2026-01-01T00:00:00.000Z",
-						downloadUrl: "https://example.com/file.gguf",
-						mmprojFilename: "",
-						mmprojDownloadUrl: "",
-						mmprojSizeBytes: 0,
-						mmprojLocalFilename: "",
-						mmprojDownloadedAt: "",
 					},
 				},
 			},
 		};
 		const result = await migrateAsync({ state, migrations });
 
-		const model = (result as MigrationResult).tables.hfModels["repo__file.gguf"];
-		expect(model.contextLength).toBe(0);
-	});
-
-	it("preserves existing contextLength on hfModels rows", async () => {
-		const state = {
-			...createV5State({}),
-			tables: {
-				...createV5State({}).tables,
-				hfModels: {
-					"repo__file.gguf": {
-						id: "repo__file.gguf",
-						repoId: "author/repo",
-						filename: "file.gguf",
-						displayName: "Test Model",
-						fileSizeBytes: 1000000,
-						parametersB: 1,
-						quantization: "Q4_K_M",
-						pipelineTag: "text-generation",
-						sha256: "",
-						localFilename: "hf-test.gguf",
-						downloadedAt: "2026-01-01T00:00:00.000Z",
-						downloadUrl: "https://example.com/file.gguf",
-						mmprojFilename: "",
-						mmprojDownloadUrl: "",
-						mmprojSizeBytes: 0,
-						mmprojLocalFilename: "",
-						mmprojDownloadedAt: "",
-						contextLength: 32768,
-					},
-				},
-			},
-		};
-		const result = await migrateAsync({ state, migrations });
-
-		const model = (result as MigrationResult).tables.hfModels["repo__file.gguf"];
-		expect(model.contextLength).toBe(32768);
+		expect((result as MigrationResult).tables.hfModels).toEqual({});
 	});
 });
