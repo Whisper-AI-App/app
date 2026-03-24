@@ -90,6 +90,7 @@ export function createOpenRouterProvider(store: Store): AIProvider {
 				resumableState: "",
 				isPaused: false,
 				fileRemoved: false,
+				mmprojFilename: "",
 				capabilitiesVersion: 0,
 			});
 		},

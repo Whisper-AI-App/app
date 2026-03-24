@@ -75,6 +75,8 @@ export const tablesSchemaMainStore = {
 		protocol: { type: "string" as const },
 		// Bumped when multimodal capabilities change (triggers reactive UI updates)
 		capabilitiesVersion: { type: "number" as const },
+		// Download queue (array of model IDs waiting to download)
+		downloadQueue: { type: "string" as const }, // JSON: string[]
 	},
 	attachments: {
 		id: { type: "string" as const },
@@ -90,5 +92,25 @@ export const tablesSchemaMainStore = {
 		alt: { type: "string" as const },
 		thumbnailUri: { type: "string" as const },
 		createdAt: { type: "string" as const },
+	},
+	hfModels: {
+		id: { type: "string" as const },
+		repoId: { type: "string" as const },
+		filename: { type: "string" as const },
+		displayName: { type: "string" as const },
+		fileSizeBytes: { type: "number" as const },
+		parametersB: { type: "number" as const },
+		quantization: { type: "string" as const },
+		pipelineTag: { type: "string" as const },
+		sha256: { type: "string" as const },
+		localFilename: { type: "string" as const },
+		downloadedAt: { type: "string" as const },
+		downloadUrl: { type: "string" as const },
+		mmprojFilename: { type: "string" as const },
+		mmprojDownloadUrl: { type: "string" as const },
+		mmprojSizeBytes: { type: "number" as const },
+		mmprojLocalFilename: { type: "string" as const },
+		mmprojDownloadedAt: { type: "string" as const },
+		contextLength: { type: "number" as const },
 	},
 } as const;

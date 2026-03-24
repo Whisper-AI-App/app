@@ -833,3 +833,164 @@ describe("V4 migration", () => {
 		).toBeUndefined();
 	});
 });
+
+// ─── V6 migration isolated tests ─────────────────────────────────────────────
+
+describe("V6 migration", () => {
+	/**
+	 * Build a minimal v5 state that the v6 migration will receive.
+	 */
+	function createV5State(
+		aiProviders: Record<string, Record<string, unknown>> = {},
+	) {
+		return {
+			_version: 5,
+			values: {
+				version: "5",
+				name: "Test",
+				onboardedAt: "2026-01-01T00:00:00.000Z",
+			},
+			tables: {
+				chats: {},
+				messages: {},
+				folders: {},
+				aiProviders,
+				attachments: {},
+			},
+		};
+	}
+
+	function fullProviderRow(overrides: Record<string, unknown> = {}) {
+		return {
+			id: "test",
+			status: "ready",
+			error: "",
+			selectedModelId: "",
+			modelCard: "",
+			modelCardId: "",
+			configVersion: "",
+			downloadedAt: "",
+			filename: "",
+			progressSizeGB: 0,
+			totalSizeGB: 0,
+			downloadError: "",
+			resumableState: "",
+			isPaused: false,
+			fileRemoved: false,
+			endpointUrl: "",
+			protocol: "",
+			capabilitiesVersion: 0,
+			...overrides,
+		};
+	}
+
+	it("adds downloadQueue to aiProviders rows", async () => {
+		const state = createV5State({
+			huggingface: fullProviderRow({ id: "huggingface" }),
+		});
+		const result = await migrateAsync({ state, migrations });
+
+		const provider = (result as MigrationResult).tables.aiProviders.huggingface;
+		expect(provider.downloadQueue).toBe("");
+	});
+
+	it("does not overwrite existing downloadQueue", async () => {
+		const state = createV5State({
+			huggingface: fullProviderRow({
+				id: "huggingface",
+				downloadQueue: '["model1","model2"]',
+			}),
+		});
+		const result = await migrateAsync({ state, migrations });
+
+		const provider = (result as MigrationResult).tables.aiProviders.huggingface;
+		expect(provider.downloadQueue).toBe('["model1","model2"]');
+	});
+
+	it("backfills mmprojFilename on aiProviders", async () => {
+		const state = createV5State({
+			"whisper-ai": fullProviderRow({ id: "whisper-ai" }),
+		});
+		const result = await migrateAsync({ state, migrations });
+
+		const provider = (result as MigrationResult).tables.aiProviders["whisper-ai"];
+		expect(provider.mmprojFilename).toBe("");
+	});
+
+	it("creates empty hfModels table", async () => {
+		const state = createV5State({});
+		const result = await migrateAsync({ state, migrations });
+
+		expect((result as MigrationResult).values.version).toBe("6");
+		expect((result as MigrationResult).tables.hfModels).toEqual({});
+	});
+
+	it("backfills contextLength on existing hfModels rows", async () => {
+		const state = {
+			...createV5State({}),
+			tables: {
+				...createV5State({}).tables,
+				hfModels: {
+					"repo__file.gguf": {
+						id: "repo__file.gguf",
+						repoId: "author/repo",
+						filename: "file.gguf",
+						displayName: "Test Model",
+						fileSizeBytes: 1000000,
+						parametersB: 1,
+						quantization: "Q4_K_M",
+						pipelineTag: "text-generation",
+						sha256: "",
+						localFilename: "hf-test.gguf",
+						downloadedAt: "2026-01-01T00:00:00.000Z",
+						downloadUrl: "https://example.com/file.gguf",
+						mmprojFilename: "",
+						mmprojDownloadUrl: "",
+						mmprojSizeBytes: 0,
+						mmprojLocalFilename: "",
+						mmprojDownloadedAt: "",
+					},
+				},
+			},
+		};
+		const result = await migrateAsync({ state, migrations });
+
+		const model = (result as MigrationResult).tables.hfModels["repo__file.gguf"];
+		expect(model.contextLength).toBe(0);
+	});
+
+	it("preserves existing contextLength on hfModels rows", async () => {
+		const state = {
+			...createV5State({}),
+			tables: {
+				...createV5State({}).tables,
+				hfModels: {
+					"repo__file.gguf": {
+						id: "repo__file.gguf",
+						repoId: "author/repo",
+						filename: "file.gguf",
+						displayName: "Test Model",
+						fileSizeBytes: 1000000,
+						parametersB: 1,
+						quantization: "Q4_K_M",
+						pipelineTag: "text-generation",
+						sha256: "",
+						localFilename: "hf-test.gguf",
+						downloadedAt: "2026-01-01T00:00:00.000Z",
+						downloadUrl: "https://example.com/file.gguf",
+						mmprojFilename: "",
+						mmprojDownloadUrl: "",
+						mmprojSizeBytes: 0,
+						mmprojLocalFilename: "",
+						mmprojDownloadedAt: "",
+						contextLength: 32768,
+					},
+				},
+			},
+		};
+		const result = await migrateAsync({ state, migrations });
+
+		const model = (result as MigrationResult).tables.hfModels["repo__file.gguf"];
+		expect(model.contextLength).toBe(32768);
+	});
+});

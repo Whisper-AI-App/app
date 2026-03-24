@@ -257,6 +257,7 @@ export interface AIProvider {
 	readonly capabilities: {
 		oauth: boolean;
 		download: boolean;
+		modelBrowsing?: boolean;
 		userApiKey: boolean;
 	};
 
@@ -272,7 +273,7 @@ export interface AIProvider {
 	// Optional capabilities
 	startOAuth?(): Promise<void>;
 	handleOAuthCallback?(params: Record<string, string>): Promise<void>;
-	startDownload?(restart?: boolean): Promise<void>;
+	startDownload?(restart?: boolean): Promise<boolean | void>;
 	pauseDownload?(): void;
 	resumeDownload?(): Promise<void>;
 
@@ -300,6 +301,9 @@ export interface AIProvider {
 
 	// Optional: only for local providers with cache
 	clearCache?(): Promise<void>;
+
+	// Optional: delete a downloaded model and its files
+	deleteModel?(modelId: string): Promise<void>;
 
 	// Multimodal support
 	getMultimodalCapabilities(): MultimodalCapabilities;

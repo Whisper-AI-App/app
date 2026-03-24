@@ -106,6 +106,7 @@ export function createCustomProvider(store: Store): AIProvider {
 				resumableState: "",
 				isPaused: false,
 				fileRemoved: false,
+				mmprojFilename: "",
 				endpointUrl: "",
 				protocol: "openai",
 			});
