@@ -1,4 +1,5 @@
 import { CustomProviderSetup } from "@/components/provider-setup/CustomProviderSetup";
+import { GitHubCopilotSetup } from "@/components/provider-setup/GitHubCopilotSetup";
 import { OpenAISetup } from "@/components/provider-setup/OpenAISetup";
 import { OpenRouterSetup } from "@/components/provider-setup/OpenRouterSetup";
 import { WhisperAISetup } from "@/components/provider-setup/WhisperAISetup";
@@ -12,6 +13,7 @@ export default function ProviderSetup() {
 	if (providerId === "whisper-ai") return <WhisperAISetup />;
 	if (providerId === "openrouter") return <OpenRouterSetup />;
 	if (providerId === "openai") return <OpenAISetup />;
+	if (providerId === "github-copilot") return <GitHubCopilotSetup />;
 	if (providerId === "custom-provider") return <CustomProviderSetup />;
 
 	return (

@@ -1,5 +1,6 @@
 import type { Store } from "tinybase";
 import { createCustomProvider } from "./custom-provider/provider";
+import { createGitHubCopilotProvider } from "./github-copilot/provider";
 import { createOpenAIProvider } from "./openai/provider";
 import { createOpenRouterProvider } from "./openrouter/provider";
 import type { AIProvider, AIProviderFactory } from "./types";
@@ -10,6 +11,7 @@ export const PROVIDER_FACTORIES: AIProviderFactory[] = [
 	createWhisperAIProvider,
 	createOpenRouterProvider,
 	createOpenAIProvider,
+	createGitHubCopilotProvider,
 	createCustomProvider,
 ];
 

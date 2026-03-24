@@ -9,6 +9,7 @@ const PROVIDER_CREDENTIAL_FIELDS: Record<string, string[]> = {
 	openrouter: ["apiKey", "oAuthCodeVerifier"],
 	"custom-provider": ["apiKey"],
 	openai: ["accessToken", "refreshToken", "expiresAt", "accountId"],
+	"github-copilot": ["oauthToken"],
 };
 
 function credentialKey(providerId: string, field: string): string {

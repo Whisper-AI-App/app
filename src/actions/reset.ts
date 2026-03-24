@@ -44,6 +44,8 @@ export async function resetEverything() {
 	await SecureStore.deleteItemAsync(ENCRYPTION_KEY_STORE_ID);
 	await deleteProviderCredentials("openrouter");
 	await deleteProviderCredentials("custom-provider");
+	await deleteProviderCredentials("openai");
+	await deleteProviderCredentials("github-copilot");
 
 	mainStore.delValues();
 	mainStore.delTables();
