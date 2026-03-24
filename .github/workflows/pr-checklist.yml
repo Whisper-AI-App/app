@@ -1,4 +1,4 @@
-name: PR Checklist Check
+name: PR Checklist
 
 on:
   pull_request:
@@ -7,11 +7,49 @@ on:
     types: [edited]
 
 jobs:
+  comment:
+    name: Post Checklist Comment
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request' && github.event.action == 'opened'
+    permissions:
+      pull-requests: write
+    steps:
+      - name: Post PR checklist comment
+        uses: actions/github-script@v7
+        with:
+          script: |
+            await github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: `## Contribution Checklist
+
+            > As the author of these code changes, you agree to our [Contributor License Agreement](https://github.com/Whisper-AI-App/app/blob/main/CLA.md).
+
+            ### Author Confirmation
+            Please confirm the following before requesting review:
+            - [ ] Tested on Android
+            - [ ] Tested on iOS
+
+            ### Reviewer Confirmation
+            Please confirm the following before approving:
+            <!-- REVIEWER_CHECKLIST_START -->
+            - [ ] Tested on Android
+            - [ ] Tested on iOS
+            <!-- REVIEWER_CHECKLIST_END -->
+
+            **Reviewer must test iOS and Android for PR to be merged.**
+
+            Make sure to test again should changes to this PR be made.
+            `
+            })
+
   verify-checklist:
     name: Verify Reviewer Checklist
+    needs: [comment]
+    # always() ensures this runs even when the comment job is skipped (on synchronize/reopened/issue_comment)
+    if: always() && (github.event_name == 'pull_request' || (github.event_name == 'issue_comment' && github.event.issue.pull_request))
     runs-on: ubuntu-latest
-    # For issue_comment events, only run on PR comments (not issue comments)
-    if: github.event_name == 'pull_request' || (github.event_name == 'issue_comment' && github.event.issue.pull_request)
     permissions:
       pull-requests: read
     steps:
@@ -36,8 +74,7 @@ jobs:
             );
 
             if (!checklistComment) {
-              console.log('No checklist comment found yet. This is expected for new PRs.');
-              // Don't fail if the comment doesn't exist yet - it might not have been created
+              core.setFailed('Checklist comment not found. This check cannot pass without the reviewer checklist.');
               return;
             }
 
