@@ -17,6 +17,7 @@ const mockTextStream = {
 const mockStreamTextResult = {
 	textStream: mockTextStream,
 	// Default: resolves to a successful result with finishReason "stop"
+	// biome-ignore lint/suspicious/noThenProperty: mock must be thenable to simulate streamText's promise-like return
 	then: (resolve: (v: unknown) => void) =>
 		resolve({ finishReason: "stop", usage: {} }),
 };
@@ -253,6 +254,7 @@ describe("Apple Models Provider", () => {
 			// AI SDK result resolves with finishReason "error"
 			(streamText as jest.Mock).mockImplementationOnce(() => ({
 				textStream: mockTextStream,
+				// biome-ignore lint/suspicious/noThenProperty: mock must be thenable to simulate streamText's promise-like return
 				then: (resolve: (v: unknown) => void) =>
 					resolve({ finishReason: "error", usage: {} }),
 			}));
