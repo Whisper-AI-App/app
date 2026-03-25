@@ -1,3 +1,4 @@
+import { AppleModelsSetup } from "@/components/provider-setup/AppleModelsSetup";
 import { CustomProviderSetup } from "@/components/provider-setup/CustomProviderSetup";
 import { OpenAISetup } from "@/components/provider-setup/OpenAISetup";
 import { OpenRouterSetup } from "@/components/provider-setup/OpenRouterSetup";
@@ -13,6 +14,7 @@ export default function ProviderSetup() {
 	if (providerId === "openrouter") return <OpenRouterSetup />;
 	if (providerId === "openai") return <OpenAISetup />;
 	if (providerId === "custom-provider") return <CustomProviderSetup />;
+	if (providerId === "apple-models") return <AppleModelsSetup />;
 
 	return (
 		<View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>

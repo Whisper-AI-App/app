@@ -33,6 +33,7 @@
 		"@expo/vector-icons": "^15.0.3",
 		"@nanocollective/json-up": "^0.2.0",
 		"@openrouter/ai-sdk-provider": "^2.2.3",
+		"@react-native-ai/apple": "^0.12.0",
 		"@react-navigation/native": "^7.1.8",
 		"@shopify/react-native-skia": "2.4.18",
 		"ai": "^6.0.103",
