@@ -158,43 +158,43 @@ export default function SetupAI() {
 					{providers
 						.filter((p) => p.type === "local")
 						.map((p) => (
-							<ProviderSetupCard
-								key={p.id}
-								provider={p}
-								onConfigure={handleConfigure}
-								onToggleEnabled={handleToggleEnabled}
-							/>
+							<View key={p.id}>
+								<ProviderSetupCard
+									provider={p}
+									onConfigure={handleConfigure}
+									onToggleEnabled={handleToggleEnabled}
+								/>
+								{/* Whisper AI model update check - only under Whisper AI */}
+								{p.id === "whisper-ai" && modelCard && configVersion && downloadedAt && (
+									<View style={{ marginTop: 4, marginBottom: 16 }}>
+										<Text
+											style={{
+												fontSize: 12,
+												opacity: 0.6,
+												marginBottom: 12,
+												lineHeight: 18,
+												textAlign: "center",
+											}}
+										>
+											{modelCard.name} • v{configVersion} •{" "}
+											{modelCard.sizeGB.toFixed(1)} GB
+										</Text>
+										<Button
+											variant="outline"
+											size="sm"
+											onPress={handleCheckForUpdates}
+											disabled={checkingForUpdates || showUpToDate}
+										>
+											{checkingForUpdates
+												? "Checking..."
+												: showUpToDate
+													? "Up to date!"
+													: "Check for Updates"}
+										</Button>
+									</View>
+								)}
+							</View>
 						))}
-
-					{/* Whisper AI model update check */}
-					{modelCard && configVersion && downloadedAt && (
-						<View style={{ marginTop: 4, marginBottom: 16 }}>
-							<Text
-								style={{
-									fontSize: 12,
-									opacity: 0.6,
-									marginBottom: 12,
-									lineHeight: 18,
-									textAlign: "center",
-								}}
-							>
-								{modelCard.name} • v{configVersion} •{" "}
-								{modelCard.sizeGB.toFixed(1)} GB
-							</Text>
-							<Button
-								variant="outline"
-								size="sm"
-								onPress={handleCheckForUpdates}
-								disabled={checkingForUpdates || showUpToDate}
-							>
-								{checkingForUpdates
-									? "Checking..."
-									: showUpToDate
-										? "Up to date!"
-										: "Check for Updates"}
-							</Button>
-						</View>
-					)}
 
 					<Text
 						style={{

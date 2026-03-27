@@ -1,5 +1,6 @@
 import { AppleModelsSetup } from "@/components/provider-setup/AppleModelsSetup";
 import { CustomProviderSetup } from "@/components/provider-setup/CustomProviderSetup";
+import { HuggingFaceSetup } from "@/components/provider-setup/HuggingFaceSetup";
 import { OpenAISetup } from "@/components/provider-setup/OpenAISetup";
 import { OpenRouterSetup } from "@/components/provider-setup/OpenRouterSetup";
 import { WhisperAISetup } from "@/components/provider-setup/WhisperAISetup";
@@ -8,12 +9,13 @@ import { View } from "@/components/ui/view";
 import { useLocalSearchParams } from "expo-router";
 
 export default function ProviderSetup() {
-	const { providerId } = useLocalSearchParams<{ providerId: string }>();
+	const { providerId, search } = useLocalSearchParams<{ providerId: string; search?: string }>();
 
 	if (providerId === "whisper-ai") return <WhisperAISetup />;
 	if (providerId === "openrouter") return <OpenRouterSetup />;
 	if (providerId === "openai") return <OpenAISetup />;
 	if (providerId === "custom-provider") return <CustomProviderSetup />;
+	if (providerId === "huggingface") return <HuggingFaceSetup initialSearch={search} />;
 	if (providerId === "apple-models") return <AppleModelsSetup />;
 
 	return (

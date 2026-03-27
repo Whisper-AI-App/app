@@ -815,6 +815,140 @@ export const migrations = createAsyncMigrations()
 			};
 		},
 	})
+	.add({
+		version: 6,
+		schema: z.object({
+			values: z.object({
+				version: z.string(),
+				name: z.string().optional(),
+				onboardedAt: z.string().optional(),
+				theme: z.string().optional(),
+				localAuthEnabled: z.boolean().optional(),
+				activeProviderId: z.string().optional(),
+				chat_background_type: z.string().optional(),
+				chat_background_uri: z.string().optional(),
+				chat_background_preset_id: z.string().optional(),
+				chat_background_blur: z.number().optional(),
+				chat_background_grain: z.number().optional(),
+				chat_background_opacity: z.number().optional(),
+				flappy_bird_high_score: z.number().optional(),
+				app_icon_variant: z.string().optional(),
+				encryptionMigratedAt: z.string().optional(),
+			}),
+			tables: z.object({
+				chats: z.record(z.string(), z.object({
+					id: z.string(),
+					name: z.string(),
+					createdAt: z.string(),
+					folderId: z.string(),
+				})).optional().default({}),
+				messages: z.record(z.string(), z.object({
+					id: z.string(),
+					chatId: z.string(),
+					contents: z.string(),
+					role: z.string(),
+					createdAt: z.string(),
+					providerId: z.string(),
+					modelId: z.string(),
+					status: z.string(),
+				})).optional().default({}),
+				folders: z.record(z.string(), z.object({
+					id: z.string(),
+					name: z.string(),
+					createdAt: z.string(),
+				})).optional().default({}),
+				aiProviders: z.record(z.string(), z.object({
+					id: z.string(),
+					status: z.string(),
+					error: z.string(),
+					selectedModelId: z.string(),
+					modelCard: z.string(),
+					modelCardId: z.string(),
+					configVersion: z.string(),
+					downloadedAt: z.string(),
+					filename: z.string(),
+					progressSizeGB: z.number(),
+					totalSizeGB: z.number(),
+					downloadError: z.string(),
+					resumableState: z.string(),
+					isPaused: z.union([z.boolean(), z.number()]),
+					fileRemoved: z.union([z.boolean(), z.number()]),
+					mmprojFilename: z.string(),
+					endpointUrl: z.string().optional(),
+					protocol: z.string().optional(),
+					capabilitiesVersion: z.number().optional(),
+					downloadQueue: z.string().optional(),
+				})).optional().default({}),
+				attachments: z.record(
+					z.string(),
+					z.object({
+						id: z.string(),
+						messageId: z.string(),
+						type: z.string(),
+						uri: z.string(),
+						mimeType: z.string(),
+						fileName: z.string(),
+						fileSize: z.number(),
+						width: z.number(),
+						height: z.number(),
+						duration: z.number(),
+						alt: z.string(),
+						thumbnailUri: z.string(),
+						createdAt: z.string(),
+					}),
+				).optional().default({}),
+				hfModels: z.record(
+					z.string(),
+					z.object({
+						id: z.string(),
+						repoId: z.string(),
+						filename: z.string(),
+						displayName: z.string(),
+						fileSizeBytes: z.number(),
+						parametersB: z.number(),
+						quantization: z.string(),
+						pipelineTag: z.string(),
+						sha256: z.string(),
+						localFilename: z.string(),
+						downloadedAt: z.string(),
+						downloadUrl: z.string(),
+						mmprojFilename: z.string(),
+						mmprojDownloadUrl: z.string(),
+						mmprojSizeBytes: z.number(),
+						mmprojLocalFilename: z.string(),
+						mmprojDownloadedAt: z.string(),
+						contextLength: z.number(),
+					}),
+				).optional().default({}),
+			}),
+		}),
+		up: (data) => {
+			// v6: Add hfModels table, add downloadQueue to aiProviders.
+			const aiProviders = Object.fromEntries(
+				Object.entries(data.tables.aiProviders ?? {}).map(
+					([id, row]) => [
+						id,
+						{
+							...row,
+							downloadQueue: "",
+						},
+					],
+				),
+			);
+
+			return {
+				values: {
+					...data.values,
+					version: "6",
+				},
+				tables: {
+					...data.tables,
+					aiProviders,
+					hfModels: {},
+				},
+			};
+		},
+	})
 	.build();
 
 export const CURRENT_SCHEMA_VERSION = migrations[migrations.length - 1].version;

@@ -16,7 +16,7 @@ import {
 	useColorScheme,
 } from "react-native";
 import { ScrollView } from "react-native-gesture-handler";
-import { useCell, useValue } from "tinybase/ui-react";
+import { useCell, useStore, useTable, useValue } from "tinybase/ui-react";
 import { Text } from "./ui/text";
 import { TopSheet } from "./ui/top-sheet";
 import { View } from "./ui/view";
@@ -143,6 +143,10 @@ export function ProviderAndModelSelector({
 						setActiveProvider(p.id);
 						setOpen(false);
 					}}
+					onBrowseModel={(p, modelName) => {
+						setOpen(false);
+						router.push(`/provider-setup/${p.id}?search=${encodeURIComponent(modelName)}`);
+					}}
 					onSetup={() => {
 						setOpen(false);
 						router.push("/setup-ai");
@@ -159,6 +163,7 @@ function SelectAIContent({
 	activeProviderId,
 	onSelectLocal,
 	onSelectCloudModel,
+	onBrowseModel,
 	onSetup,
 }: {
 	open: boolean;
@@ -166,19 +171,32 @@ function SelectAIContent({
 	activeProviderId: string | null;
 	onSelectLocal: (provider: AIProvider) => void;
 	onSelectCloudModel: (provider: AIProvider, modelId: string) => void;
+	onBrowseModel: (provider: AIProvider, modelName: string) => void;
 	onSetup: () => void;
 }) {
 	const [searchQuery, setSearchQuery] = useState("");
 	const colorScheme = useColorScheme() ?? "light";
 	const theme = Colors[colorScheme];
 	const { isConnected } = useNetworkState();
+	const store = useStore();
 
 	useEffect(() => {
 		if (!open) setSearchQuery("");
 	}, [open]);
 
-	const localProviders = providers.filter((p) => p.type === "local");
-	const cloudProviders = providers.filter((p) => p.type === "cloud");
+	// Only show enabled providers (have a row in aiProviders table)
+	const enabledProviders = providers.filter((p) => {
+		const status = store?.getCell("aiProviders", p.id, "status") as string | undefined;
+		return !!status && status !== "disabled";
+	});
+
+	// Providers with model browsing (e.g. HuggingFace) show models like cloud providers
+	const localProviders = enabledProviders.filter(
+		(p) => p.type === "local" && !p.capabilities?.modelBrowsing,
+	);
+	const cloudProviders = enabledProviders.filter(
+		(p) => p.type === "cloud" || (p.type === "local" && p.capabilities?.modelBrowsing),
+	);
 	const query = searchQuery.toLowerCase();
 
 	// Sort active provider to top within each group
@@ -224,6 +242,7 @@ function SelectAIContent({
 			open={open}
 			isConnected={isConnected}
 			onSelectModel={(modelId) => onSelectCloudModel(p, modelId)}
+			onBrowseModel={(modelName) => onBrowseModel(p, modelName)}
 			onSetup={onSetup}
 		/>
 	));
@@ -366,6 +385,7 @@ function CloudProviderSection({
 	open,
 	isConnected,
 	onSelectModel,
+	onBrowseModel,
 	onSetup,
 }: {
 	provider: AIProvider;
@@ -375,6 +395,7 @@ function CloudProviderSection({
 	open: boolean;
 	isConnected: boolean;
 	onSelectModel: (modelId: string) => void;
+	onBrowseModel: (modelName: string) => void;
 	onSetup: () => void;
 }) {
 	const status = useCell("aiProviders", provider.id, "status") as
@@ -394,9 +415,22 @@ function CloudProviderSection({
 		timestamp: number;
 	} | null>(null);
 
-	const isReady = status === "ready";
+	// Get all downloaded HuggingFace models for checking if a model is already downloaded
+	const hfModelsTable = useTable("hfModels");
+
+	// Download-capable local providers (e.g. HuggingFace) can show models when enabled
+	const isDownloadProvider = provider.capabilities?.modelBrowsing && provider.type === "local";
+
+	// Helper to check if a model is downloaded
+	const isModelDownloaded = (modelId: string): boolean => {
+		return hfModelsTable?.[modelId]?.downloadedAt != null;
+	};
+	const isReady = status === "ready" || (isDownloadProvider && !!status && status !== "disabled");
 	const isActiveProvider = activeProviderId === provider.id;
 	const isSearching = searchQuery.length > 0;
+	const searchDebounceRef = useRef<ReturnType<typeof setTimeout>>();
+	const [searchModels, setSearchModels] = useState<ProviderModel[]>([]);
+	const [isSearchingApi, setIsSearchingApi] = useState(false);
 
 	// Fetch models when sheet opens and provider is ready (with TTL cache)
 	useEffect(() => {
@@ -423,8 +457,37 @@ function CloudProviderSection({
 			.finally(() => setIsLoading(false));
 	}, [open, provider, isReady]);
 
+	// For download providers, debounced API search when typing
+	useEffect(() => {
+		if (!isDownloadProvider || !isReady) return;
+
+		if (!searchQuery) {
+			setSearchModels([]);
+			setIsSearchingApi(false);
+			return;
+		}
+
+		setIsSearchingApi(true);
+		if (searchDebounceRef.current) clearTimeout(searchDebounceRef.current);
+		searchDebounceRef.current = setTimeout(() => {
+			provider
+				.models(searchQuery)
+				.then((result) => setSearchModels(result))
+				.catch(() => setSearchModels([]))
+				.finally(() => setIsSearchingApi(false));
+		}, 400);
+
+		return () => {
+			if (searchDebounceRef.current) clearTimeout(searchDebounceRef.current);
+		};
+	}, [searchQuery, isDownloadProvider, isReady, provider]);
+
 	const displayModels = (() => {
 		if (isSearching) {
+			// Download providers use API search results; others filter client-side
+			if (isDownloadProvider) {
+				return searchModels;
+			}
 			return models.filter(
 				(m) =>
 					m.name.toLowerCase().includes(searchQuery) ||
@@ -479,7 +542,7 @@ function CloudProviderSection({
 				</Text>
 			</View>
 
-			{!isConnected ? (
+			{!isConnected && !isDownloadProvider ? (
 				<View
 					style={{
 						flexDirection: "row",
@@ -515,18 +578,22 @@ function CloudProviderSection({
 						Set up {provider.name} to browse models
 					</Text>
 				</TouchableOpacity>
-			) : isLoading ? (
+			) : isLoading || isSearchingApi ? (
 				<View style={{ paddingVertical: 20, alignItems: "center" }}>
 					<ActivityIndicator />
 				</View>
 			) : (
 				<>
-					{displayModels.map((model) => {
+					{displayModels.map((model, index) => {
 						const isSelected = isActiveProvider && selectedModelId === model.id;
+						const downloaded = isDownloadProvider && isModelDownloaded(model.id);
+						const handlePress = isDownloadProvider
+							? () => (downloaded ? onSelectModel(model.id) : onBrowseModel(model.name))
+							: () => onSelectModel(model.id);
 						return (
 							<TouchableOpacity
-								key={model.id}
-								onPress={() => onSelectModel(model.id)}
+								key={`${model.id}-${index}`}
+								onPress={handlePress}
 								style={{
 									flexDirection: "row",
 									alignItems: "center",
@@ -535,9 +602,9 @@ function CloudProviderSection({
 								}}
 								activeOpacity={0.7}
 							>
+								<View style={{ flex: 1 }}>
 								<Text
 									style={{
-										flex: 1,
 										fontSize: 15,
 										fontWeight: isSelected ? "600" : "400",
 										color: isSelected ? theme.green : "inherit",
@@ -546,6 +613,19 @@ function CloudProviderSection({
 								>
 									{model.name}
 								</Text>
+								{model.description ? (
+									<Text
+										style={{
+											fontSize: 12,
+											color: theme.textMuted,
+											marginTop: 2,
+										}}
+										numberOfLines={1}
+									>
+										{model.description}
+									</Text>
+								) : null}
+							</View>
 								{isSelected && (
 									<View
 										style={{
@@ -560,6 +640,14 @@ function CloudProviderSection({
 									>
 										<Check color="#FFFFFF" size={12} strokeWidth={3} />
 									</View>
+								)}
+								{isDownloadProvider && !downloaded && (
+									<ChevronDown
+										color={theme.textMuted}
+										size={14}
+										strokeWidth={2}
+										style={{ marginLeft: 8, transform: [{ rotate: "-90deg" }] }}
+									/>
 								)}
 							</TouchableOpacity>
 						);
@@ -588,6 +676,8 @@ function CloudProviderSection({
 							Couldn't load models from this provider
 						</Text>
 					)}
+					{/* Manual model ID entry - not for download providers */}
+					{!isDownloadProvider && (
 					<View
 						style={{
 							flexDirection: "row",
@@ -645,6 +735,7 @@ function CloudProviderSection({
 							</Text>
 						</TouchableOpacity>
 					</View>
+					)}
 				</>
 			)}
 		</View>

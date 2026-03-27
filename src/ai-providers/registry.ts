@@ -1,6 +1,7 @@
 import { Platform } from "react-native";
 import type { Store } from "tinybase";
 import { createCustomProvider } from "./custom-provider/provider";
+import { createHuggingFaceProvider } from "./huggingface/provider";
 import { createOpenAIProvider } from "./openai/provider";
 import { createOpenRouterProvider } from "./openrouter/provider";
 import type { AIProvider, AIProviderFactory } from "./types";
@@ -12,6 +13,7 @@ export const PROVIDER_FACTORIES: AIProviderFactory[] = [
 	createOpenRouterProvider,
 	createOpenAIProvider,
 	createCustomProvider,
+	createHuggingFaceProvider,
 ];
 
 if (Platform.OS === "ios") {

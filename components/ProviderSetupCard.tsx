@@ -138,7 +138,7 @@ export function ProviderSetupCard({
 
 				<View style={{ flex: 1 }} />
 
-				{isEnabled && status !== "ready" && (
+				{isEnabled && (status !== "ready" || provider.id === "huggingface") && (
 					<Button
 						onPress={() => onConfigure(provider.id)}
 						size="sm"

@@ -8,6 +8,7 @@ import * as SecureStore from "expo-secure-store";
 const PROVIDER_CREDENTIAL_FIELDS: Record<string, string[]> = {
 	openrouter: ["apiKey", "oAuthCodeVerifier"],
 	"custom-provider": ["apiKey"],
+	huggingface: ["apiToken"],
 	openai: ["accessToken", "refreshToken", "expiresAt", "accountId"],
 };
 
