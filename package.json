@@ -68,9 +68,9 @@
 		"expo-web-browser": "~55.0.9",
 		"llama.rn": "^0.11.4",
 		"lucide-react-native": "^0.544.0",
-		"react": "19.2.0",
-		"react-dom": "19.2.0",
-		"react-native": "0.83.2",
+		"react": "^19.2.4",
+		"react-dom": "^19.2.4",
+		"react-native": "0.84.1",
 		"react-native-gesture-handler": "~2.30.0",
 		"react-native-get-random-values": "~1.11.0",
 		"react-native-gifted-chat": "^2.6.5",
@@ -104,7 +104,7 @@
 		"typescript": "~5.9.2"
 	},
 	"overrides": {
-		"react-test-renderer": "19.2.0",
+		"react-test-renderer": "19.2.4",
 		"tinybase": {
 			"react": "$react",
 			"react-dom": "$react-dom",

@@ -150,6 +150,16 @@
       "section": "libraries"
     },
     {
+      "author": "Mike Grabowski",
+      "description": "Creator of @react-native-ai/apple",
+      "packages": [
+        "@react-native-ai/apple"
+      ],
+      "url": "https://github.com/callstackincubator/ai#readme",
+      "priority": 50,
+      "section": "libraries"
+    },
+    {
       "author": "Nicolas Gallagher",
       "description": "Creator of react-native-web",
       "packages": [
@@ -344,6 +354,16 @@
           "react-native-reanimated",
           "react-native-screens"
         ],
+        "priority": 50,
+        "section": "libraries"
+      },
+      {
+        "author": "Mike Grabowski",
+        "description": "Creator of @react-native-ai/apple",
+        "packages": [
+          "@react-native-ai/apple"
+        ],
+        "url": "https://github.com/callstackincubator/ai#readme",
         "priority": 50,
         "section": "libraries"
       },
