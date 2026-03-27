@@ -15,9 +15,9 @@ import { mainStore } from "@/src/stores/main/main-store";
 import { Colors } from "@/theme/colors";
 import { useNavigationState } from "@react-navigation/native";
 import { useRouter } from "expo-router";
-import { BadgeInfo, ChevronLeft } from "lucide-react-native";
-import { useState } from "react";
-import { useColorScheme } from "react-native";
+import { BadgeInfo, ChevronDown, ChevronLeft } from "lucide-react-native";
+import { useRef, useState } from "react";
+import { Animated, Pressable, useColorScheme } from "react-native";
 import { ScrollView } from "react-native-gesture-handler";
 import { SafeAreaView } from "react-native-safe-area-context";
 import type { Store } from "tinybase";
@@ -42,6 +42,24 @@ export default function SetupAI() {
 		| string
 		| undefined;
 	const modelCard = getStoredModelCard(mainStore as unknown as Store);
+
+	const [advancedOpen, setAdvancedOpen] = useState(false);
+	const advancedAnim = useRef(new Animated.Value(0)).current;
+
+	const toggleAdvanced = () => {
+		const toValue = advancedOpen ? 0 : 1;
+		setAdvancedOpen(!advancedOpen);
+		Animated.timing(advancedAnim, {
+			toValue,
+			duration: 200,
+			useNativeDriver: false,
+		}).start();
+	};
+
+	const advancedRotation = advancedAnim.interpolate({
+		inputRange: [0, 1],
+		outputRange: ["0deg", "180deg"],
+	});
 
 	const [checkingForUpdates, setCheckingForUpdates] = useState(false);
 	const [showUpToDate, setShowUpToDate] = useState(false);
@@ -155,8 +173,9 @@ export default function SetupAI() {
 						Enable and configure your AI
 					</Text>
 
+					{/* Whisper AI provider - always visible */}
 					{providers
-						.filter((p) => p.type === "local")
+						.filter((p) => p.id === "whisper-ai")
 						.map((p) => (
 							<View key={p.id}>
 								<ProviderSetupCard
@@ -164,8 +183,7 @@ export default function SetupAI() {
 									onConfigure={handleConfigure}
 									onToggleEnabled={handleToggleEnabled}
 								/>
-								{/* Whisper AI model update check - only under Whisper AI */}
-								{p.id === "whisper-ai" && modelCard && configVersion && downloadedAt && (
+								{modelCard && configVersion && downloadedAt && (
 									<View style={{ marginTop: 4, marginBottom: 16 }}>
 										<Text
 											style={{
@@ -196,92 +214,187 @@ export default function SetupAI() {
 							</View>
 						))}
 
-					<Text
-						style={{
-							fontSize: 24,
-							marginTop: 40,
-							marginBottom: 8,
-							lineHeight: 24,
-							textAlign: "center",
-							fontWeight: "600",
-						}}
-					>
-						Add Providers
-					</Text>
-					<Text
-						style={{
-							fontSize: 14,
-							lineHeight: 20,
-							textAlign: "center",
-							marginBottom: 8,
-							color: theme.text,
-							opacity: 0.8,
-							maxWidth: 220,
-							margin: "auto",
-						}}
-					>
-						You can use other providers in Whisper. Internet required.
-					</Text>
-					<View
-						style={{
-							display: "flex",
-							justifyContent: "center",
-							alignItems: "center",
-							paddingTop: 8,
-							paddingBottom: 32,
-						}}
-					>
-						<View
-							style={{
-								display: "flex",
-								justifyContent: "center",
-								alignItems: "center",
-								flexDirection: "row",
-								gap: 6,
+					{/* Non-whisper local providers - visible when not onboarding */}
+					{!isOnboarding &&
+						providers
+							.filter((p) => p.type === "local" && p.id !== "whisper-ai")
+							.map((p) => (
+								<ProviderSetupCard
+									key={p.id}
+									provider={p}
+									onConfigure={handleConfigure}
+									onToggleEnabled={handleToggleEnabled}
+								/>
+							))}
 
-								opacity: 0.6,
-								backgroundColor: theme.background,
-								width: "auto",
-								paddingHorizontal: 12,
-								paddingVertical: 4,
-								borderRadius: 12,
+					{isOnboarding && (
+						<Pressable
+							onPress={toggleAdvanced}
+							style={{
+								flexDirection: "row",
+								alignItems: "center",
+								justifyContent: "center",
+								marginTop: 32,
+								marginBottom: 32,
+								gap: 8,
 							}}
 						>
-							<BadgeInfo size={16} color={"#fff"} fill={theme.destructive} />
 							<Text
 								style={{
-									fontSize: 12,
-									lineHeight: 16,
-									textAlign: "center",
-									color: theme.destructive,
+									fontSize: 14,
+									fontWeight: "600",
+									color: theme.text,
 								}}
 							>
-								Privacy not guaranteed
+								More Options
 							</Text>
-						</View>
-					</View>
+							<Animated.View
+								style={{ transform: [{ rotate: advancedRotation }] }}
+							>
+								<ChevronDown size={18} color={theme.text} strokeWidth={2} />
+							</Animated.View>
+						</Pressable>
+					)}
 
-					{providers
-						.filter((p) => p.type === "cloud" && !p.capabilities.userApiKey)
-						.map((p) => (
-							<ProviderSetupCard
-								key={p.id}
-								provider={p}
-								onConfigure={handleConfigure}
-								onToggleEnabled={handleToggleEnabled}
-							/>
-						))}
+					{(!isOnboarding || advancedOpen) && (
+						<>
+							{/* Other local providers - only in advanced during onboarding */}
+							{isOnboarding &&
+								providers.filter(
+									(p) => p.type === "local" && p.id !== "whisper-ai",
+								).length > 0 && (
+									<>
+										<Text
+											style={{
+												fontSize: 24,
+												marginTop: 8,
+												marginBottom: 8,
+												lineHeight: 24,
+												textAlign: "center",
+												fontWeight: "600",
+											}}
+										>
+											Local Providers
+										</Text>
+										<Text
+											style={{
+												fontSize: 14,
+												lineHeight: 20,
+												textAlign: "center",
+												marginBottom: 24,
+												color: theme.text,
+												opacity: 0.8,
+											}}
+										>
+											Other on-device AI providers.
+										</Text>
+										{providers
+											.filter(
+												(p) => p.type === "local" && p.id !== "whisper-ai",
+											)
+											.map((p) => (
+												<ProviderSetupCard
+													key={p.id}
+													provider={p}
+													onConfigure={handleConfigure}
+													onToggleEnabled={handleToggleEnabled}
+												/>
+											))}
+									</>
+								)}
 
-					{providers
-						.filter((p) => p.capabilities.userApiKey)
-						.map((p) => (
-							<ProviderSetupCard
-								key={p.id}
-								provider={p}
-								onConfigure={handleConfigure}
-								onToggleEnabled={handleToggleEnabled}
-							/>
-						))}
+							<Text
+								style={{
+									fontSize: 24,
+									marginTop: isOnboarding ? 24 : 40,
+									marginBottom: 8,
+									lineHeight: 24,
+									textAlign: "center",
+									fontWeight: "600",
+								}}
+							>
+								Cloud Providers
+							</Text>
+							<Text
+								style={{
+									fontSize: 14,
+									lineHeight: 20,
+									textAlign: "center",
+									marginBottom: 8,
+									color: theme.text,
+									opacity: 0.8,
+									maxWidth: 220,
+									margin: "auto",
+								}}
+							>
+								You can use other providers in Whisper. Internet required.
+							</Text>
+							<View
+								style={{
+									display: "flex",
+									justifyContent: "center",
+									alignItems: "center",
+									paddingTop: 8,
+									paddingBottom: 32,
+								}}
+							>
+								<View
+									style={{
+										display: "flex",
+										justifyContent: "center",
+										alignItems: "center",
+										flexDirection: "row",
+										gap: 6,
+
+										opacity: 0.6,
+										backgroundColor: theme.background,
+										width: "auto",
+										paddingHorizontal: 12,
+										paddingVertical: 4,
+										borderRadius: 12,
+									}}
+								>
+									<BadgeInfo
+										size={16}
+										color={"#fff"}
+										fill={theme.destructive}
+									/>
+									<Text
+										style={{
+											fontSize: 12,
+											lineHeight: 16,
+											textAlign: "center",
+											color: theme.destructive,
+										}}
+									>
+										Privacy not guaranteed
+									</Text>
+								</View>
+							</View>
+
+							{providers
+								.filter((p) => p.type === "cloud" && !p.capabilities.userApiKey)
+								.map((p) => (
+									<ProviderSetupCard
+										key={p.id}
+										provider={p}
+										onConfigure={handleConfigure}
+										onToggleEnabled={handleToggleEnabled}
+									/>
+								))}
+
+							{providers
+								.filter((p) => p.capabilities.userApiKey)
+								.map((p) => (
+									<ProviderSetupCard
+										key={p.id}
+										provider={p}
+										onConfigure={handleConfigure}
+										onToggleEnabled={handleToggleEnabled}
+									/>
+								))}
+						</>
+					)}
 				</ScrollView>
 
 				{/* Continue button */}

@@ -10,20 +10,26 @@ import { createWhisperAIProvider } from "./whisper-ai/provider";
 // Adding a new provider = add one line here
 export const PROVIDER_FACTORIES: AIProviderFactory[] = [
 	createWhisperAIProvider,
+	createHuggingFaceProvider,
+
+	...(Platform.OS === "ios"
+		? (() => {
+				try {
+					const {
+						createAppleModelsProvider,
+					} = require("./apple-models/provider");
+					return [createAppleModelsProvider];
+				} catch {
+					// Package not available or native module missing, skip silently
+					return [];
+				}
+			})()
+		: []),
+
 	createOpenRouterProvider,
 	createOpenAIProvider,
 	createCustomProvider,
-	createHuggingFaceProvider,
 ];
-
-if (Platform.OS === "ios") {
-	try {
-		const { createAppleModelsProvider } = require("./apple-models/provider");
-		PROVIDER_FACTORIES.push(createAppleModelsProvider);
-	} catch {
-		// Package not available or native module missing, skip silently
-	}
-}
 
 // Create all provider instances from store
 export function createAllProviders(store: Store): AIProvider[] {
