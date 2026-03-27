@@ -37,6 +37,7 @@ jest.mock("../../ai-providers/message-converter", () => ({
 
 // Must import after mocks
 import { createAppleModelsProvider } from "../../ai-providers/apple-models/provider";
+import { CONTENT_SAFETY_MESSAGE } from "../../ai-providers/apple-models/provider";
 import { streamText } from "ai";
 
 describe("Apple Models Provider", () => {
@@ -106,17 +107,14 @@ describe("Apple Models Provider", () => {
 			).toBe("system-default");
 		});
 
-		it("transitions to error when not available", async () => {
+		it("transitions to ready even when not available (setup no longer checks availability)", async () => {
 			provider.enable();
 			mockIsAvailable.mockReturnValue(false);
 
 			await provider.setup();
 
 			expect(store.getCell("aiProviders", "apple-models", "status")).toBe(
-				"error",
-			);
-			expect(store.getCell("aiProviders", "apple-models", "error")).toContain(
-				"not available",
+				"ready",
 			);
 		});
 	});
@@ -267,6 +265,55 @@ describe("Apple Models Provider", () => {
 			expect(result.finishReason).toBe("error");
 			expect(result.content).toContain("Apple Intelligence could not generate");
 		});
+
+		it("returns content safety message when stream content contains safety text", async () => {
+			const tokens: string[] = [];
+
+			// Stream yields safety-related content, then ends
+			const safetyText = "Detected content likely to be unsafe";
+			let yielded = false;
+			mockTextStream[Symbol.asyncIterator].mockReturnValue({
+				next: jest.fn(() => {
+					if (!yielded) {
+						yielded = true;
+						return Promise.resolve({ value: safetyText, done: false });
+					}
+					return Promise.resolve({ value: undefined, done: true });
+				}),
+			});
+
+			// AI SDK result resolves with finishReason "error" via direct property
+			(streamText as jest.Mock).mockImplementationOnce(() => ({
+				textStream: mockTextStream,
+				finishReason: Promise.resolve("error"),
+			}));
+
+			const result = await provider.completion(
+				[{ role: "user", content: "Hi" }],
+				(token) => tokens.push(token),
+			);
+
+			expect(result.finishReason).toBe("stop");
+			expect(result.content).toContain(CONTENT_SAFETY_MESSAGE);
+			expect(tokens).toContain(CONTENT_SAFETY_MESSAGE);
+		});
+
+		it("returns content safety message when thrown error contains safety text", async () => {
+			const tokens: string[] = [];
+
+			(streamText as jest.Mock).mockImplementationOnce(() => {
+				throw new Error("Detected content likely to be unsafe");
+			});
+
+			const result = await provider.completion(
+				[{ role: "user", content: "Hi" }],
+				(token) => tokens.push(token),
+			);
+
+			expect(result.finishReason).toBe("stop");
+			expect(result.content).toContain(CONTENT_SAFETY_MESSAGE);
+			expect(tokens).toContain(CONTENT_SAFETY_MESSAGE);
+		});
 	});
 
 	describe("stopCompletion()", () => {
@@ -319,11 +366,11 @@ describe("Apple Models Provider", () => {
 });
 
 describe("Apple Models Registry", () => {
-	it("registers factory only on iOS when available", () => {
+	it("registers factory on iOS without checking availability", () => {
 		const { Platform } = require("react-native");
-		const { apple } = require("@react-native-ai/apple");
 
 		expect(Platform.OS).toBe("ios");
-		expect(apple.isAvailable()).toBe(true);
+		// Registry no longer gates on isAvailable() — provider is registered
+		// for all iOS devices; the setup screen handles compatibility messaging.
 	});
 });

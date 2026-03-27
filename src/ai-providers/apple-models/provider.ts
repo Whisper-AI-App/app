@@ -1,6 +1,5 @@
 import type { ModelMessage } from "ai";
 import { streamText } from "ai";
-import { Platform } from "react-native";
 import type { Store } from "tinybase";
 import { convertMessagesForAISDK } from "../message-converter";
 import type {
@@ -14,6 +13,13 @@ import { NO_MULTIMODAL } from "../types";
 
 // Module-scoped runtime state
 let abortController: AbortController | null = null;
+
+// Pattern to detect Apple's content safety / guardrail errors
+const SAFETY_ERROR_PATTERN =
+	/unsafe|safety|content.*(filter|blocked|policy|violat)|guardrail/i;
+
+export const CONTENT_SAFETY_MESSAGE =
+	"Apple Intelligence declined to generate this response due to its content safety guidelines. Try rephrasing your message.";
 
 export function createAppleModelsProvider(store: Store): AIProvider {
 	const provider: AIProvider = {
@@ -59,17 +65,6 @@ export function createAppleModelsProvider(store: Store): AIProvider {
 			store.setCell("aiProviders", "apple-models", "status", "configuring");
 
 			try {
-				if (Platform.OS !== "ios") {
-					throw new Error("Apple Intelligence is only available on iOS");
-				}
-
-				const { apple } = require("@react-native-ai/apple");
-				if (!apple.isAvailable()) {
-					throw new Error(
-						"Apple Intelligence is not available on this device. Requires iOS 26+ with Apple Intelligence enabled.",
-					);
-				}
-
 				store.setCell(
 					"aiProviders",
 					"apple-models",
@@ -144,6 +139,14 @@ export function createAppleModelsProvider(store: Store): AIProvider {
 				const finishReason = await result.finishReason;
 
 				if (finishReason === "error" || (!content && finishReason !== "stop")) {
+					if (SAFETY_ERROR_PATTERN.test(content)) {
+						onToken(CONTENT_SAFETY_MESSAGE);
+						return {
+							content: content + CONTENT_SAFETY_MESSAGE,
+							finishReason: "stop",
+						};
+					}
+
 					const errorText =
 						"Apple Intelligence could not generate a response. The on-device model may still be downloading, please check Settings > Apple Intelligence & Siri and try again.";
 					onToken(errorText);
@@ -159,6 +162,16 @@ export function createAppleModelsProvider(store: Store): AIProvider {
 					return { content, finishReason: "cancelled" };
 				}
 				console.warn("[AppleModels] Completion failed:", error);
+
+				const errorMsg =
+					error instanceof Error ? error.message : String(error);
+				if (SAFETY_ERROR_PATTERN.test(errorMsg)) {
+					onToken(CONTENT_SAFETY_MESSAGE);
+					return {
+						content: content + CONTENT_SAFETY_MESSAGE,
+						finishReason: "stop",
+					};
+				}
 
 				// Apple FoundationModels throws GenerationError.assetsUnavailable
 				// when model assets aren't downloaded yet. The AI SDK may also

@@ -7,12 +7,21 @@ import { View } from "@/components/ui/view";
 import { useAIProvider } from "@/contexts/AIProviderContext";
 import { useColor } from "@/hooks/useColor";
 import { useRouter } from "expo-router";
-import { ChevronLeft, Check } from "lucide-react-native";
+import { ChevronLeft, Check, Info } from "lucide-react-native";
 import { useEffect, useState } from "react";
 import { ActivityIndicator, Pressable } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useCell } from "tinybase/ui-react";
 import type { ProviderModel } from "@/src/ai-providers/types";
+
+function useAppleIntelligenceAvailable(): boolean {
+	try {
+		const { apple } = require("@react-native-ai/apple");
+		return apple.isAvailable();
+	} catch {
+		return false;
+	}
+}
 
 export function AppleModelsSetup() {
 	const router = useRouter();
@@ -21,6 +30,7 @@ export function AppleModelsSetup() {
 	const primaryColor = useColor("primary");
 	const primaryForegroundColor = useColor("primaryForeground");
 	const mutedForegroundColor = useColor("mutedForeground");
+	const isAvailable = useAppleIntelligenceAvailable();
 
 	const [models, setModels] = useState<ProviderModel[]>([]);
 	const [selectedModelId, setSelectedModelId] = useState<string | null>(null);
@@ -34,10 +44,10 @@ export function AppleModelsSetup() {
 		| undefined;
 
 	useEffect(() => {
-		if (provider) {
+		if (provider && isAvailable) {
 			provider.models().then(setModels);
 		}
-	}, [provider]);
+	}, [provider, isAvailable]);
 
 	const handleSelectModel = async () => {
 		if (!provider || !selectedModelId) return;
@@ -110,81 +120,118 @@ export function AppleModelsSetup() {
 						On-device Apple AI. No internet or downloads needed.
 					</Text>
 
-					<View style={{ width: "100%", gap: 12 }}>
-						{models.map((model) => {
-							const isSelected = selectedModelId === model.id;
-							return (
-								<Pressable
-									key={model.id}
-									onPress={() => setSelectedModelId(model.id)}
-								>
-									<Card
-										style={{
-											borderWidth: 2,
-											borderColor: isSelected
-												? primaryColor
-												: "transparent",
-										}}
+					{!isAvailable ? (
+						<Card style={{ width: "100%", gap: 12, alignItems: "center" }}>
+							<Info color={mutedForegroundColor} size={32} strokeWidth={1.5} />
+							<Text
+								style={{
+									fontWeight: "600",
+									fontSize: 16,
+									textAlign: "center",
+								}}
+							>
+								Not Available on This Device
+							</Text>
+							<Text
+								style={{
+									fontSize: 14,
+									color: mutedForegroundColor,
+									textAlign: "center",
+									lineHeight: 20,
+								}}
+							>
+								Apple Intelligence requires iOS 26 or later with Apple
+								Intelligence enabled.
+							</Text>
+							<Text
+								style={{
+									fontSize: 14,
+									color: mutedForegroundColor,
+									textAlign: "center",
+									lineHeight: 20,
+								}}
+							>
+								Go to Settings &gt; Apple Intelligence &amp; Siri to check
+								compatibility and enable it.
+							</Text>
+						</Card>
+					) : (
+						<View style={{ width: "100%", gap: 12 }}>
+							{models.map((model) => {
+								const isSelected = selectedModelId === model.id;
+								return (
+									<Pressable
+										key={model.id}
+										onPress={() => setSelectedModelId(model.id)}
 									>
-										<View
+										<Card
 											style={{
-												flexDirection: "row",
-												justifyContent: "space-between",
-												alignItems: "center",
+												borderWidth: 2,
+												borderColor: isSelected
+													? primaryColor
+													: "transparent",
 											}}
 										>
-											<View style={{ flex: 1 }}>
-												<Text
-													style={{ fontWeight: "600", fontSize: 16 }}
-												>
-													{model.name}
-												</Text>
-												{model.description && (
+											<View
+												style={{
+													flexDirection: "row",
+													justifyContent: "space-between",
+													alignItems: "center",
+												}}
+											>
+												<View style={{ flex: 1 }}>
 													<Text
-														style={{
-															fontSize: 13,
-															color: mutedForegroundColor,
-															marginTop: 4,
-														}}
+														style={{ fontWeight: "600", fontSize: 16 }}
 													>
-														{model.description}
+														{model.name}
 													</Text>
-												)}
-												{model.contextLength && (
+													{model.description && (
+														<Text
+															style={{
+																fontSize: 13,
+																color: mutedForegroundColor,
+																marginTop: 4,
+															}}
+														>
+															{model.description}
+														</Text>
+													)}
+													{model.contextLength && (
+														<Text
+															style={{
+																fontSize: 12,
+																color: mutedForegroundColor,
+																marginTop: 4,
+															}}
+														>
+															Context: {model.contextLength.toLocaleString()}{" "}
+															tokens
+														</Text>
+													)}
 													<Text
 														style={{
 															fontSize: 12,
 															color: mutedForegroundColor,
-															marginTop: 4,
+															marginTop: 2,
 														}}
 													>
-														Context: {model.contextLength.toLocaleString()}{" "}
-														tokens
+														Text generation
 													</Text>
+												</View>
+												{isSelected && (
+													<Check
+														color={primaryColor}
+														size={20}
+														strokeWidth={2.5}
+													/>
 												)}
-												<Text
-													style={{
-														fontSize: 12,
-														color: mutedForegroundColor,
-														marginTop: 2,
-													}}
-												>
-													Text generation
-												</Text>
 											</View>
-											{isSelected && (
-												<Check
-													color={primaryColor}
-													size={20}
-													strokeWidth={2.5}
-												/>
-											)}
-										</View>
-									</Card>
-								</Pressable>
-							);
-						})}
-					</View>
+										</Card>
+									</Pressable>
+								);
+							})}
+						</View>
+					)}
 				</View>
 
 				<View
@@ -207,24 +254,26 @@ export function AppleModelsSetup() {
 						</Text>
 					)}
 
-					<Button
-						onPress={handleSelectModel}
-						disabled={!selectedModelId || isSettingUp}
-						style={{ width: "100%" }}
-					>
-						{isSettingUp ? (
-							<View
-								style={{ flexDirection: "row", gap: 8, alignItems: "center" }}
-							>
-								<ActivityIndicator color={primaryForegroundColor} />
-								<Text style={{ color: primaryForegroundColor }}>
-									Setting up...
-								</Text>
-							</View>
-						) : (
-							"Select Model"
-						)}
-					</Button>
+					{isAvailable && (
+						<Button
+							onPress={handleSelectModel}
+							disabled={!selectedModelId || isSettingUp}
+							style={{ width: "100%" }}
+						>
+							{isSettingUp ? (
+								<View
+									style={{ flexDirection: "row", gap: 8, alignItems: "center" }}
+								>
+									<ActivityIndicator color={primaryForegroundColor} />
+									<Text style={{ color: primaryForegroundColor }}>
+										Setting up...
+									</Text>
+								</View>
+							) : (
+								"Select Model"
+							)}
+						</Button>
+					)}
 				</View>
 			</SafeAreaView>
 		</View>
