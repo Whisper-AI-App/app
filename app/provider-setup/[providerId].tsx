@@ -1,3 +1,4 @@
+import { AppleModelsSetup } from "@/components/provider-setup/AppleModelsSetup";
 import { CustomProviderSetup } from "@/components/provider-setup/CustomProviderSetup";
 import { HuggingFaceSetup } from "@/components/provider-setup/HuggingFaceSetup";
 import { OpenAISetup } from "@/components/provider-setup/OpenAISetup";
@@ -15,6 +16,7 @@ export default function ProviderSetup() {
 	if (providerId === "openai") return <OpenAISetup />;
 	if (providerId === "custom-provider") return <CustomProviderSetup />;
 	if (providerId === "huggingface") return <HuggingFaceSetup initialSearch={search} />;
+	if (providerId === "apple-models") return <AppleModelsSetup />;
 
 	return (
 		<View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>

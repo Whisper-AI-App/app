@@ -1,3 +1,4 @@
+import { Platform } from "react-native";
 import type { Store } from "tinybase";
 import { createCustomProvider } from "./custom-provider/provider";
 import { createHuggingFaceProvider } from "./huggingface/provider";
@@ -14,6 +15,15 @@ export const PROVIDER_FACTORIES: AIProviderFactory[] = [
 	createCustomProvider,
 	createHuggingFaceProvider,
 ];
+
+if (Platform.OS === "ios") {
+	try {
+		const { createAppleModelsProvider } = require("./apple-models/provider");
+		PROVIDER_FACTORIES.push(createAppleModelsProvider);
+	} catch {
+		// Package not available or native module missing, skip silently
+	}
+}
 
 // Create all provider instances from store
 export function createAllProviders(store: Store): AIProvider[] {
