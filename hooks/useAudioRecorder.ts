@@ -46,6 +46,7 @@ import { Alert, AppState, type AppStateStatus, Linking } from "react-native";
 
 export interface AudioRecorderState {
 	isRecording: boolean;
+	isStopped: boolean;
 	isPaused: boolean;
 	durationMs: number;
 	uri: string | null;
@@ -66,10 +67,12 @@ export interface UseAudioRecorderReturn {
 export function useAudioRecorder(
 	constraints?: MultimodalConstraints,
 ): UseAudioRecorderReturn {
-	const maxDuration = (constraints?.maxAudioDuration ?? 120) * 1000; // Convert to ms
+	const maxDuration = (constraints?.maxAudioDuration ?? 300) * 1000; // Convert to ms
 	const [hasPermission, setHasPermission] = useState<boolean | null>(null);
 	const [isRecording, setIsRecording] = useState(false);
+	const [isStopped, setIsStopped] = useState(false);
 	const isRecordingRef = useRef(false);
+	const isStoppedRef = useRef(false);
 	const maxDurationTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
 	const recorder = useExpoAudioRecorder(WAV_MONO_16K);
@@ -80,9 +83,13 @@ export function useAudioRecorder(
 		const handleAppStateChange = (nextState: AppStateStatus) => {
 			if (nextState !== "active" && isRecordingRef.current) {
 				// App went to background — stop recording, preserve partial
-				recorder.stop();
+				if (!isStoppedRef.current) {
+					recorder.stop();
+				}
 				setIsRecording(false);
+				setIsStopped(false);
 				isRecordingRef.current = false;
+				isStoppedRef.current = false;
 				if (maxDurationTimerRef.current) {
 					clearTimeout(maxDurationTimerRef.current);
 					maxDurationTimerRef.current = null;
@@ -131,15 +138,19 @@ export function useAudioRecorder(
 		await recorder.prepareToRecordAsync();
 		recorder.record();
 		setIsRecording(true);
+		setIsStopped(false);
 		isRecordingRef.current = true;
+		isStoppedRef.current = false;
 
-		// Set max duration timer
+		// Set max duration timer — stop the recorder but keep UI visible
+		// so the user can send or cancel the recording
 		if (maxDuration > 0) {
 			maxDurationTimerRef.current = setTimeout(async () => {
-				if (isRecordingRef.current) {
+				if (isRecordingRef.current && !isStoppedRef.current) {
 					await recorder.stop();
-					setIsRecording(false);
-					isRecordingRef.current = false;
+					setIsStopped(true);
+					isStoppedRef.current = true;
+					// Keep isRecording=true so the overlay stays visible
 				}
 			}, maxDuration);
 		}
@@ -153,9 +164,14 @@ export function useAudioRecorder(
 			maxDurationTimerRef.current = null;
 		}
 
-		await recorder.stop();
+		// Only call recorder.stop() if not already stopped by max duration timer
+		if (!isStoppedRef.current) {
+			await recorder.stop();
+		}
 		setIsRecording(false);
+		setIsStopped(false);
 		isRecordingRef.current = false;
+		isStoppedRef.current = false;
 
 		// Reset audio mode
 		await setAudioModeAsync({
@@ -173,9 +189,14 @@ export function useAudioRecorder(
 			maxDurationTimerRef.current = null;
 		}
 
-		await recorder.stop();
+		// Only call recorder.stop() if not already stopped by max duration timer
+		if (!isStoppedRef.current) {
+			await recorder.stop();
+		}
 		setIsRecording(false);
+		setIsStopped(false);
 		isRecordingRef.current = false;
+		isStoppedRef.current = false;
 
 		// Reset audio mode
 		await setAudioModeAsync({
@@ -186,6 +207,7 @@ export function useAudioRecorder(
 	return {
 		recorderState: {
 			isRecording,
+			isStopped,
 			isPaused: false,
 			durationMs: recorderStatus.durationMillis ?? 0,
 			uri: recorder.uri,

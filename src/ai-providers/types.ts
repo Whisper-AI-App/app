@@ -84,7 +84,7 @@ export const DEFAULT_CONSTRAINTS: MultimodalConstraints = {
 	maxImageWidth: 1024,
 	maxImageHeight: 1024,
 	maxFileSize: 10 * 1024 * 1024, // 10 MB
-	maxAudioDuration: 120, // 2 minutes
+	maxAudioDuration: 300, // 5 minutes
 	supportedImageFormats: ["jpeg", "png"],
 	supportedFileTypes: ["txt", "md", "json", "csv"],
 	audioFormat: "wav",

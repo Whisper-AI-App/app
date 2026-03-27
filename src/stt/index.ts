@@ -82,9 +82,10 @@ export async function initSTT(): Promise<void> {
  * If the STT service is not ready, attempts budget-checked lazy init first.
  *
  * @param audioUri - Path to the audio file
+ * @param durationMs - Optional known duration of the audio in milliseconds (enables chunked transcription for long audio)
  * @returns Transcribed text string
  */
-export async function getTranscription(audioUri: string): Promise<string> {
+export async function getTranscription(audioUri: string, durationMs?: number): Promise<string> {
 	if (status !== "ready") {
 		// T068: On-demand loading path with budget check via lazy init
 		if (status === "uninitialized" || status === "released") {
@@ -119,7 +120,7 @@ export async function getTranscription(audioUri: string): Promise<string> {
 	}
 
 	const jobId = ++jobCounter;
-	const text = await whisperSTT.transcribe(contextId, jobId, audioUri);
+	const text = await whisperSTT.transcribe(contextId, jobId, audioUri, durationMs);
 
 	// On low-memory devices, release STT immediately to reclaim ~75MB for chat inference.
 	// This prevents the whisper model from competing with llama.rn for scarce RAM,

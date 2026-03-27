@@ -68,7 +68,7 @@ describe("STT service", () => {
 			const result = await getTranscription("/path/to/audio.wav");
 
 			expect(result).toBe("transcribed text");
-			expect(mockTranscribe).toHaveBeenCalledWith(42, expect.any(Number), "/path/to/audio.wav");
+			expect(mockTranscribe).toHaveBeenCalledWith(42, expect.any(Number), "/path/to/audio.wav", undefined);
 		});
 	});
 
@@ -90,7 +90,7 @@ describe("STT service", () => {
 			await getTranscription("/path/to/audio.wav");
 
 			expect(mockInit).toHaveBeenCalledWith("/local/path/ggml-tiny.bin");
-			expect(mockTranscribe).toHaveBeenCalledWith(99, expect.any(Number), "/path/to/audio.wav");
+			expect(mockTranscribe).toHaveBeenCalledWith(99, expect.any(Number), "/path/to/audio.wav", undefined);
 		});
 	});
 });

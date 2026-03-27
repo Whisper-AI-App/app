@@ -213,7 +213,7 @@ export default function ChatPage() {
 
 		const transcribeAndSend = async () => {
 			try {
-				const transcription = await getTranscription(uri);
+				const transcription = await getTranscription(uri, recorderState.durationMs);
 
 				if (transcription?.trim()) {
 					audioAtt.transcription = transcription;
@@ -515,6 +515,7 @@ export default function ChatPage() {
 						{recorderState.isRecording && (
 							<AudioRecorderOverlay
 								isRecording={recorderState.isRecording}
+								isStopped={recorderState.isStopped}
 								durationMs={recorderState.durationMs}
 								onSend={handleSendRecording}
 								onCancel={cancelRecording}

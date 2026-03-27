@@ -167,7 +167,10 @@ export function useChatCompletion(
 								let transcription = transcriptionById.get(att.id) ?? "";
 								if (!transcription) {
 									try {
-										transcription = await getTranscription(att.uri);
+										transcription = await getTranscription(
+											att.uri,
+											att.duration ? att.duration * 1000 : undefined,
+										);
 									} catch (sttError) {
 										console.warn("[useChatCompletion] STT transcription failed:", sttError);
 									}

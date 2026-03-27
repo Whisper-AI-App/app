@@ -8,6 +8,7 @@ import { View } from "../ui/view";
 
 interface AudioRecorderOverlayProps {
 	isRecording: boolean;
+	isStopped: boolean;
 	durationMs: number;
 	onSend: () => void;
 	onCancel: () => void;
@@ -88,8 +89,17 @@ function RecordingPulse() {
 	);
 }
 
+function StoppedIndicator() {
+	return (
+		<View style={styles.stoppedIndicator}>
+			<View style={styles.stoppedDot} />
+		</View>
+	);
+}
+
 export const AudioRecorderOverlay: FC<AudioRecorderOverlayProps> = ({
 	isRecording,
+	isStopped,
 	durationMs,
 	onSend,
 	onCancel,
@@ -106,15 +116,23 @@ export const AudioRecorderOverlay: FC<AudioRecorderOverlayProps> = ({
 				{ backgroundColor: `${theme.card}F0`, marginTop: 16 },
 			]}
 		>
-			{/* Row 1: timer + waveform */}
+			{/* Row 1: timer + waveform or stopped label */}
 			<View style={styles.topRow}>
-				<Text style={[styles.timer, { color: theme.text }]}>
-					{formatDuration(durationMs)}
-				</Text>
-				<WaveformDots />
+				{isStopped ? (
+					<Text style={[styles.stoppedLabel, { color: theme.text }]}>
+						Max duration reached
+					</Text>
+				) : (
+					<>
+						<Text style={[styles.timer, { color: theme.text }]}>
+							{formatDuration(durationMs)}
+						</Text>
+						<WaveformDots />
+					</>
+				)}
 			</View>
 
-			{/* Row 2: cancel + pulse + send */}
+			{/* Row 2: cancel + pulse/stopped + send */}
 			<View style={styles.bottomRow}>
 				<TouchableOpacity
 					onPress={onCancel}
@@ -127,7 +145,7 @@ export const AudioRecorderOverlay: FC<AudioRecorderOverlayProps> = ({
 					<Trash2 size={18} color={theme.destructive} strokeWidth={2} />
 				</TouchableOpacity>
 
-				<RecordingPulse />
+				{isStopped ? <StoppedIndicator /> : <RecordingPulse />}
 
 				<TouchableOpacity
 					onPress={onSend}
@@ -205,5 +223,23 @@ const styles = StyleSheet.create({
 		borderRadius: 18,
 		justifyContent: "center",
 		alignItems: "center",
+	},
+	stoppedIndicator: {
+		width: 24,
+		height: 24,
+		borderRadius: 12,
+		backgroundColor: "rgba(120, 120, 128, 0.2)",
+		justifyContent: "center",
+		alignItems: "center",
+	},
+	stoppedDot: {
+		width: 12,
+		height: 12,
+		borderRadius: 6,
+		backgroundColor: "rgba(120, 120, 128, 0.6)",
+	},
+	stoppedLabel: {
+		fontSize: 16,
+		fontWeight: "600",
 	},
 });
