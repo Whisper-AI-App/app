@@ -70,7 +70,7 @@
 		"lucide-react-native": "^0.544.0",
 		"react": "19.2.0",
 		"react-dom": "19.2.0",
-		"react-native": "0.83.2",
+		"react-native": "0.84.1",
 		"react-native-gesture-handler": "~2.30.0",
 		"react-native-get-random-values": "~1.11.0",
 		"react-native-gifted-chat": "^2.6.5",
