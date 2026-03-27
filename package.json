@@ -37,7 +37,7 @@
 		"@react-navigation/native": "^7.1.8",
 		"@shopify/react-native-skia": "2.4.18",
 		"ai": "^6.0.103",
-		"expo": "~55.0.5",
+		"expo": "~55.0.8",
 		"expo-alternate-app-icons": "^7.0.0",
 		"expo-asset": "^55.0.8",
 		"expo-audio": "~55.0.8",
