@@ -2,9 +2,12 @@ import {
 	deleteProviderCredentials,
 	getCredential,
 } from "@/src/actions/secure-credentials";
-import * as FileSystem from "expo-file-system";
+import { createOpenAI } from "@ai-sdk/openai";
+import { streamText } from "ai";
 import { fetch as expoFetch } from "expo/fetch";
 import type { Store } from "tinybase";
+import { convertMessagesForAISDK } from "../message-converter";
+import { getValidAccessToken } from "../token-refresh";
 import type {
 	AIProvider,
 	CompletionMessage,
@@ -14,13 +17,12 @@ import type {
 } from "../types";
 import { DEFAULT_CONSTRAINTS, NO_MULTIMODAL } from "../types";
 import {
-	requestDeviceCode,
-	pollForAuthorization,
 	cancelPolling,
 	OPENAI_CLIENT_ID,
 	OPENAI_TOKEN_URL,
+	pollForAuthorization,
+	requestDeviceCode,
 } from "./oauth";
-import { getValidAccessToken } from "../token-refresh";
 
 const CODEX_API_BASE = "https://chatgpt.com/backend-api/codex";
 const DEFAULT_CLOUD_CONTEXT_SIZE = 128000;
@@ -37,7 +39,11 @@ const CODEX_MODELS: ProviderModel[] = [
 	{ id: "gpt-5.2", name: "GPT-5.2", contextLength: 128000 },
 	{ id: "gpt-5.1-codex", name: "GPT-5.1 Codex", contextLength: 192000 },
 	{ id: "gpt-5.1-codex-max", name: "GPT-5.1 Codex Max", contextLength: 192000 },
-	{ id: "gpt-5.1-codex-mini", name: "GPT-5.1 Codex Mini", contextLength: 192000 },
+	{
+		id: "gpt-5.1-codex-mini",
+		name: "GPT-5.1 Codex Mini",
+		contextLength: 192000,
+	},
 ];
 
 // Module-scoped runtime state
@@ -68,12 +74,71 @@ export function createOpenAIProvider(store: Store): AIProvider {
 
 	function getSelectedModelId(): string {
 		return (
-			(store.getCell(
-				"aiProviders",
-				"openai",
-				"selectedModelId",
-			) as string) || ""
+			(store.getCell("aiProviders", "openai", "selectedModelId") as string) ||
+			""
 		);
+	}
+
+	/**
+	 * Custom fetch wrapper for the Codex API.
+	 * Handles token refresh, injects required headers, and patches the
+	 * request body to include `store: false` as required by the Codex backend.
+	 *
+	 */
+	async function codexFetch(
+		url: RequestInfo | URL,
+		init?: RequestInit,
+	): Promise<Response> {
+		// Refresh token before each request
+		await refreshAccessToken();
+		const token = getAccessToken();
+		const accountId = await getAccountId();
+
+		const headers = new Headers(init?.headers);
+		headers.set("Authorization", `Bearer ${token}`);
+		headers.set("ChatGPT-Account-Id", accountId);
+		headers.set("originator", "codex_cli_rs");
+
+		// Patch the request body for Codex backend requirements:
+		// 1. Add store: false
+		// 2. Extract developer/system message from input[] into top-level instructions
+		//    (Codex requires instructions as a separate field, not inline in input)
+		let body = init?.body;
+		if (typeof body === "string") {
+			try {
+				const parsed = JSON.parse(body) as Record<string, unknown>;
+				parsed.store = false;
+
+				// Move developer message from input to instructions
+				const input = parsed.input as
+					| Array<Record<string, unknown>>
+					| undefined;
+				if (input && !parsed.instructions) {
+					const devIdx = input.findIndex((m) => m.role === "developer");
+					if (devIdx !== -1) {
+						parsed.instructions =
+							input[devIdx].content ?? "You are a helpful assistant.";
+						input.splice(devIdx, 1);
+					}
+				}
+
+				body = JSON.stringify(parsed);
+			} catch {
+				// Not JSON — leave body as-is
+			}
+		}
+
+		// Convert Headers to plain object for expoFetch compatibility
+		const headersObj: Record<string, string> = {};
+		headers.forEach((value, key) => {
+			headersObj[key] = value;
+		});
+
+		return expoFetch(url, {
+			...init,
+			headers: headersObj,
+			body,
+		} as RequestInit);
 	}
 
 	const provider: AIProvider = {
@@ -194,7 +259,6 @@ export function createOpenAIProvider(store: Store): AIProvider {
 			await refreshAccessToken();
 			const token = getAccessToken();
 			const modelId = getSelectedModelId();
-			const accountId = await getAccountId();
 
 			if (!token || !modelId) {
 				return { content: "", finishReason: "error" };
@@ -206,121 +270,37 @@ export function createOpenAIProvider(store: Store): AIProvider {
 			let content = "";
 
 			try {
-				// Build input array in the Responses API format
-				const input: Array<Record<string, unknown>> = [];
-				for (const msg of messages) {
-					if (typeof msg.content === "string") {
-						input.push({
-							role: msg.role === "system" ? "developer" : msg.role,
-							content: msg.content,
-						});
-					} else {
-						// Multimodal parts — convert to Responses API format
-						const parts: Array<Record<string, unknown>> = [];
-						for (const part of msg.content) {
-							if (part.type === "text") {
-								parts.push({ type: "input_text", text: part.text });
-							} else if (part.type === "image") {
-								try {
-									const file = new FileSystem.File(part.uri);
-									if (!file.exists) throw new Error(`File not found: ${part.uri}`);
-									const base64 = await file.base64();
-									const mimeType = ["image/jpeg", "image/png", "image/gif", "image/webp"].includes(part.mimeType)
-										? part.mimeType
-										: "image/jpeg";
-									parts.push({
-										type: "input_image",
-										image_url: `data:${mimeType};base64,${base64}`,
-									});
-								} catch {
-									parts.push({ type: "input_text", text: `[${part.alt}]` });
-								}
-							} else if (part.type === "audio") {
-								// Use alt text (transcription) for audio
-								parts.push({ type: "input_text", text: `[${part.alt}]` });
-							} else if (part.type === "file") {
-								parts.push({ type: "input_text", text: `[${part.alt}]` });
-							}
-						}
-						input.push({
-							role: msg.role === "system" ? "developer" : msg.role,
-							content: parts,
-						});
-					}
+				// Convert multimodal content parts to AI SDK format
+				const convertedMessages = await convertMessagesForAISDK(messages);
+
+				// Create OpenAI provider pointing at Codex API with custom fetch
+				const openai = createOpenAI({
+					baseURL: CODEX_API_BASE,
+					apiKey: "",
+					fetch: codexFetch as unknown as typeof globalThis.fetch,
+				});
+
+				const result = streamText({
+					model: openai.responses(modelId),
+					messages: convertedMessages,
+					abortSignal: localAbortController.signal,
+				});
+
+				for await (const chunk of result.textStream) {
+					content += chunk;
+					onToken(chunk);
 				}
 
-				const response = await expoFetch(
-					`${CODEX_API_BASE}/responses`,
-					{
-						method: "POST",
-						headers: {
-							"Content-Type": "application/json",
-							Authorization: `Bearer ${token}`,
-							"ChatGPT-Account-Id": accountId,
-							originator: "codex_cli_rs",
-						},
-						body: JSON.stringify({
-							model: modelId,
-							instructions: input.find((m) => m.role === "developer")?.content ?? "You are a helpful assistant.",
-							input: input.filter((m) => m.role !== "developer"),
-							stream: true,
-							store: false,
-						}),
-						signal: localAbortController.signal,
-					},
-				);
-
-				if (!response.ok) {
-					const errorText = await response.text();
-					throw new Error(
-						`Codex API error ${response.status}: ${errorText}`,
-					);
-				}
-
-				// Parse SSE stream
-				const reader = response.body?.getReader();
-				if (!reader) {
-					throw new Error("No response body");
-				}
-
-				const decoder = new TextDecoder();
-				let buffer = "";
-
-				while (true) {
-					const { done, value } = await reader.read();
-					if (done) break;
-
-					buffer += decoder.decode(value, { stream: true });
-					const lines = buffer.split("\n");
-					buffer = lines.pop() ?? "";
-
-					for (const line of lines) {
-						if (!line.startsWith("data: ")) continue;
-						const data = line.slice(6).trim();
-						if (data === "[DONE]") continue;
-
-						try {
-							const event = JSON.parse(data) as {
-								type?: string;
-								delta?: string;
-								status?: string;
-							};
-							if (
-								event.type === "response.output_text.delta" &&
-								event.delta
-							) {
-								content += event.delta;
-								onToken(event.delta);
-							}
-						} catch {
-							// Skip unparseable events
-						}
-					}
-				}
+				const finalResult = await result;
 
 				return {
 					content,
-					finishReason: "stop",
+					finishReason:
+						finalResult.finishReason === "length" ? "length" : "stop",
+					usage: {
+						promptTokens: finalResult.usage?.promptTokens,
+						completionTokens: finalResult.usage?.completionTokens,
+					},
 				};
 			} catch (error) {
 				if (localAbortController.signal.aborted) {
