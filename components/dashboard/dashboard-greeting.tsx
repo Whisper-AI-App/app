@@ -1,15 +1,14 @@
+import type { ViewStyle } from "react-native";
+import { Linking, Pressable, useColorScheme } from "react-native";
+import type { AnimatedStyle } from "react-native-reanimated";
+import Animated from "react-native-reanimated";
 import { Text } from "@/components/ui/text";
 import { View } from "@/components/ui/view";
 import { Colors } from "@/theme/colors";
-import { Hand } from "lucide-react-native";
-import type { ViewStyle } from "react-native";
-import { Linking, Pressable, useColorScheme } from "react-native";
-import type { AnimatedStyleProp } from "react-native-reanimated";
-import Animated from "react-native-reanimated";
 
 interface DashboardGreetingProps {
 	chatCount: number;
-	animatedStyle: AnimatedStyleProp<ViewStyle>;
+	animatedStyle: AnimatedStyle<ViewStyle>;
 	showUpdateAlert: boolean;
 	folderSelectorOffset?: number;
 }
@@ -60,16 +59,7 @@ export function DashboardGreeting({
 				}}
 			>
 				<Text style={{ fontSize: 18, fontWeight: "500" }}>{getGreeting()}</Text>
-				<Hand
-					color={theme.text}
-					width={16}
-					strokeWidth={2}
-					style={{
-						width: 8,
-						height: 8,
-						transform: [{ rotate: "40deg" }],
-					}}
-				/>
+				<Text style={{ fontSize: 16 }}>👋</Text>
 			</View>
 
 			<View
@@ -81,7 +71,7 @@ export function DashboardGreeting({
 				}}
 			>
 				<Pressable
-					onPress={() => Linking.openURL("https://usewhisper.org/news")}
+					onPress={() => Linking.openURL("https://usewhisper.org/labs")}
 				>
 					<Text
 						style={{
