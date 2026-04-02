@@ -1,4 +1,5 @@
 import { ChatBackground } from "@/components/chat-background";
+import { createLogger } from "@/src/logger";
 import { AttachmentButton } from "@/components/chat/attachment-button";
 import { AttachmentPreview } from "@/components/chat/attachment-preview";
 import { AudioRecorderOverlay } from "@/components/chat/audio-recorder-overlay";
@@ -42,6 +43,8 @@ import {
 import { GiftedChat, type IMessage } from "react-native-gifted-chat";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useCell, useSortedRowIds, useTable } from "tinybase/ui-react";
+
+const logger = createLogger("Chat");
 
 export default function ChatPage() {
 	const router = useRouter();
@@ -219,7 +222,7 @@ export default function ChatPage() {
 					audioAtt.transcription = transcription;
 				}
 			} catch (err) {
-				console.warn("[chat] STT failed:", err);
+				logger.warn("STT failed", { error: err });
 			} finally {
 				setIsTranscribing(false);
 			}

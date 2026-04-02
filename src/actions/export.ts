@@ -1,7 +1,10 @@
 import * as FileSystem from "expo-file-system";
 import * as Sharing from "expo-sharing";
+import { createLogger } from "@/src/logger";
 import { mainStore } from "../stores/main/main-store";
 import { getProviderCredentials } from "./secure-credentials";
+
+const logger = createLogger("Export");
 
 export type ExportFormat = "markdown" | "json";
 
@@ -134,7 +137,7 @@ export async function exportAllChats(
 	const chats = getAllChatsData();
 
 	if (chats.length === 0) {
-		console.log("[exportAllChats] No chats to export");
+		logger.info("no chats to export");
 		return null;
 	}
 
@@ -201,11 +204,7 @@ export async function exportAllChats(
 		}
 	}
 
-	console.log(
-		`[exportAllChats] Export content (${format}):`,
-		content.length,
-		"characters",
-	);
+	logger.info("export content generated", { format, characters: content.length });
 
 	let tempFile: FileSystem.File | null = null;
 
@@ -220,12 +219,12 @@ export async function exportAllChats(
 		await tempFile.write(content);
 
 		const fileUri = tempFile.uri;
-		console.log("[exportAllChats] File written to:", fileUri);
+		logger.info("file written", { fileUri });
 
 		// Check if sharing is available
 		const isAvailable = await Sharing.isAvailableAsync();
 		if (!isAvailable) {
-			console.log("[exportAllChats] Sharing not available on this device");
+			logger.warn("sharing not available on this device");
 			return fileUri;
 		}
 
@@ -235,10 +234,10 @@ export async function exportAllChats(
 			dialogTitle: `Export Whisper Chats (${format.toUpperCase()})`,
 		});
 
-		console.log("[exportAllChats] Shared successfully");
+		logger.info("shared successfully");
 		return fileUri;
 	} catch (error) {
-		console.error("[exportAllChats] Error exporting:", error);
+		logger.error("error exporting", { error: error instanceof Error ? error.message : String(error) });
 		throw error;
 	} finally {
 		// Clean up temp file after sharing completes or is cancelled

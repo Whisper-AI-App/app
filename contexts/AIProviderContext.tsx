@@ -1,6 +1,7 @@
 import { createAllProviders } from "@/src/ai-providers/registry";
 import type { AIProvider } from "@/src/ai-providers/types";
 import { DEFAULT_LOAD_CONFIG } from "@/src/ai-providers/types";
+import { createLogger } from "@/src/logger";
 import {
 	createContext,
 	type ReactNode,
@@ -13,6 +14,8 @@ import {
 } from "react";
 import { useCell, useStore, useValue } from "tinybase/ui-react";
 import type { Store } from "tinybase";
+
+const logger = createLogger("AIProvider");
 
 type AIProviderContextType = {
 	// Active provider
@@ -78,7 +81,7 @@ export function AIProviderProvider({ children }: { children: ReactNode }) {
 			!activeProvider.isConfigured() &&
 			setupAttemptedRef.current !== activeProvider.id
 		) {
-			console.info("[AIProvider] Starting setup for:", activeProvider.id);
+			logger.info("Starting setup", { providerId: activeProvider.id });
 			setupAttemptedRef.current = activeProvider.id;
 			setIsSettingUp(true);
 			setSetupError(null);
@@ -86,11 +89,11 @@ export function AIProviderProvider({ children }: { children: ReactNode }) {
 			activeProvider
 				.setup()
 				.then(() => {
-					console.info("[AIProvider] Setup complete for:", activeProvider.id);
+					logger.info("Setup complete", { providerId: activeProvider.id });
 					setIsSettingUp(false);
 				})
 				.catch((error) => {
-					console.error("[AIProvider] Setup FAILED for:", activeProvider.id, error);
+					logger.error("Setup failed", { providerId: activeProvider.id, error: error instanceof Error ? error.message : String(error) });
 					setIsSettingUp(false);
 					setSetupError(
 						error instanceof Error ? error.message : "Setup failed",
@@ -112,7 +115,7 @@ export function AIProviderProvider({ children }: { children: ReactNode }) {
 		// Nothing loaded yet — existing setup effect handles it
 		if (!activeProvider.isConfigured()) return;
 
-		console.info("[AIProvider] New model downloaded, reloading:", activeProviderId);
+		logger.info("New model downloaded, reloading", { providerId: activeProviderId });
 		setupAttemptedRef.current = null;
 		setIsSettingUp(true);
 		setSetupError(null);
@@ -127,11 +130,11 @@ export function AIProviderProvider({ children }: { children: ReactNode }) {
 			)
 			.then(() => activeProvider.setup())
 			.then(() => {
-				console.info("[AIProvider] Reload complete for:", activeProviderId);
+				logger.info("Reload complete", { providerId: activeProviderId });
 				setIsSettingUp(false);
 			})
 			.catch((error) => {
-				console.error("[AIProvider] Reload failed for:", activeProviderId, error);
+				logger.error("Reload failed", { providerId: activeProviderId, error: error instanceof Error ? error.message : String(error) });
 				setIsSettingUp(false);
 				setSetupError(error instanceof Error ? error.message : "Reload failed");
 			});
@@ -148,7 +151,7 @@ export function AIProviderProvider({ children }: { children: ReactNode }) {
 					try {
 						await oldProvider.teardown();
 					} catch (err) {
-						console.error(`[AIProvider] Teardown error for ${activeProviderId}:`, err);
+						logger.error("Teardown error", { providerId: activeProviderId, error: err instanceof Error ? err.message : String(err) });
 					}
 				}
 

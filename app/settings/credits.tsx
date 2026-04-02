@@ -1,4 +1,5 @@
 import { Button } from "@/components/ui/button";
+import { createLogger } from "@/src/logger";
 import { Text } from "@/components/ui/text";
 import { View } from "@/components/ui/view";
 import { type AuthorCredit, CREDIT_SECTIONS } from "@/src/data/credits";
@@ -12,6 +13,8 @@ import { ChevronLeft, ExternalLink } from "lucide-react-native";
 import { TouchableOpacity, useColorScheme } from "react-native";
 import { ScrollView } from "react-native-gesture-handler";
 import { SafeAreaView } from "react-native-safe-area-context";
+
+const logger = createLogger("Credits");
 
 export default function Credits() {
 	const colorScheme = useColorScheme() ?? "light";
@@ -28,7 +31,7 @@ export default function Credits() {
 				controlsColor: theme.primary,
 			});
 		} catch (error) {
-			console.error("Failed to open URL:", error);
+			logger.error("Failed to open URL", { error });
 		}
 	};
 

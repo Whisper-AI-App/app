@@ -2,10 +2,17 @@ import { AlertDialog, useAlertDialog } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import { Text } from "@/components/ui/text";
 import { View } from "@/components/ui/view";
+import { shareDiagnostics } from "@/src/actions/diagnostics";
 import { saveBackupData } from "@/src/actions/reset";
 import { Colors } from "@/theme/colors";
 import * as Updates from "expo-updates";
-import { AlertTriangle, RefreshCw, Save, Trash2 } from "lucide-react-native";
+import {
+	AlertTriangle,
+	RefreshCw,
+	Save,
+	Share2,
+	Trash2,
+} from "lucide-react-native";
 import { useState } from "react";
 import { useColorScheme } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -145,6 +152,14 @@ export function MigrationErrorScreen({
 
 						<Button variant="secondary" onPress={handleSaveBackup} icon={Save}>
 							Save Backup
+						</Button>
+
+						<Button
+							variant="secondary"
+							onPress={shareDiagnostics}
+							icon={Share2}
+						>
+							Share Logs with Whisper Team
 						</Button>
 
 						<Separator />

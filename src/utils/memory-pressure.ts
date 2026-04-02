@@ -1,6 +1,9 @@
 import { AppState, type NativeEventSubscription } from "react-native";
+import { createLogger } from "@/src/logger";
 import { dispatch, getCapabilityStatus } from "../memory/state";
 import { releaseSTT } from "../stt";
+
+const logger = createLogger("MemoryPressure");
 
 /**
  * Tiered memory pressure handler integrated with the capability state machine.
@@ -46,10 +49,10 @@ async function handleMemoryWarning(): Promise<void> {
 		try {
 			await releaseSTT();
 			dispatch("stt", { type: "RELEASE_COMPLETE" });
-			console.warn("[MemoryPressure] Tier 1: Released WhisperContext (~150MB)");
+			logger.warn("Tier 1: released WhisperContext", { freedMB: 150 });
 			onTierChanged?.(1, "Released audio transcription to free memory");
 		} catch (err) {
-			console.error("[MemoryPressure] Failed to release STT:", err);
+			logger.error("failed to release STT", { error: String(err) });
 			dispatch("stt", { type: "RELEASE_COMPLETE" });
 		}
 		return;
@@ -61,17 +64,17 @@ async function handleMemoryWarning(): Promise<void> {
 		try {
 			await releaseMultimodalFn();
 			dispatch("vision", { type: "RELEASE_COMPLETE" });
-			console.warn("[MemoryPressure] Tier 2: Released multimodal/vision (~670MB)");
+			logger.warn("Tier 2: released multimodal/vision", { freedMB: 670 });
 			onTierChanged?.(2, "Released vision capability to free memory");
 		} catch (err) {
-			console.error("[MemoryPressure] Failed to release multimodal:", err);
+			logger.error("failed to release multimodal", { error: String(err) });
 			dispatch("vision", { type: "RELEASE_COMPLETE" });
 		}
 		return;
 	}
 
 	// Tier 3: Never auto-release chat model
-	console.warn("[MemoryPressure] No more resources to release. Chat model preserved.");
+	logger.warn("no more resources to release, chat model preserved");
 }
 
 /**

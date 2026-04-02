@@ -11,6 +11,7 @@ import type {
 	ProcessedAttachment,
 	TextMessagePart,
 } from "@/src/ai-providers/types";
+import { createLogger } from "@/src/logger";
 import { getTranscription } from "@/src/stt";
 import { enrichAltText } from "@/src/utils/alt-text";
 import type {
@@ -22,6 +23,8 @@ import * as Haptics from "expo-haptics";
 import { useCallback, useRef, useState } from "react";
 import { useStore } from "tinybase/ui-react";
 import { v4 as uuidv4 } from "uuid";
+
+const logger = createLogger("ChatCompletion");
 
 const MAX_AUTO_CONTINUES = 0;
 
@@ -172,7 +175,7 @@ export function useChatCompletion(
 											att.duration ? att.duration * 1000 : undefined,
 										);
 									} catch (sttError) {
-										console.warn("[useChatCompletion] STT transcription failed:", sttError);
+										logger.warn("STT transcription failed", { error: sttError });
 									}
 								}
 
@@ -180,7 +183,7 @@ export function useChatCompletion(
 									parts.push({ type: "text", text: transcription });
 									enrichAltText(att.id, transcription);
 								} else {
-									console.warn("[useChatCompletion] STT returned empty for:", att.uri);
+									logger.warn("STT returned empty", { attachmentId: att.id });
 									const durationInfo = att.duration
 										? `${Math.round(att.duration)}s`
 										: "unknown duration";
@@ -221,7 +224,7 @@ export function useChatCompletion(
 							}
 						}
 					} catch (error) {
-						console.warn("[useChatCompletion] Preprocessing failed, sending text only:", error);
+						logger.warn("Preprocessing failed, sending text only", { error });
 					} finally {
 						setIsProcessingMedia(false);
 					}
@@ -407,7 +410,7 @@ export function useChatCompletion(
 							setStreamingText("");
 						}
 					} catch (error) {
-						console.error("[useChatCompletion] AI completion error:", error);
+						logger.error("AI completion error", { error });
 						setStreamingText("");
 						const errorMsgId = uuidv4();
 						upsertMessage(
@@ -517,7 +520,7 @@ export function useChatCompletion(
 				setStreamingText("");
 			}
 		} catch (error) {
-			console.error("[useChatCompletion] Continue error:", error);
+			logger.error("Continue error", { error });
 			setStreamingText("");
 			// Create empty AI message with error status
 			const errorMsgId = uuidv4();

@@ -1,11 +1,14 @@
+import * as Crypto from "expo-crypto";
+import * as WebBrowser from "expo-web-browser";
+import type { Store } from "tinybase";
 import {
 	deleteCredential,
 	getCredential,
 	setCredential,
 } from "@/src/actions/secure-credentials";
-import * as Crypto from "expo-crypto";
-import * as WebBrowser from "expo-web-browser";
-import type { Store } from "tinybase";
+import { createLogger } from "@/src/logger";
+
+const logger = createLogger("OpenRouter:OAuth");
 
 const OPENROUTER_AUTH_URL = "https://openrouter.ai/auth";
 const OPENROUTER_KEYS_URL = "https://openrouter.ai/api/v1/auth/keys";
@@ -147,7 +150,9 @@ async function exchangeCodeForKey(store: Store, code: string): Promise<void> {
 		store.setCell("aiProviders", "openrouter", "status", "ready");
 		store.setCell("aiProviders", "openrouter", "error", "");
 	} catch (error) {
-		console.error("[OpenRouter] Key exchange failed:", error);
+		logger.error("Key exchange failed", {
+			error: error instanceof Error ? error.message : String(error),
+		});
 		const errorMessage =
 			error instanceof Error ? error.message : "Key exchange failed";
 		store.setCell("aiProviders", "openrouter", "error", errorMessage);

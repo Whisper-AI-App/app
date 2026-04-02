@@ -8,6 +8,9 @@ import * as FileSystem from "expo-file-system";
 import type { Persister, Persists } from "tinybase/persisters";
 import { createCustomPersister } from "tinybase/persisters";
 import type { Store } from "tinybase";
+import { createLogger } from "@/src/logger";
+
+const logger = createLogger("Persister");
 
 const encoder = new TextEncoder();
 const decoder = new TextDecoder();
@@ -78,12 +81,12 @@ export function createExpoFileSystemPersister(
 					const json = await decrypt(bytes);
 					return jsonParse(json);
 				} catch (decryptErr) {
-					console.warn("[Persister] Decrypt failed, trying plain text fallback:", decryptErr);
+					logger.warn("Decrypt failed, trying plain text fallback", { error: decryptErr });
 					try {
 						const text = await file.text();
 						return jsonParse(text);
 					} catch (fallbackError) {
-						console.error("[Persister] Plain text fallback also failed:", fallbackError);
+						logger.error("Plain text fallback also failed", { error: fallbackError });
 						onIgnoredError?.(fallbackError);
 						return undefined;
 					}
@@ -94,7 +97,7 @@ export function createExpoFileSystemPersister(
 			const text = await file.text();
 			return jsonParse(text);
 		} catch (error) {
-			console.error("[Persister] getPersisted top-level error:", error);
+			logger.error("getPersisted top-level error", { error });
 			onIgnoredError?.(error);
 			return undefined;
 		}
@@ -106,7 +109,7 @@ export function createExpoFileSystemPersister(
 		getContent: () => unknown,
 	): Promise<void> => {
 		if (saveInProgress) {
-			console.warn("[Persister] Save already in progress, skipping");
+			logger.warn("Save already in progress, skipping");
 			return;
 		}
 		saveInProgress = true;
@@ -121,7 +124,7 @@ export function createExpoFileSystemPersister(
 				await file.write(json);
 			}
 		} catch (error) {
-			console.error("[Persister] setPersisted error:", error);
+			logger.error("setPersisted error", { error });
 			throw error;
 		} finally {
 			saveInProgress = false;

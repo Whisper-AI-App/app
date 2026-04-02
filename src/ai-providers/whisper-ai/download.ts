@@ -5,8 +5,11 @@ import {
 } from "expo-file-system/legacy";
 import type { Store } from "tinybase";
 import type { WhisperLLMCard } from "whisper-llm-cards";
+import { createLogger } from "@/src/logger";
 import { bytesToGB } from "../../utils/bytes";
 import { generateModelFileName } from "../../utils/generate-model-filename";
+
+const logger = createLogger("WhisperAI:Download");
 
 // Module-scoped download reference
 let activeDownloadResumable: DownloadResumable | null = null;
@@ -53,19 +56,22 @@ function createProgressCallback(store: Store) {
 		} else {
 			pendingProgress = progressSizeGB;
 			if (!timeoutId) {
-				timeoutId = setTimeout(() => {
-					if (pendingProgress !== null) {
-						store.setCell(
-							"aiProviders",
-							"whisper-ai",
-							"progressSizeGB",
-							pendingProgress,
-						);
-						lastUpdateTime = Date.now();
-						pendingProgress = null;
-					}
-					timeoutId = null;
-				}, 500 - (now - lastUpdateTime));
+				timeoutId = setTimeout(
+					() => {
+						if (pendingProgress !== null) {
+							store.setCell(
+								"aiProviders",
+								"whisper-ai",
+								"progressSizeGB",
+								pendingProgress,
+							);
+							lastUpdateTime = Date.now();
+							pendingProgress = null;
+						}
+						timeoutId = null;
+					},
+					500 - (now - lastUpdateTime),
+				);
 			}
 		}
 	};
@@ -87,18 +93,13 @@ function handleDownloadComplete(
 ): void {
 	if (result?.status === 200 || result?.status === 206) {
 		const now = new Date().toISOString();
-		store.setCell(
-			"aiProviders",
-			"whisper-ai",
-			"downloadedAt",
-			now,
-		);
+		store.setCell("aiProviders", "whisper-ai", "downloadedAt", now);
 		store.setCell("aiProviders", "whisper-ai", "status", "ready");
 		cleanupDownloadState(store);
 		setActiveDownloadResumable(null);
-		console.info("[WhisperAI:Download] Download complete");
+		logger.info("Download complete");
 	} else {
-		console.error("[WhisperAI:Download] Download failed with status:", result?.status);
+		logger.error("Download failed with status", { status: result?.status });
 		throw new Error(`Download failed with status: ${result?.status}`);
 	}
 }
@@ -143,7 +144,9 @@ async function downloadMmproj(
 		}
 	}
 
-	console.info(`[WhisperAI:Download] Starting mmproj download (${card.multimodal.mmproj.sizeGB} GB)`);
+	logger.info("Starting mmproj download", {
+		sizeGB: card.multimodal.mmproj.sizeGB,
+	});
 	store.setCell("aiProviders", "whisper-ai", "status", "downloading_mmproj");
 	store.setCell("aiProviders", "whisper-ai", "mmprojFilename", mmprojFilename);
 	store.setCell("aiProviders", "whisper-ai", "progressSizeGB", 0);
@@ -169,13 +172,15 @@ async function downloadMmproj(
 		if (checkIfPaused(store)) return;
 
 		if (result?.status === 200 || result?.status === 206) {
-			console.info("[WhisperAI:Download] mmproj download complete");
+			logger.info("mmproj download complete");
 			// mmproj download complete — now mark the whole download as done
 			return;
 		}
 		throw new Error(`mmproj download failed with status: ${result?.status}`);
 	} catch (error) {
-		console.error("[WhisperAI:Download] mmproj download error:", error);
+		logger.error("mmproj download error", {
+			error: error instanceof Error ? error.message : String(error),
+		});
 		handleDownloadError(store, error);
 	}
 }
@@ -185,7 +190,9 @@ function handleDownloadError(store: Store, error: unknown): void {
 		return;
 	}
 
-	console.error("[AI Model Download] Error occurred", error);
+	logger.error("Error occurred", {
+		error: error instanceof Error ? error.message : String(error),
+	});
 	const errorMessage =
 		error instanceof Error ? error.message : "Unknown error occurred";
 	store.setCell("aiProviders", "whisper-ai", "downloadError", errorMessage);
@@ -214,7 +221,9 @@ export async function pauseDownload(store: Store): Promise<void> {
 		);
 		store.setCell("aiProviders", "whisper-ai", "isPaused", true);
 	} catch (error) {
-		console.error("[AI Model Download] Error pausing download", error);
+		logger.error("Error pausing download", {
+			error: error instanceof Error ? error.message : String(error),
+		});
 		throw error;
 	}
 }
@@ -352,12 +361,7 @@ export async function startDownload(
 	}
 
 	// Save card metadata
-	store.setCell(
-		"aiProviders",
-		"whisper-ai",
-		"modelCard",
-		JSON.stringify(card),
-	);
+	store.setCell("aiProviders", "whisper-ai", "modelCard", JSON.stringify(card));
 	store.setCell("aiProviders", "whisper-ai", "modelCardId", cardId);
 	store.setCell("aiProviders", "whisper-ai", "configVersion", configVersion);
 	store.setCell("aiProviders", "whisper-ai", "filename", versionedFilename);
@@ -377,7 +381,7 @@ export async function startDownload(
 	}
 
 	try {
-		console.info(`[WhisperAI:Download] Starting download to ${versionedFilename}`);
+		logger.info("Starting download", { filename: versionedFilename });
 		const resumable = createDownloadResumable(
 			sourceUrl,
 			fileUri,
@@ -405,7 +409,9 @@ export async function startDownload(
 
 		handleDownloadComplete(store, result ?? null);
 	} catch (error) {
-		console.error("[WhisperAI:Download] startDownload error:", error);
+		logger.error("startDownload error", {
+			error: error instanceof Error ? error.message : String(error),
+		});
 		handleDownloadError(store, error);
 	}
 }
