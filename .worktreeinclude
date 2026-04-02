@@ -1,0 +1,39 @@
+# Expo
+.expo/
+dist/
+web-build/
+expo-env.d.ts
+
+# Native
+.kotlin/
+*.orig.*
+*.jks
+*.p8
+*.p12
+*.key
+*.mobileprovision
+*.apk
+credentials.json
+
+# macOS
+.DS_Store
+*.pem
+
+# local env files
+.env*.local
+
+# service account JSON
+**/service-account.json
+
+# misc
+**/*.zip
+**/*.jar
+node_modules
+ios
+android
+.claude
+*.json
+
+# bundled whisper model (too large for git, ~150MB)
+assets/models/*.bin
+modules/**/android/build
