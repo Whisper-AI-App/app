@@ -222,7 +222,7 @@ export default function ChatPage() {
 					audioAtt.transcription = transcription;
 				}
 			} catch (err) {
-				logger.warn("STT failed", { error: err });
+				logger.warn("STT failed", { error: err instanceof Error ? err.message : String(err) });
 			} finally {
 				setIsTranscribing(false);
 			}

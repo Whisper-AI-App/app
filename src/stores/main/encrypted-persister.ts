@@ -81,12 +81,12 @@ export function createExpoFileSystemPersister(
 					const json = await decrypt(bytes);
 					return jsonParse(json);
 				} catch (decryptErr) {
-					logger.warn("Decrypt failed, trying plain text fallback", { error: decryptErr });
+					logger.warn("Decrypt failed, trying plain text fallback", { error: decryptErr instanceof Error ? decryptErr.message : String(decryptErr) });
 					try {
 						const text = await file.text();
 						return jsonParse(text);
 					} catch (fallbackError) {
-						logger.error("Plain text fallback also failed", { error: fallbackError });
+						logger.error("Plain text fallback also failed", { error: fallbackError instanceof Error ? fallbackError.message : String(fallbackError) });
 						onIgnoredError?.(fallbackError);
 						return undefined;
 					}

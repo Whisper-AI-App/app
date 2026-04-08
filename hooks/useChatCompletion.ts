@@ -175,7 +175,7 @@ export function useChatCompletion(
 											att.duration ? att.duration * 1000 : undefined,
 										);
 									} catch (sttError) {
-										logger.warn("STT transcription failed", { error: sttError });
+										logger.warn("STT transcription failed", { error: sttError instanceof Error ? sttError.message : String(sttError) });
 									}
 								}
 
