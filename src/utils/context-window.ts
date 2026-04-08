@@ -80,10 +80,10 @@ export function wouldTruncate(
 
 export function truncateMessages(
 	systemMessage: string,
-	messages: { role: "user" | "assistant" | "system"; content: string | CompletionMessagePart[] }[],
+	messages: { role: "user" | "assistant" | "system" | "tool"; content: string | CompletionMessagePart[] }[],
 	maxTokens = DEFAULT_CONTEXT_SIZE,
 	imageMaxTokens?: number,
-): { role: "user" | "assistant" | "system"; content: string | CompletionMessagePart[] }[] {
+): { role: "user" | "assistant" | "system" | "tool"; content: string | CompletionMessagePart[] }[] {
 	const available =
 		maxTokens - estimateTokens(systemMessage) - RESPONSE_RESERVE;
 

@@ -2,12 +2,15 @@ import type { ModelMessage } from "ai";
 import { streamText } from "ai";
 import type { Store } from "tinybase";
 import { convertMessagesForAISDK } from "../message-converter";
+import { convertToAISDKTools } from "../tool-converter";
+import type { ToolDefinition } from "../../tools/types";
 import type {
 	AIProvider,
 	CompletionMessage,
 	CompletionResult,
 	MultimodalCapabilities,
 	ProviderModel,
+	ToolCapabilities,
 } from "../types";
 import { NO_MULTIMODAL } from "../types";
 
@@ -100,6 +103,7 @@ export function createAppleModelsProvider(store: Store): AIProvider {
 		async completion(
 			messages: CompletionMessage[],
 			onToken: (token: string) => void,
+			options?: { tools?: ToolDefinition[] },
 		): Promise<CompletionResult> {
 			const localAbortController = new AbortController();
 			abortController = localAbortController;
@@ -120,7 +124,8 @@ export function createAppleModelsProvider(store: Store): AIProvider {
 
 				const convertedMessages = await convertMessagesForAISDK(messages);
 				const systemMessage = provider.getSystemMessage(messages);
-
+				// Note: Apple's Foundation Models requires native Tool protocol
+				// registration. Don't pass AI SDK tools — use XML prompt fallback.
 				const result = streamText({
 					model: apple(),
 					system: systemMessage,
@@ -133,12 +138,23 @@ export function createAppleModelsProvider(store: Store): AIProvider {
 					onToken(chunk);
 				}
 
-				// Await the full result to catch errors the AI SDK may have
-				// swallowed during stream processing (e.g. GenerationError
-				// surfaces as finishReason "error" instead of throwing).
 				const finishReason = await result.finishReason;
 
-				if (finishReason === "error" || (!content && finishReason !== "stop")) {
+				// Handle tool calls
+				if (finishReason === "tool-calls") {
+					const toolCalls = await result.toolCalls ?? [];
+					return {
+						content,
+						finishReason: "tool_calls",
+						toolCalls: toolCalls.map((tc: { toolCallId: string; toolName: string; args: Record<string, unknown> }) => ({
+							id: tc.toolCallId,
+							name: tc.toolName,
+							arguments: tc.args,
+						})),
+					};
+				}
+
+				if (finishReason === "error" || (!content && finishReason !== "stop" && finishReason !== "tool-calls")) {
 					if (SAFETY_ERROR_PATTERN.test(content)) {
 						onToken(CONTENT_SAFETY_MESSAGE);
 						return {
@@ -214,6 +230,19 @@ export function createAppleModelsProvider(store: Store): AIProvider {
 
 		getMultimodalCapabilities(): MultimodalCapabilities {
 			return NO_MULTIMODAL;
+		},
+
+		getToolCapabilities(): ToolCapabilities {
+			// Apple's Foundation Models requires tools registered via the native
+			// Tool protocol — ad-hoc AI SDK tools aren't supported. Use XML
+			// prompt fallback until native registration is implemented.
+			return {
+				supported: true,
+				nativeToolCalling: false,
+				promptFallback: true,
+				maxActiveTools: 3,
+				parallelCalls: true,
+			};
 		},
 
 		async teardown() {

@@ -34,8 +34,9 @@ import type {
 	CompletionResult,
 	MultimodalCapabilities,
 	ProviderModel,
+	ToolCapabilities,
 } from "../types";
-import { DEFAULT_CONSTRAINTS, NO_MULTIMODAL } from "../types";
+import { DEFAULT_CONSTRAINTS, NO_MULTIMODAL, NO_TOOL_SUPPORT } from "../types";
 import {
 	startDownload as startHFDownload,
 	pauseDownload as pauseHFDownload,
@@ -725,6 +726,17 @@ export function createHuggingFaceProvider(store: Store): AIProvider {
 
 		getMultimodalCapabilities(): MultimodalCapabilities {
 			return resolvedMultimodalCaps;
+		},
+
+		getToolCapabilities(): ToolCapabilities {
+			const maxTools = Math.min(Math.floor(currentContextSize / 2000), 3);
+			return {
+				supported: true,
+				nativeToolCalling: false,
+				promptFallback: true,
+				maxActiveTools: maxTools,
+				parallelCalls: true,
+			};
 		},
 
 		async clearCache() {

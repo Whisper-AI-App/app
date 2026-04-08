@@ -3,6 +3,7 @@ import {
 	getCredential,
 } from "@/src/actions/secure-credentials";
 import { createOpenRouter } from "@openrouter/ai-sdk-provider";
+import type { ModelMessage } from "ai";
 import { streamText } from "ai";
 import { fetch as expoFetch } from "expo/fetch";
 import type { Store } from "tinybase";
@@ -16,6 +17,8 @@ import type {
 } from "../types";
 import { DEFAULT_CONSTRAINTS, NO_MULTIMODAL } from "../types";
 import { convertMessagesForAISDK } from "../message-converter";
+import { convertToAISDKTools } from "../tool-converter";
+import type { ToolDefinition } from "../../tools/types";
 import { handleOAuthCallback, startOAuth } from "./oauth";
 import { getCapabilityStatus, dispatch } from "../../memory/state";
 import { initSTT } from "../../stt";
@@ -245,6 +248,7 @@ export function createOpenRouterProvider(store: Store): AIProvider {
 		async completion(
 			messages: CompletionMessage[],
 			onToken: (token: string) => void,
+			options?: { tools?: ToolDefinition[] },
 		): Promise<CompletionResult> {
 			await refreshApiKey();
 			const apiKey = getApiKey();
@@ -295,9 +299,14 @@ export function createOpenRouterProvider(store: Store): AIProvider {
 					fetch: expoFetch as unknown as typeof globalThis.fetch,
 				});
 
+				const aiTools = options?.tools?.length
+					? convertToAISDKTools(options.tools)
+					: undefined;
+
 				const result = streamText({
 					model: openrouter(modelId),
-					messages: convertedMessages,
+					messages: convertedMessages as unknown as ModelMessage[],
+					tools: aiTools,
 					abortSignal: localAbortController.signal,
 				});
 
@@ -306,15 +315,33 @@ export function createOpenRouterProvider(store: Store): AIProvider {
 					onToken(chunk);
 				}
 
-				const finalResult = await result;
+				const finishReason = await result.finishReason;
+				const usage = await result.usage;
+
+				// Handle tool calls
+				if (finishReason === "tool-calls") {
+					const toolCalls = await result.toolCalls ?? [];
+					return {
+						content,
+						finishReason: "tool_calls",
+						toolCalls: toolCalls.map((tc: { toolCallId: string; toolName: string; args: Record<string, unknown> }) => ({
+							id: tc.toolCallId,
+							name: tc.toolName,
+							arguments: tc.args,
+						})),
+						usage: {
+							promptTokens: usage?.promptTokens,
+							completionTokens: usage?.completionTokens,
+						},
+					};
+				}
 
 				return {
 					content,
-					finishReason:
-						finalResult.finishReason === "length" ? "length" : "stop",
+					finishReason: finishReason === "length" ? "length" : "stop",
 					usage: {
-						promptTokens: finalResult.usage?.promptTokens,
-						completionTokens: finalResult.usage?.completionTokens,
+						promptTokens: usage?.promptTokens,
+						completionTokens: usage?.completionTokens,
 					},
 				};
 			} catch (error) {
@@ -383,6 +410,16 @@ export function createOpenRouterProvider(store: Store): AIProvider {
 				audio: true,
 				files: modalities.includes("file"),
 				constraints: DEFAULT_CONSTRAINTS,
+			};
+		},
+
+		getToolCapabilities() {
+			return {
+				supported: true,
+				nativeToolCalling: true,
+				promptFallback: true,
+				maxActiveTools: 10,
+				parallelCalls: true,
 			};
 		},
 

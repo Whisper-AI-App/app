@@ -907,7 +907,7 @@ export function createWhisperAIProvider(store: Store): AIProvider {
 		getSystemMessage(conversationMessages: CompletionMessage[]): string {
 			const card = getStoredModelCard(store);
 			if (card) {
-				return processSystemMessage(card, conversationMessages);
+				return processSystemMessage(card, conversationMessages as unknown as Parameters<typeof processSystemMessage>[1]);
 			}
 			return `You are a 100% private on-device AI chat called Whisper. Conversations stay on the device. Help the user concisely. Be useful, creative, and accurate. Today's date is ${new Date().toLocaleString()}.`;
 		},
@@ -918,6 +918,17 @@ export function createWhisperAIProvider(store: Store): AIProvider {
 
 		getMultimodalCapabilities(): MultimodalCapabilities {
 			return resolvedMultimodalCaps;
+		},
+
+		getToolCapabilities() {
+			const maxTools = Math.min(Math.floor(currentContextSize / 2000), 3);
+			return {
+				supported: true,
+				nativeToolCalling: false,
+				promptFallback: true,
+				maxActiveTools: maxTools,
+				parallelCalls: true,
+			};
 		},
 
 		async teardown() {

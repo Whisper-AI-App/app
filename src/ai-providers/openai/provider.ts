@@ -11,6 +11,7 @@ import type {
 	CompletionResult,
 	MultimodalCapabilities,
 	ProviderModel,
+	ToolCapabilities,
 } from "../types";
 import { DEFAULT_CONSTRAINTS, NO_MULTIMODAL } from "../types";
 import {
@@ -190,6 +191,7 @@ export function createOpenAIProvider(store: Store): AIProvider {
 		async completion(
 			messages: CompletionMessage[],
 			onToken: (token: string) => void,
+			options?: { tools?: import("../../tools/types").ToolDefinition[] },
 		): Promise<CompletionResult> {
 			await refreshAccessToken();
 			const token = getAccessToken();
@@ -265,6 +267,31 @@ export function createOpenAIProvider(store: Store): AIProvider {
 							input: input.filter((m) => m.role !== "developer"),
 							stream: true,
 							store: false,
+							...(options?.tools?.length
+								? {
+										tools: options.tools.map((t) => ({
+											type: "function",
+											name: t.name,
+											description: t.description,
+											parameters: {
+												type: "object",
+												properties: Object.fromEntries(
+													t.parameters.map((p) => [
+														p.name,
+														{
+															type: p.type,
+															description: p.description,
+															...(p.enum ? { enum: p.enum } : {}),
+														},
+													]),
+												),
+												required: t.parameters
+													.filter((p) => p.required)
+													.map((p) => p.name),
+											},
+										})),
+									}
+								: {}),
 						}),
 						signal: localAbortController.signal,
 					},
@@ -367,6 +394,16 @@ export function createOpenAIProvider(store: Store): AIProvider {
 				audio: true,
 				files: false,
 				constraints: DEFAULT_CONSTRAINTS,
+			};
+		},
+
+		getToolCapabilities(): ToolCapabilities {
+			return {
+				supported: true,
+				nativeToolCalling: true,
+				promptFallback: true,
+				maxActiveTools: 10,
+				parallelCalls: true,
 			};
 		},
 

@@ -66,6 +66,7 @@
 		"expo-system-ui": "~55.0.9",
 		"expo-updates": "~55.0.12",
 		"expo-web-browser": "~55.0.9",
+		"htmlparser2": "^12.0.0",
 		"llama.rn": "^0.11.4",
 		"lucide-react-native": "^0.544.0",
 		"react": "19.2.0",

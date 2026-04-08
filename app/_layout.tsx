@@ -4,6 +4,10 @@ import { StatusBar } from "@/components/status-bar";
 import { StoreProvider } from "@/components/StoreProvider";
 import { AIProviderProvider } from "@/contexts/AIProviderContext";
 import { mainStore } from "@/src/stores/main/main-store";
+import { registerBuiltInSkills } from "@/src/tools/skills";
+
+// Register tool skills at module load time
+registerBuiltInSkills();
 import { ThemeProvider } from "@/theme/theme-provider";
 import {
 	Inter_400Regular,
