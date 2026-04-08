@@ -44,7 +44,7 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import type { Store } from "tinybase";
-import { useCell, useRowIds } from "tinybase/ui-react";
+import { useCell, useTable } from "tinybase/ui-react";
 
 interface DisplayModel {
 	id: string; // hfModels row ID format: repoId__filename
@@ -117,8 +117,10 @@ function formatBytesGB(bytes: number): string {
 
 export function HuggingFaceSetup({
 	initialSearch,
+	onboarding = false,
 }: {
 	initialSearch?: string;
+	onboarding?: boolean;
 } = {}) {
 	const router = useRouter();
 	const { setActiveProvider } = useAIProvider();
@@ -144,13 +146,13 @@ export function HuggingFaceSetup({
 	const [rateLimitCountdown, setRateLimitCountdown] = useState(0);
 	const [isOffline, setIsOffline] = useState(false);
 	const [freeDiskSpace, setFreeDiskSpace] = useState<number | null>(null);
-	const searchTimeoutRef = useRef<ReturnType<typeof setTimeout>>();
+	const searchTimeoutRef = useRef<ReturnType<typeof setTimeout>>(undefined);
 
 	// Advanced section state
 	const [advancedExpanded, setAdvancedExpanded] = useState(false);
 	const [hfToken, setHfToken] = useState("");
 	const [isTokenLoaded, setIsTokenLoaded] = useState(false);
-	const tokenSaveTimeoutRef = useRef<ReturnType<typeof setTimeout>>();
+	const tokenSaveTimeoutRef = useRef<ReturnType<typeof setTimeout>>(undefined);
 
 	// Check available disk space
 	useEffect(() => {
@@ -260,23 +262,22 @@ export function HuggingFaceSetup({
 	}, [providerStatus, setActiveProvider]);
 
 	// Subscribed to hfModels table for downloaded models
-	const downloadedModelIds = useRowIds("hfModels");
+	// useTable reacts to all cell changes (including downloadedAt being set),
+	// unlike useRowIds which only fires when rows are added/removed.
+	const hfModelsTable = useTable("hfModels");
 
 	const downloadedModels = useMemo(() => {
-		return downloadedModelIds
-			.map((id) => {
-				const row = store.getRow("hfModels", id);
-				return {
-					id,
-					displayName: (row?.displayName as string) || id,
-					fileSizeBytes: (row?.fileSizeBytes as number) || 0,
-					quantization: (row?.quantization as string) || "",
-					pipelineTag: (row?.pipelineTag as string) || "",
-					downloadedAt: (row?.downloadedAt as string) || "",
-				};
-			})
-			.filter((m) => m.downloadedAt);
-	}, [downloadedModelIds, store]);
+		return Object.entries(hfModelsTable)
+			.filter(([, row]) => !!row.downloadedAt)
+			.map(([id, row]) => ({
+				id,
+				displayName: (row.displayName as string) || id,
+				fileSizeBytes: (row.fileSizeBytes as number) || 0,
+				quantization: (row.quantization as string) || "",
+				pipelineTag: (row.pipelineTag as string) || "",
+				downloadedAt: (row.downloadedAt as string) || "",
+			}));
+	}, [hfModelsTable]);
 
 	const featuredModels = useMemo(
 		() => FEATURED_MODELS.map(featuredToDisplay),
@@ -443,6 +444,14 @@ export function HuggingFaceSetup({
 				(store.getCell("hfModels", rowId, "localFilename") as string) ?? "",
 			);
 
+			// During onboarding, navigate to dedicated download screen
+			if (onboarding) {
+				router.push(
+					`/provider-setup/huggingface-download?modelId=${encodeURIComponent(rowId)}`,
+				);
+				return;
+			}
+
 			// Start download via provider
 			try {
 				const { createHuggingFaceProvider } = await import(
@@ -454,7 +463,7 @@ export function HuggingFaceSetup({
 				setError(err instanceof Error ? err.message : "Download failed");
 			}
 		},
-		[store],
+		[store, onboarding, router],
 	);
 
 	const handleDownloadModel = useCallback(
@@ -524,7 +533,7 @@ export function HuggingFaceSetup({
 									"@/src/ai-providers/huggingface/provider"
 								);
 								const provider = createHuggingFaceProvider(store);
-								await provider.deleteModel(modelId);
+								await provider.deleteModel?.(modelId);
 								// Refresh free disk space after deletion
 								getFreeDiskStorageAsync()
 									.then((bytes) => setFreeDiskSpace(bytes))
