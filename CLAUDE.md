@@ -47,12 +47,26 @@ Whisper is a 100% private AI chat app built with React Native and Expo. It runs 
 ### Commands
 
 ```bash
-npm install          # Install dependencies
-npm run ios          # Run on iOS
-npm run android      # Run on Android
-npm test             # Run tests
-npm run lint         # Lint (Biome)
+# Install dependencies (run on fresh clone or new git worktree)
+npm install
+
+# Run on specific platforms
+npm run android
+npm run ios
+
+# Run tests
+npm test
+
+# Lint
+npm run lint
 ```
+
+### Git worktrees
+
+After entering a worktree:
+
+1. Install deps `npm ci`
+2. Upsert a new `RCT_METRO_PORT` to `.env.local` with `PORT=80$(shuf -i 10-99 -n1) && if grep -q '^RCT_METRO_PORT=' .env.local 2>/dev/null; then sed -i '' "s/^RCT_METRO_PORT=.*/RCT_METRO_PORT=$PORT/" .env.local; else echo "RCT_METRO_PORT=$PORT" >> .env.local; fi` (avoid collision with other worktrees)
 
 ### Testing
 

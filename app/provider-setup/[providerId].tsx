@@ -7,15 +7,18 @@ import { WhisperAISetup } from "@/components/provider-setup/WhisperAISetup";
 import { Text } from "@/components/ui/text";
 import { View } from "@/components/ui/view";
 import { useLocalSearchParams } from "expo-router";
+import { useValue } from "tinybase/ui-react";
 
 export default function ProviderSetup() {
 	const { providerId, search } = useLocalSearchParams<{ providerId: string; search?: string }>();
+	const onboardedAt = useValue("onboardedAt");
 
 	if (providerId === "whisper-ai") return <WhisperAISetup />;
 	if (providerId === "openrouter") return <OpenRouterSetup />;
 	if (providerId === "openai") return <OpenAISetup />;
 	if (providerId === "custom-provider") return <CustomProviderSetup />;
-	if (providerId === "huggingface") return <HuggingFaceSetup initialSearch={search} />;
+	if (providerId === "huggingface")
+		return <HuggingFaceSetup initialSearch={search} onboarding={!onboardedAt} />;
 	if (providerId === "apple-models") return <AppleModelsSetup />;
 
 	return (
