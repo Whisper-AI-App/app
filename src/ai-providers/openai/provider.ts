@@ -1,11 +1,12 @@
-import {
-	deleteProviderCredentials,
-	getCredential,
-} from "@/src/actions/secure-credentials";
 import { createOpenAI } from "@ai-sdk/openai";
 import { streamText } from "ai";
 import { fetch as expoFetch } from "expo/fetch";
 import type { Store } from "tinybase";
+import {
+	deleteProviderCredentials,
+	getCredential,
+} from "@/src/actions/secure-credentials";
+import { createLogger } from "@/src/logger";
 import { convertMessagesForAISDK } from "../message-converter";
 import { getValidAccessToken } from "../token-refresh";
 import type {
@@ -23,6 +24,8 @@ import {
 	pollForAuthorization,
 	requestDeviceCode,
 } from "./oauth";
+
+const logger = createLogger("OpenAI");
 
 const CODEX_API_BASE = "https://chatgpt.com/backend-api/codex";
 const DEFAULT_CLOUD_CONTEXT_SIZE = 128000;
@@ -306,7 +309,9 @@ export function createOpenAIProvider(store: Store): AIProvider {
 				if (localAbortController.signal.aborted) {
 					return { content, finishReason: "cancelled" };
 				}
-				console.error("[OpenAI] Completion failed:", error);
+				logger.error("Completion failed", {
+					error: error instanceof Error ? error.message : String(error),
+				});
 				throw error;
 			} finally {
 				abortController = null;

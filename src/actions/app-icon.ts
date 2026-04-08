@@ -3,8 +3,11 @@ import {
   getAppIconName,
   resetAppIcon as resetAlternateAppIcon,
 } from "expo-alternate-app-icons";
+import { createLogger } from "@/src/logger";
 import { mainStore } from "../stores/main/main-store";
 import type { AppIconVariant } from "../data/app-icon-presets";
+
+const logger = createLogger("AppIcon");
 
 export type { AppIconVariant } from "../data/app-icon-presets";
 
@@ -20,7 +23,7 @@ export async function setAppIconVariant(
     mainStore.setValue("app_icon_variant", variantId);
     return { success: true };
   } catch (error) {
-    console.error("[AppIcon] Failed to set app icon:", error);
+    logger.error("failed to set app icon", { variantId, error: error instanceof Error ? error.message : String(error) });
     return {
       success: false,
       error: error instanceof Error ? error.message : "Unknown error",

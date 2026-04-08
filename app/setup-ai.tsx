@@ -1,4 +1,5 @@
 import { GradientBackground } from "@/components/gradient-background";
+import { createLogger } from "@/src/logger";
 import { ModelUpdateNotification } from "@/components/model-update-notification";
 import { ProviderSetupCard } from "@/components/ProviderSetupCard";
 import { Button } from "@/components/ui/button";
@@ -22,6 +23,8 @@ import { ScrollView } from "react-native-gesture-handler";
 import { SafeAreaView } from "react-native-safe-area-context";
 import type { Store } from "tinybase";
 import { useCell, useValue } from "tinybase/ui-react";
+
+const logger = createLogger("SetupAI");
 
 export default function SetupAI() {
 	const colorScheme = useColorScheme() ?? "light";
@@ -116,7 +119,7 @@ export default function SetupAI() {
 				setTimeout(() => setShowUpToDate(false), 2000);
 			}
 		} catch (error) {
-			console.error("[SetupAI] Failed to check for updates:", error);
+			logger.error("Failed to check for updates", { error });
 		} finally {
 			setCheckingForUpdates(false);
 		}

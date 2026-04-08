@@ -10,6 +10,9 @@ import type {
 	ProviderModel,
 } from "../types";
 import { NO_MULTIMODAL } from "../types";
+import { createLogger } from "@/src/logger";
+
+const logger = createLogger("AppleModels");
 
 // Module-scoped runtime state
 let abortController: AbortController | null = null;
@@ -74,7 +77,7 @@ export function createAppleModelsProvider(store: Store): AIProvider {
 				store.setCell("aiProviders", "apple-models", "error", "");
 				store.setCell("aiProviders", "apple-models", "status", "ready");
 			} catch (error) {
-				console.error("[AppleModels] Setup failed:", error);
+				logger.error("Setup failed", { error: error instanceof Error ? error.message : String(error) });
 				const errorMessage =
 					error instanceof Error ? error.message : "Setup failed";
 				store.setCell("aiProviders", "apple-models", "error", errorMessage);
@@ -161,7 +164,7 @@ export function createAppleModelsProvider(store: Store): AIProvider {
 				if (localAbortController.signal.aborted) {
 					return { content, finishReason: "cancelled" };
 				}
-				console.warn("[AppleModels] Completion failed:", error);
+				logger.warn("Completion failed", { error: error instanceof Error ? error.message : String(error) });
 
 				const errorMsg =
 					error instanceof Error ? error.message : String(error);

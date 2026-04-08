@@ -1,12 +1,15 @@
 import { Button } from "@/components/ui/button";
 import { Text } from "@/components/ui/text";
 import { View } from "@/components/ui/view";
+import { createLogger } from "@/src/logger";
 import { Colors } from "@/theme/colors";
 import { BORDER_RADIUS } from "@/theme/globals";
 import { AlertTriangle, RefreshCw } from "lucide-react-native";
 import { Component, type ErrorInfo, type ReactNode } from "react";
 import { useColorScheme } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+
+const logger = createLogger("ErrorBoundary");
 
 interface ErrorBoundaryProps {
 	children: ReactNode;
@@ -38,13 +41,10 @@ export class ErrorBoundary extends Component<
 	}
 
 	componentDidCatch(error: Error, errorInfo: ErrorInfo): void {
-		if (__DEV__) {
-			console.error("[ErrorBoundary] Caught error:", error);
-			console.error(
-				"[ErrorBoundary] Component stack:",
-				errorInfo.componentStack,
-			);
-		}
+		logger.error("Caught error", { error: error.message });
+		logger.error("Component stack", {
+			componentStack: errorInfo.componentStack,
+		});
 		this.props.onError?.(error, errorInfo);
 	}
 

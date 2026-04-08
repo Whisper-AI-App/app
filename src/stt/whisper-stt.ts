@@ -1,4 +1,7 @@
+import { createLogger } from "@/src/logger";
 import { initWhisper as rnInitWhisper, type WhisperContext } from "whisper.rn";
+
+const logger = createLogger("WhisperSTT");
 
 // Store context instances by id for lookup
 const contexts = new Map<number, WhisperContext>();
@@ -46,7 +49,7 @@ export async function transcribe(
 		throw new Error(`Whisper context ${contextId} not found`);
 	}
 
-	console.log("[whisper-stt] Transcribing:", audioUri, durationMs ? `(${durationMs}ms)` : "");
+	logger.info("transcribing", { audioUri, durationMs });
 
 	// Short audio or unknown duration: single-pass transcription
 	if (!durationMs || durationMs < CHUNK_THRESHOLD_MS) {
@@ -60,17 +63,17 @@ export async function transcribe(
 		const result = await promise;
 
 		if (result.isAborted) {
-			console.warn("[whisper-stt] Transcription was aborted");
+			logger.warn("transcription was aborted");
 			return "";
 		}
 
 		const text = result.result.trim();
-		console.log("[whisper-stt] Transcription result:", text ? `"${text}"` : "(empty)");
+		logger.info("transcription result", { empty: !text });
 		return text;
 	}
 
 	// Long audio: chunked transcription
-	console.log("[whisper-stt] Using chunked transcription for long audio");
+	logger.info("using chunked transcription for long audio");
 	const chunks: string[] = [];
 	let offset = 0;
 
@@ -78,7 +81,7 @@ export async function transcribe(
 		const remaining = durationMs - offset;
 		const chunkDuration = Math.min(CHUNK_DURATION_MS, remaining);
 
-		console.log(`[whisper-stt] Chunk at offset=${offset}ms, duration=${chunkDuration}ms`);
+		logger.debug("processing chunk", { offsetMs: offset, durationMs: chunkDuration });
 
 		const { promise } = ctx.transcribe(audioUri, {
 			language: "auto",
@@ -92,7 +95,7 @@ export async function transcribe(
 		const result = await promise;
 
 		if (result.isAborted) {
-			console.warn("[whisper-stt] Chunked transcription was aborted at offset", offset);
+			logger.warn("chunked transcription was aborted", { offsetMs: offset });
 			break;
 		}
 
@@ -105,7 +108,7 @@ export async function transcribe(
 	}
 
 	const text = mergeChunks(chunks);
-	console.log("[whisper-stt] Chunked transcription result:", text ? `"${text.slice(0, 100)}..."` : "(empty)");
+	logger.info("chunked transcription result", { empty: !text });
 	return text;
 }
 

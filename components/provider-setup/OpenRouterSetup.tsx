@@ -9,6 +9,9 @@ import { ChevronLeft } from "lucide-react-native";
 import { useState } from "react";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useCell } from "tinybase/ui-react";
+import { createLogger } from "@/src/logger";
+
+const logger = createLogger("OpenRouterSetup");
 
 export function OpenRouterSetup() {
 	const router = useRouter();
@@ -30,7 +33,7 @@ export function OpenRouterSetup() {
 		try {
 			await provider.startOAuth?.();
 		} catch (err) {
-			console.error("[OpenRouterSetup] OAuth error:", err);
+			logger.error("OAuth error", { error: err instanceof Error ? err.message : String(err) });
 		} finally {
 			setIsConnecting(false);
 		}

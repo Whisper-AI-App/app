@@ -4,6 +4,7 @@ import {
 	renameChat,
 	shareChat,
 } from "@/src/actions/chat";
+import { createLogger } from "@/src/logger";
 import type {
 	UseChatStateOptions,
 	UseChatStateReturn,
@@ -11,6 +12,8 @@ import type {
 import { useCallback, useEffect, useState } from "react";
 import { Alert, Platform } from "react-native";
 import { useRow } from "tinybase/ui-react";
+
+const logger = createLogger("ChatState");
 
 /**
  * Hook to manage chat state and CRUD operations.
@@ -38,7 +41,7 @@ export function useChatState(options: UseChatStateOptions): UseChatStateReturn {
 			try {
 				await shareChat(currentChatId);
 			} catch (error) {
-				console.error("[handleShareChat] Error:", error);
+				logger.error("Share chat failed", { error });
 				Alert.alert(
 					"Share Failed",
 					"Could not share the chat. Please try again.",

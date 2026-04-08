@@ -10,6 +10,9 @@ import {
 import { bytesToGB } from "../../utils/bytes";
 import { validateModelFileName } from "../../utils/generate-model-filename";
 import { DEFAULT_AI_CHAT_MODEL } from "./constants";
+import { createLogger } from "@/src/logger";
+
+const logger = createLogger("WhisperAI:Config");
 
 export interface ModelUpdateInfo {
 	hasUpdate: boolean;
@@ -35,12 +38,12 @@ export async function fetchLatestRecommendedModel(): Promise<{
 		const deviceMemoryBytes = Device.totalMemory;
 		const ramGB = deviceMemoryBytes ? bytesToGB(deviceMemoryBytes) : undefined;
 
-		console.info(`Device RAM GB: ${ramGB}`);
+		logger.info("Device RAM detected", { ramGB });
 
 		const cardId = recommendModelCard(ramGB);
 		const recommendedCard = config.cards[cardId];
 
-		console.info(`Recommended card ID: ${cardId}`);
+		logger.info("Recommended card selected", { cardId });
 
 		if (!recommendedCard) {
 			throw new Error(
@@ -50,7 +53,7 @@ export async function fetchLatestRecommendedModel(): Promise<{
 
 		return { config, recommendedCard, cardId };
 	} catch (error) {
-		console.error("[AI Model] Failed to fetch latest config:", error);
+		logger.error("Failed to fetch latest config", { error: error instanceof Error ? error.message : String(error) });
 		return {
 			config: whisperLLMCardsJson,
 			recommendedCard: DEFAULT_AI_CHAT_MODEL,
@@ -87,7 +90,7 @@ export function getStoredModelCard(store: Store): WhisperLLMCard | null {
 	try {
 		return JSON.parse(cardJson) as WhisperLLMCard;
 	} catch (error) {
-		console.error("[AI Model] Failed to parse stored card:", error);
+		logger.error("Failed to parse stored card", { error: error instanceof Error ? error.message : String(error) });
 		return null;
 	}
 }

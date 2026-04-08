@@ -2,7 +2,10 @@ import * as FileSystem from "expo-file-system/legacy";
 import * as ImageManipulator from "expo-image-manipulator";
 import * as ImagePicker from "expo-image-picker";
 
+import { createLogger } from "@/src/logger";
 import { mainStore } from "@/src/stores/main/main-store";
+
+const logger = createLogger("Background");
 
 // Max dimensions for background images to prevent memory issues
 const MAX_BACKGROUND_WIDTH = 1920;
@@ -45,9 +48,10 @@ async function compressAndResizeImage(
 
 	while (fileSize > TARGET_MAX_SIZE_BYTES && quality > MIN_COMPRESSION_QUALITY) {
 		quality -= QUALITY_STEP;
-		console.log(
-			`[Background] File size ${(fileSize / 1024).toFixed(0)} KB exceeds 1MB, retrying with quality ${quality.toFixed(1)}`,
-		);
+		logger.debug("file size exceeds 1MB, retrying with lower quality", {
+			fileSizeKB: Number((fileSize / 1024).toFixed(0)),
+			quality: Number(quality.toFixed(1)),
+		});
 
 		result = await rendered.saveAsync({
 			format: ImageManipulator.SaveFormat.JPEG,
@@ -108,7 +112,7 @@ export async function pickBackgroundFromLibrary(): Promise<{
 			originalInfo.exists && "size" in originalInfo
 				? (originalInfo.size / 1024).toFixed(2)
 				: "unknown";
-		console.log(`[Background] Original image size: ${originalSizeKB} KB`);
+		logger.debug("original image size", { sizeKB: originalSizeKB });
 
 		const processedImage = await compressAndResizeImage(asset.uri);
 
@@ -118,10 +122,12 @@ export async function pickBackgroundFromLibrary(): Promise<{
 			compressedInfo.exists && "size" in compressedInfo
 				? (compressedInfo.size / 1024).toFixed(2)
 				: "unknown";
-		console.log(`[Background] Compressed image size: ${compressedSizeKB} KB`);
-		console.log(
-			`[Background] Size reduction: ${originalSizeKB !== "unknown" && compressedSizeKB !== "unknown" ? (((Number(originalSizeKB) - Number(compressedSizeKB)) / Number(originalSizeKB)) * 100).toFixed(1) : "N/A"}%`,
-		);
+		logger.debug("compressed image size", {
+			sizeKB: compressedSizeKB,
+			reductionPercent: originalSizeKB !== "unknown" && compressedSizeKB !== "unknown"
+				? Number((((Number(originalSizeKB) - Number(compressedSizeKB)) / Number(originalSizeKB)) * 100).toFixed(1))
+				: null,
+		});
 
 		const fileName = `chat-background-${Date.now()}.jpg`;
 		const destinationUri = `${FileSystem.documentDirectory}${fileName}`;
@@ -138,7 +144,7 @@ export async function pickBackgroundFromLibrary(): Promise<{
 
 		return { success: true };
 	} catch (error: unknown) {
-		console.error("Failed to pick/save background image:", error);
+		logger.error("failed to pick/save background image", { error: error instanceof Error ? error.message : String(error) });
 
 		// Check for native module errors
 		const errorMessage = error instanceof Error ? error.message : String(error);
@@ -195,7 +201,7 @@ async function cleanupOldCustomBackground(): Promise<void> {
 				});
 			}
 		} catch (error) {
-			console.warn("Failed to delete old background:", error);
+			logger.warn("failed to delete old background", { error: error instanceof Error ? error.message : String(error) });
 		}
 	}
 }

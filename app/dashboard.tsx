@@ -4,6 +4,7 @@ import {
 	DashboardGreeting,
 	UpdateBanner,
 } from "@/components/dashboard";
+import { createLogger } from "@/src/logger";
 import { FolderManagementSheet } from "@/components/folder-management-sheet";
 import { FolderSelector } from "@/components/folder-selector";
 import { GradientBackground } from "@/components/gradient-background";
@@ -46,6 +47,8 @@ import {
 	useSortedRowIds,
 	useTable,
 } from "tinybase/ui-react";
+
+const logger = createLogger("Dashboard");
 
 export default function Dashboard() {
 	const colorScheme = useColorScheme() ?? "light";
@@ -232,7 +235,7 @@ export default function Dashboard() {
 					setUpdateNotificationVisible(true);
 				}
 			} catch (error) {
-				console.error("[Dashboard] Failed to check for updates:", error);
+				logger.error("Failed to check for updates", { error });
 			}
 		};
 
