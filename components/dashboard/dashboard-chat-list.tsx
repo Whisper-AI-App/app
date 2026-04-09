@@ -96,7 +96,7 @@ export function DashboardChatList({
 						}}
 					>
 						<Pressable
-							onPress={() => Linking.openURL("https://usewhisper.org/news")}
+							onPress={() => Linking.openURL("https://usewhisper.org/labs")}
 						>
 							<Text
 								style={{

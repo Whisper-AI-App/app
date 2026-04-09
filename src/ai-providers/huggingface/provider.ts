@@ -1,3 +1,4 @@
+import { createLogger } from "@/src/logger";
 import * as Device from "expo-device";
 import * as FileSystem from "expo-file-system";
 import {
@@ -8,6 +9,10 @@ import {
 	toggleNativeLog,
 } from "llama.rn";
 import type { Store } from "tinybase";
+
+const logger = createLogger("HuggingFace");
+
+import { deleteProviderCredentials } from "../../actions/secure-credentials";
 import {
 	checkBudget,
 	getDeviceMemoryTier,
@@ -26,7 +31,6 @@ import {
 	startMemoryPressureMonitor,
 } from "../../utils/memory-pressure";
 import { getAvailableMemory } from "../../utils/native-memory";
-import { deleteProviderCredentials } from "../../actions/secure-credentials";
 import type {
 	AIProvider,
 	CompletionMessage,
@@ -37,14 +41,14 @@ import type {
 	ToolCapabilities,
 	ToolDefinition,
 } from "../types";
-import { DEFAULT_CONSTRAINTS, NO_MULTIMODAL, NO_TOOL_SUPPORT } from "../types";
+import { DEFAULT_CONSTRAINTS, NO_MULTIMODAL } from "../types";
 import { convertToLlamaTools } from "../tool-converter-llama";
+import { searchModels } from "./api";
 import {
-	startDownload as startHFDownload,
 	pauseDownload as pauseHFDownload,
 	resumeDownload as resumeHFDownload,
+	startDownload as startHFDownload,
 } from "./download";
-import { searchModels } from "./api";
 
 const PROVIDER_ID = "huggingface";
 const DEFAULT_CONTEXT_SIZE = 2048;
@@ -158,7 +162,7 @@ async function loadVisionOnDemand(
 	if (visionStatus === "loading") return false;
 
 	if (!llamaContext || !storedMmprojUri) {
-		console.warn("[HuggingFace] Cannot load vision: no context or mmproj URI");
+		logger.warn("Cannot load vision: no context or mmproj URI");
 		return false;
 	}
 
@@ -184,10 +188,11 @@ async function loadVisionOnDemand(
 
 	if (!budget.canLoad) {
 		dispatch("vision", { type: "LOAD_FAIL_BUDGET" });
-		console.warn(
-			`[HuggingFace] Vision budget denied: ${(budget.availableBytes / (1024 * 1024 * 1024)).toFixed(1)}GB avail, ` +
-				`${(budget.estimatedModelBytes / (1024 * 1024 * 1024)).toFixed(1)}GB needed (${budget.source})`,
-		);
+		logger.warn("Vision budget denied", {
+			availableGB: (budget.availableBytes / (1024 * 1024 * 1024)).toFixed(1),
+			neededGB: (budget.estimatedModelBytes / (1024 * 1024 * 1024)).toFixed(1),
+			source: budget.source,
+		});
 		return false;
 	}
 
@@ -207,20 +212,20 @@ async function loadVisionOnDemand(
 				...resolvedMultimodalCaps,
 				vision: true,
 			});
-			console.info("[HuggingFace] Vision capability unlocked (on-demand)");
+			logger.info("Vision capability unlocked (on-demand)");
 			return true;
 		}
 		dispatch("vision", {
 			type: "LOAD_FAIL_ERROR",
 			error: "vision not reported after init",
 		});
-		console.warn(
-			"[HuggingFace] initMultimodal completed but vision not available",
-		);
+		logger.warn("initMultimodal completed but vision not available");
 		return false;
 	} catch (err) {
 		dispatch("vision", { type: "LOAD_FAIL_ERROR", error: String(err) });
-		console.warn("[HuggingFace] Failed to init multimodal:", err);
+		logger.warn("Failed to init multimodal", {
+			error: err instanceof Error ? err.message : String(err),
+		});
 		return false;
 	}
 }
@@ -283,7 +288,9 @@ export function createHuggingFaceProvider(store: Store): AIProvider {
 			try {
 				await releaseAllLlama();
 			} catch (error) {
-				console.error("[HuggingFace] Error releasing context on disable", error);
+				logger.error("Error releasing context on disable", {
+					error: error instanceof Error ? error.message : String(error),
+				});
 			}
 			llamaContext = null;
 			currentContextSize = DEFAULT_CONTEXT_SIZE;
@@ -299,7 +306,11 @@ export function createHuggingFaceProvider(store: Store): AIProvider {
 			// Delete all downloaded model and mmproj files
 			const modelRowIds = store.getRowIds("hfModels");
 			for (const rowId of modelRowIds) {
-				const localFilename = store.getCell("hfModels", rowId, "localFilename") as string | undefined;
+				const localFilename = store.getCell(
+					"hfModels",
+					rowId,
+					"localFilename",
+				) as string | undefined;
 				if (localFilename) {
 					try {
 						const fileUri = `${new FileSystem.Directory(FileSystem.Paths.document).uri}/${localFilename}`;
@@ -308,10 +319,17 @@ export function createHuggingFaceProvider(store: Store): AIProvider {
 							file.delete();
 						}
 					} catch (error) {
-						console.error("[HuggingFace] Error deleting model file", localFilename, error);
+						logger.error("Error deleting model file", {
+							filename: localFilename,
+							error: error instanceof Error ? error.message : String(error),
+						});
 					}
 				}
-				const mmprojLocalFilename = store.getCell("hfModels", rowId, "mmprojLocalFilename") as string | undefined;
+				const mmprojLocalFilename = store.getCell(
+					"hfModels",
+					rowId,
+					"mmprojLocalFilename",
+				) as string | undefined;
 				if (mmprojLocalFilename) {
 					try {
 						const mmprojUri = `${new FileSystem.Directory(FileSystem.Paths.document).uri}/${mmprojLocalFilename}`;
@@ -320,7 +338,10 @@ export function createHuggingFaceProvider(store: Store): AIProvider {
 							mmprojFile.delete();
 						}
 					} catch (error) {
-						console.error("[HuggingFace] Error deleting mmproj file", mmprojLocalFilename, error);
+						logger.error("Error deleting mmproj file", {
+							filename: mmprojLocalFilename,
+							error: error instanceof Error ? error.message : String(error),
+						});
 					}
 				}
 				store.delRow("hfModels", rowId);
@@ -334,7 +355,11 @@ export function createHuggingFaceProvider(store: Store): AIProvider {
 
 		async setup() {
 			// Sync capabilitiesVersion from store
-			const storedCapabilitiesVersion = store.getCell("aiProviders", PROVIDER_ID, "capabilitiesVersion") as number | undefined;
+			const storedCapabilitiesVersion = store.getCell(
+				"aiProviders",
+				PROVIDER_ID,
+				"capabilitiesVersion",
+			) as number | undefined;
 			if (typeof storedCapabilitiesVersion === "number") {
 				capabilitiesVersion = storedCapabilitiesVersion;
 			}
@@ -351,7 +376,11 @@ export function createHuggingFaceProvider(store: Store): AIProvider {
 			}
 
 			const run = async () => {
-				const selectedModelId = store.getCell("aiProviders", PROVIDER_ID, "selectedModelId") as string | undefined;
+				const selectedModelId = store.getCell(
+					"aiProviders",
+					PROVIDER_ID,
+					"selectedModelId",
+				) as string | undefined;
 
 				if (!selectedModelId) {
 					store.setCell("aiProviders", PROVIDER_ID, "status", "needs_setup");
@@ -371,7 +400,7 @@ export function createHuggingFaceProvider(store: Store): AIProvider {
 				// Check if file exists and is not corrupted/truncated
 				const file = new FileSystem.File(fileUri);
 				if (!file.exists) {
-					console.warn("[HuggingFace] GGUF file missing, marking as needs_setup", fileUri);
+					logger.warn("GGUF file missing, marking as needs_setup");
 					store.setCell("aiProviders", PROVIDER_ID, "fileRemoved", true);
 					store.setCell("aiProviders", PROVIDER_ID, "status", "needs_setup");
 					return;
@@ -380,9 +409,10 @@ export function createHuggingFaceProvider(store: Store): AIProvider {
 				// File size sanity check — detect truncated/corrupted downloads
 				const expectedSize = modelRow.fileSizeBytes as number | undefined;
 				if (expectedSize && file.size && file.size < expectedSize * 0.95) {
-					console.warn(
-						`[HuggingFace] File appears truncated: ${file.size} bytes vs expected ${expectedSize} bytes`,
-					);
+					logger.warn("File appears truncated", {
+						actualBytes: file.size,
+						expectedBytes: expectedSize,
+					});
 					store.setCell("aiProviders", PROVIDER_ID, "fileRemoved", true);
 					store.setCell("aiProviders", PROVIDER_ID, "status", "needs_setup");
 					store.setCell(
@@ -394,18 +424,24 @@ export function createHuggingFaceProvider(store: Store): AIProvider {
 					return;
 				}
 
-				console.info("[HuggingFace:Setup] Configuring model");
+				logger.info("Configuring model");
 				store.setCell("aiProviders", PROVIDER_ID, "status", "configuring");
 
 				try {
 					await releaseAllLlama();
 					await new Promise((resolve) => setTimeout(resolve, 200));
 					const postReleaseMemory = await getAvailableMemory();
-					console.info(
-						`[HuggingFace:Setup] releaseAllLlama completed, 200ms settle done. Available memory: ${(postReleaseMemory.bytes / (1024 * 1024)).toFixed(1)}MB (source=${postReleaseMemory.source})`,
-					);
+					logger.info("releaseAllLlama completed, 200ms settle done", {
+						availableMemoryMB: (
+							postReleaseMemory.bytes /
+							(1024 * 1024)
+						).toFixed(1),
+						source: postReleaseMemory.source,
+					});
 				} catch (error) {
-					console.error("[HuggingFace] Trouble releasing existing context", error);
+					logger.error("Trouble releasing existing context", {
+						error: error instanceof Error ? error.message : String(error),
+					});
 				}
 
 				try {
@@ -417,18 +453,30 @@ export function createHuggingFaceProvider(store: Store): AIProvider {
 					const modelSizeGB = file.size ? bytesToGB(file.size) : 1.0;
 
 					// RAM-linear context scaling
-					const storedContextLength = modelRow.contextLength as number | undefined;
-					const modelContextLength = (storedContextLength && storedContextLength > 0)
-						? storedContextLength
-						: DEFAULT_CONTEXT_SIZE;
-					const ramScaledCtx = Math.max(512, Math.round(ramGB * 1024 / modelSizeGB));
+					const storedContextLength = modelRow.contextLength as
+						| number
+						| undefined;
+					const modelContextLength =
+						storedContextLength && storedContextLength > 0
+							? storedContextLength
+							: DEFAULT_CONTEXT_SIZE;
+					const ramScaledCtx = Math.max(
+						512,
+						Math.round((ramGB * 1024) / modelSizeGB),
+					);
 					const nCtx = Math.min(modelContextLength, ramScaledCtx);
 
 					const chatBudget = await checkBudget(modelSizeGB, nCtx);
 
 					if (!chatBudget.canLoad) {
-						const availGB = (chatBudget.availableBytes / (1024 * 1024 * 1024)).toFixed(1);
-						const needGB = ((chatBudget.estimatedModelBytes * 1.3) / (1024 * 1024 * 1024)).toFixed(1);
+						const availGB = (
+							chatBudget.availableBytes /
+							(1024 * 1024 * 1024)
+						).toFixed(1);
+						const needGB = (
+							(chatBudget.estimatedModelBytes * 1.3) /
+							(1024 * 1024 * 1024)
+						).toFixed(1);
 						const errorMsg = `Not enough memory to load model. Available: ${availGB}GB, Required: ${needGB}GB. Close other apps and try again.`;
 						store.setCell("aiProviders", PROVIDER_ID, "error", errorMsg);
 						store.setCell("aiProviders", PROVIDER_ID, "status", "error");
@@ -455,7 +503,9 @@ export function createHuggingFaceProvider(store: Store): AIProvider {
 						}
 					}
 
-					const useMlock = !isAndroid && (deviceTier === "full" || deviceTier === "unrestricted");
+					const useMlock =
+						!isAndroid &&
+						(deviceTier === "full" || deviceTier === "unrestricted");
 
 					// Multimodal (vision) models require ctx_shift: false because
 					// context shifting is incompatible with how multimodal embeddings
@@ -465,14 +515,19 @@ export function createHuggingFaceProvider(store: Store): AIProvider {
 					const isVisionModel = pipelineTag === "image-text-to-text";
 					const ctxShift = isVisionModel ? false : undefined;
 
-					console.info(
-						`[HuggingFace:Setup] Loading model (n_ctx=${nCtx}, gpu_layers=${gpuLayers}, tier=${deviceTier}${isVisionModel ? ", vision=true, ctx_shift=false" : ""})`,
-					);
+					logger.info("Loading model", {
+						n_ctx: nCtx,
+						gpu_layers: gpuLayers,
+						tier: deviceTier,
+						isVisionModel,
+					});
 
 					// Enable native llama.cpp logging to capture crash details
 					await toggleNativeLog(true);
 					addNativeLogListener((level, text) => {
-						console.info(`[llama.cpp:${level}] ${text.trimEnd()}`);
+						if (level === "warn" || level === "error") {
+							logger.warn("llama.cpp", { level, text: text.trimEnd() });
+						}
 					});
 
 					try {
@@ -487,7 +542,12 @@ export function createHuggingFaceProvider(store: Store): AIProvider {
 						});
 					} catch (loadError) {
 						if (gpuLayers > 0) {
-							console.warn("[HuggingFace:Setup] Load failed, retrying CPU-only", loadError);
+							logger.warn("Load failed, retrying CPU-only", {
+								error:
+									loadError instanceof Error
+										? loadError.message
+										: String(loadError),
+							});
 							llamaContext = await initLlama({
 								model: fileUri,
 								use_mlock: false,
@@ -508,8 +568,12 @@ export function createHuggingFaceProvider(store: Store): AIProvider {
 					storedIsVisionModel = isVisionModel;
 					storedMmprojUri = null;
 					if (isVisionModel) {
-						const mmprojDownloadedAt = modelRow.mmprojDownloadedAt as string | undefined;
-						const mmprojLocalFilename = modelRow.mmprojLocalFilename as string | undefined;
+						const mmprojDownloadedAt = modelRow.mmprojDownloadedAt as
+							| string
+							| undefined;
+						const mmprojLocalFilename = modelRow.mmprojLocalFilename as
+							| string
+							| undefined;
 						if (mmprojDownloadedAt && mmprojLocalFilename) {
 							storedMmprojUri = `${new FileSystem.Directory(FileSystem.Paths.document).uri}/${mmprojLocalFilename}`;
 						}
@@ -528,7 +592,7 @@ export function createHuggingFaceProvider(store: Store): AIProvider {
 
 					store.setCell("aiProviders", PROVIDER_ID, "status", "ready");
 					store.setCell("aiProviders", PROVIDER_ID, "error", "");
-					console.info("[HuggingFace:Setup] Model loaded — ready");
+					logger.info("Model loaded — ready");
 
 					// Subscribe to state machine changes to update capabilities reactively
 					stateUnsubscribe?.();
@@ -548,7 +612,9 @@ export function createHuggingFaceProvider(store: Store): AIProvider {
 							try {
 								await ctx.releaseMultimodal?.();
 							} catch (e) {
-								console.error("[HuggingFace] releaseMultimodal error:", e);
+								logger.error("releaseMultimodal error", {
+									error: e instanceof Error ? e.message : String(e),
+								});
 							}
 						});
 					}
@@ -567,11 +633,13 @@ export function createHuggingFaceProvider(store: Store): AIProvider {
 							storedMmprojUri &&
 							llamaContext
 						) {
-							console.info("[HuggingFace] Pre-warming vision");
+							logger.info("Pre-warming vision");
 							try {
 								await loadVisionOnDemand(updateCapabilities);
 							} catch (err) {
-								console.warn("[HuggingFace] Vision pre-warm failed:", err);
+								logger.warn("Vision pre-warm failed", {
+									error: err instanceof Error ? err.message : String(err),
+								});
 							}
 
 							// Small delay to let memory settle before next allocation
@@ -580,29 +648,33 @@ export function createHuggingFaceProvider(store: Store): AIProvider {
 
 						// 2. Then pre-warm STT (if tier allows)
 						if (tierStrategy.preWarmSTT) {
-							console.info("[HuggingFace] Pre-warming STT");
+							logger.info("Pre-warming STT");
 							dispatch("stt", { type: "PRE_WARM" });
 							try {
 								await initSTT();
 								dispatch("stt", { type: "LOAD_SUCCESS" });
-								console.info("[HuggingFace] STT pre-warmed successfully");
+								logger.info("STT pre-warmed successfully");
 							} catch (err: unknown) {
 								dispatch("stt", {
 									type: "LOAD_FAIL_ERROR",
 									error: String(err),
 								});
-								console.warn("[HuggingFace] STT pre-warm failed:", err);
+								logger.warn("STT pre-warm failed", {
+									error: err instanceof Error ? err.message : String(err),
+								});
 							}
 						}
 					})().catch((err) => {
-						console.warn(
-							"[HuggingFace] Sequential pre-warm IIFE failed unexpectedly:",
-							err,
-						);
+						logger.warn("Sequential pre-warm IIFE failed unexpectedly", {
+							error: err instanceof Error ? err.message : String(err),
+						});
 					});
 				} catch (error) {
-					console.error("[HuggingFace] Failed to load model", error);
-					const errorMessage = error instanceof Error ? error.message : "Failed to load model";
+					logger.error("Failed to load model", {
+						error: error instanceof Error ? error.message : String(error),
+					});
+					const errorMessage =
+						error instanceof Error ? error.message : "Failed to load model";
 					store.setCell("aiProviders", PROVIDER_ID, "error", errorMessage);
 					store.setCell("aiProviders", PROVIDER_ID, "status", "error");
 					throw error;
@@ -645,7 +717,12 @@ export function createHuggingFaceProvider(store: Store): AIProvider {
 			store.setCell("aiProviders", PROVIDER_ID, "selectedModelId", modelId);
 			const row = store.getRow("hfModels", modelId);
 			if (row?.localFilename) {
-				store.setCell("aiProviders", PROVIDER_ID, "filename", row.localFilename as string);
+				store.setCell(
+					"aiProviders",
+					PROVIDER_ID,
+					"filename",
+					row.localFilename as string,
+				);
 			}
 			updateCapabilities({ ...resolvedMultimodalCaps });
 		},
@@ -674,7 +751,10 @@ export function createHuggingFaceProvider(store: Store): AIProvider {
 				};
 			}
 
-			const convertedMessages = convertToLlamaMessages(messages, resolvedMultimodalCaps.vision);
+			const convertedMessages = convertToLlamaMessages(
+				messages,
+				resolvedMultimodalCaps.vision,
+			);
 
 			// Convert tools to OpenAI function-calling format for llama.rn
 			const llamaTools = options?.tools?.length
@@ -792,7 +872,9 @@ export function createHuggingFaceProvider(store: Store): AIProvider {
 			try {
 				await releaseAllLlama();
 			} catch (error) {
-				console.error("[HuggingFace] Error releasing context", error);
+				logger.error("Error releasing context", {
+					error: error instanceof Error ? error.message : String(error),
+				});
 			}
 
 			// Complete release transitions
@@ -828,7 +910,9 @@ export function createHuggingFaceProvider(store: Store): AIProvider {
 						file.delete();
 					}
 				} catch (error) {
-					console.error("[HuggingFace] Error deleting model file", error);
+					logger.error("Error deleting model file", {
+						error: error instanceof Error ? error.message : String(error),
+					});
 				}
 			}
 
@@ -842,7 +926,9 @@ export function createHuggingFaceProvider(store: Store): AIProvider {
 						mmprojFile.delete();
 					}
 				} catch (error) {
-					console.error("[HuggingFace] Error deleting mmproj file", error);
+					logger.error("Error deleting mmproj file", {
+						error: error instanceof Error ? error.message : String(error),
+					});
 				}
 			}
 
@@ -850,14 +936,21 @@ export function createHuggingFaceProvider(store: Store): AIProvider {
 			store.delRow("hfModels", modelId);
 
 			// Handle active model deletion
-			const selectedModelId = store.getCell("aiProviders", PROVIDER_ID, "selectedModelId") as string;
+			const selectedModelId = store.getCell(
+				"aiProviders",
+				PROVIDER_ID,
+				"selectedModelId",
+			) as string;
 			if (selectedModelId === modelId) {
 				// Release context if loaded
 				if (llamaContext) {
 					try {
 						await releaseAllLlama();
 					} catch (error) {
-						console.error("[HuggingFace] Error releasing context after active model deletion", error);
+						logger.error(
+							"Error releasing context after active model deletion",
+							{ error: error instanceof Error ? error.message : String(error) },
+						);
 					}
 					llamaContext = null;
 					currentContextSize = DEFAULT_CONTEXT_SIZE;

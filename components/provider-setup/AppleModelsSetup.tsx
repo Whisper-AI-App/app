@@ -13,6 +13,9 @@ import { ActivityIndicator, Pressable } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useCell } from "tinybase/ui-react";
 import type { ProviderModel } from "@/src/ai-providers/types";
+import { createLogger } from "@/src/logger";
+
+const logger = createLogger("AppleModelsSetup");
 
 function useAppleIntelligenceAvailable(): boolean {
 	try {
@@ -62,7 +65,7 @@ export function AppleModelsSetup() {
 				router.back();
 			}
 		} catch (err) {
-			console.error("[AppleModelsSetup] Setup error:", err);
+			logger.error("Setup error", { error: err instanceof Error ? err.message : String(err) });
 		} finally {
 			setIsSettingUp(false);
 		}

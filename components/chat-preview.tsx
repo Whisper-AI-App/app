@@ -7,9 +7,12 @@ import { useColorScheme } from "@/hooks/useColorScheme";
 import { deleteChat, shareChat } from "@/src/actions/chat";
 import { formatChatPreviewDate } from "@/src/utils/format-date";
 import { Colors } from "@/theme/colors";
+import { createLogger } from "@/src/logger";
 import { Card, CardContent } from "./ui/card";
 import { Text } from "./ui/text";
 import { View } from "./ui/view";
+
+const logger = createLogger("ChatPreview");
 
 export function ChatPreview({
 	chatId,
@@ -90,7 +93,7 @@ export function ChatPreview({
 		try {
 			await shareChat(chatId);
 		} catch (error) {
-			console.error("[handleShareChat] Error:", error);
+			logger.error("Share chat failed", { error: error instanceof Error ? error.message : String(error) });
 			Alert.alert(
 				"Share Failed",
 				"Could not share the chat. Please try again.",

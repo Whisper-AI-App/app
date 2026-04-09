@@ -14,6 +14,9 @@ import { useCallback, useState } from "react";
 import { ActivityIndicator, Clipboard } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useCell } from "tinybase/ui-react";
+import { createLogger } from "@/src/logger";
+
+const logger = createLogger("OpenAISetup");
 
 export function OpenAISetup() {
 	const router = useRouter();
@@ -51,7 +54,7 @@ export function OpenAISetup() {
 		try {
 			await provider.startOAuth?.();
 		} catch (err) {
-			console.error("[OpenAISetup] OAuth error:", err);
+			logger.error("OAuth error", { error: err instanceof Error ? err.message : String(err) });
 		} finally {
 			setIsConnecting(false);
 		}

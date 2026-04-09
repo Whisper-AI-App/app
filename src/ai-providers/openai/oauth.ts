@@ -1,8 +1,9 @@
-import {
-	setCredential,
-} from "@/src/actions/secure-credentials";
 import * as Linking from "expo-linking";
 import type { Store } from "tinybase";
+import { setCredential } from "@/src/actions/secure-credentials";
+import { createLogger } from "@/src/logger";
+
+const logger = createLogger("OpenAI:OAuth");
 
 const OPENAI_CLIENT_ID = "app_EMoamEEZ73f0CkXaXp7hrann";
 const DEVICE_CODE_URL =
@@ -59,11 +60,11 @@ export async function requestDeviceCode(
 			verificationUrl: DEVICE_AUTH_PAGE,
 		};
 	} catch (error) {
-		console.error("[OpenAI] Device code request failed:", error);
+		logger.error("Device code request failed", {
+			error: error instanceof Error ? error.message : String(error),
+		});
 		const errorMessage =
-			error instanceof Error
-				? error.message
-				: "Failed to get device code";
+			error instanceof Error ? error.message : "Failed to get device code";
 		store.setCell("aiProviders", "openai", "error", errorMessage);
 		store.setCell("aiProviders", "openai", "status", "error");
 		return null;
@@ -154,7 +155,9 @@ export async function pollForAuthorization(
 		} catch (error) {
 			if (signal.aborted) return;
 			// Network errors during polling — keep trying
-			console.warn("[OpenAI] Poll error, retrying:", error);
+			logger.warn("Poll error, retrying", {
+				error: error instanceof Error ? error.message : String(error),
+			});
 		}
 	}
 }
@@ -211,9 +214,7 @@ async function exchangeCodeForToken(
 		}
 
 		// Extract account ID from JWT claims
-		const accountId = extractAccountId(
-			data.id_token ?? data.access_token,
-		);
+		const accountId = extractAccountId(data.id_token ?? data.access_token);
 		if (accountId) {
 			await setCredential("openai", "accountId", accountId);
 		}
@@ -221,7 +222,9 @@ async function exchangeCodeForToken(
 		store.setCell("aiProviders", "openai", "status", "ready");
 		store.setCell("aiProviders", "openai", "error", "");
 	} catch (error) {
-		console.error("[OpenAI] Token exchange failed:", error);
+		logger.error("Token exchange failed", {
+			error: error instanceof Error ? error.message : String(error),
+		});
 		const errorMessage =
 			error instanceof Error ? error.message : "Token exchange failed";
 		store.setCell("aiProviders", "openai", "error", errorMessage);

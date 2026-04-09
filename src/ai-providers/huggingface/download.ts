@@ -4,8 +4,11 @@ import {
 	type DownloadResumable,
 } from "expo-file-system/legacy";
 import type { Store } from "tinybase";
-import { bytesToGB } from "../../utils/bytes";
+import { createLogger } from "@/src/logger";
 import { getCredential } from "../../actions/secure-credentials";
+import { bytesToGB } from "../../utils/bytes";
+
+const logger = createLogger("HuggingFace:Download");
 
 const PROVIDER_ID = "huggingface";
 
@@ -33,7 +36,9 @@ type QueueItem = string; // model ID
  * Gets the current download queue from the store
  */
 export function getDownloadQueue(store: Store): QueueItem[] {
-	const queueStr = store.getCell("aiProviders", PROVIDER_ID, "downloadQueue") as string | undefined;
+	const queueStr = store.getCell("aiProviders", PROVIDER_ID, "downloadQueue") as
+		| string
+		| undefined;
 	if (!queueStr) return [];
 	try {
 		const parsed = JSON.parse(queueStr);
@@ -47,7 +52,12 @@ export function getDownloadQueue(store: Store): QueueItem[] {
  * Saves the queue to the store
  */
 function setDownloadQueue(store: Store, queue: QueueItem[]): void {
-	store.setCell("aiProviders", PROVIDER_ID, "downloadQueue", JSON.stringify(queue));
+	store.setCell(
+		"aiProviders",
+		PROVIDER_ID,
+		"downloadQueue",
+		JSON.stringify(queue),
+	);
 }
 
 /**
@@ -65,7 +75,10 @@ export function addToDownloadQueue(store: Store, modelId: string): boolean {
  * Removes a model ID from the download queue
  * @returns true if removed, false if not in queue
  */
-export function removeFromDownloadQueue(store: Store, modelId: string): boolean {
+export function removeFromDownloadQueue(
+	store: Store,
+	modelId: string,
+): boolean {
 	const queue = getDownloadQueue(store);
 	const index = queue.indexOf(modelId);
 	if (index === -1) return false;
@@ -79,7 +92,9 @@ export function removeFromDownloadQueue(store: Store, modelId: string): boolean 
  * Checks if a download is currently active
  */
 export function isDownloadActive(store: Store): boolean {
-	const status = store.getCell("aiProviders", PROVIDER_ID, "status") as string | undefined;
+	const status = store.getCell("aiProviders", PROVIDER_ID, "status") as
+		| string
+		| undefined;
 	return status === "downloading";
 }
 
@@ -111,7 +126,11 @@ export async function startNextQueuedDownload(store: Store): Promise<void> {
 	// Set as selected model and start download
 	store.setCell("aiProviders", PROVIDER_ID, "selectedModelId", nextModelId);
 
-	const filename = store.getCell("hfModels", nextModelId, "localFilename") as string;
+	const filename = store.getCell(
+		"hfModels",
+		nextModelId,
+		"localFilename",
+	) as string;
 	if (filename) {
 		store.setCell("aiProviders", PROVIDER_ID, "filename", filename);
 	}
@@ -144,7 +163,12 @@ function createProgressCallback(store: Store) {
 
 		if (now - lastUpdateTime >= 500) {
 			lastUpdateTime = now;
-			store.setCell("aiProviders", PROVIDER_ID, "progressSizeGB", progressSizeGB);
+			store.setCell(
+				"aiProviders",
+				PROVIDER_ID,
+				"progressSizeGB",
+				progressSizeGB,
+			);
 			pendingProgress = null;
 			if (timeoutId) {
 				clearTimeout(timeoutId);
@@ -153,14 +177,22 @@ function createProgressCallback(store: Store) {
 		} else {
 			pendingProgress = progressSizeGB;
 			if (!timeoutId) {
-				timeoutId = setTimeout(() => {
-					if (pendingProgress !== null) {
-						store.setCell("aiProviders", PROVIDER_ID, "progressSizeGB", pendingProgress);
-						lastUpdateTime = Date.now();
-						pendingProgress = null;
-					}
-					timeoutId = null;
-				}, 500 - (now - lastUpdateTime));
+				timeoutId = setTimeout(
+					() => {
+						if (pendingProgress !== null) {
+							store.setCell(
+								"aiProviders",
+								PROVIDER_ID,
+								"progressSizeGB",
+								pendingProgress,
+							);
+							lastUpdateTime = Date.now();
+							pendingProgress = null;
+						}
+						timeoutId = null;
+					},
+					500 - (now - lastUpdateTime),
+				);
 			}
 		}
 	};
@@ -182,21 +214,33 @@ function cleanupDownloadState(store: Store): void {
  * Failure is non-fatal — the model works without vision.
  */
 async function downloadMmproj(store: Store, modelId: string): Promise<void> {
-	const mmprojDownloadUrl = store.getCell("hfModels", modelId, "mmprojDownloadUrl") as string | undefined;
-	const mmprojFilename = store.getCell("hfModels", modelId, "mmprojFilename") as string | undefined;
+	const mmprojDownloadUrl = store.getCell(
+		"hfModels",
+		modelId,
+		"mmprojDownloadUrl",
+	) as string | undefined;
+	const mmprojFilename = store.getCell("hfModels", modelId, "mmprojFilename") as
+		| string
+		| undefined;
 
 	if (!mmprojDownloadUrl || !mmprojFilename) return;
 
 	// Generate local filename for mmproj
 	const repoId = store.getCell("hfModels", modelId, "repoId") as string;
-	const localMmprojFilename = `hf-${repoId.replace(/\//g, "-")}-${mmprojFilename}`
-		.replace(/[^a-zA-Z0-9._-]/g, "-")
-		.substring(0, 100);
+	const localMmprojFilename =
+		`hf-${repoId.replace(/\//g, "-")}-${mmprojFilename}`
+			.replace(/[^a-zA-Z0-9._-]/g, "-")
+			.substring(0, 100);
 	const fileUri = `${new FileSystem.Directory(FileSystem.Paths.document).uri}/${localMmprojFilename}`;
 
-	store.setCell("hfModels", modelId, "mmprojLocalFilename", localMmprojFilename);
+	store.setCell(
+		"hfModels",
+		modelId,
+		"mmprojLocalFilename",
+		localMmprojFilename,
+	);
 
-	console.info(`[HuggingFace:Download] Starting mmproj download: ${mmprojFilename}`);
+	logger.info("Starting mmproj download", { filename: mmprojFilename });
 
 	try {
 		const downloadOptions = await getDownloadOptions();
@@ -210,26 +254,51 @@ async function downloadMmproj(store: Store, modelId: string): Promise<void> {
 		const result = await resumable.downloadAsync();
 
 		if (result?.status === 200 || result?.status === 206) {
-			store.setCell("hfModels", modelId, "mmprojDownloadedAt", new Date().toISOString());
-			console.info("[HuggingFace:Download] mmproj download complete");
+			store.setCell(
+				"hfModels",
+				modelId,
+				"mmprojDownloadedAt",
+				new Date().toISOString(),
+			);
+			logger.info("mmproj download complete");
 		} else {
-			console.warn("[HuggingFace:Download] mmproj download failed with status:", result?.status);
+			logger.warn("mmproj download failed with status", {
+				status: result?.status,
+			});
 		}
 	} catch (error) {
-		console.warn("[HuggingFace:Download] mmproj download failed (non-fatal):", error);
+		logger.warn("mmproj download failed (non-fatal)", {
+			error: error instanceof Error ? error.message : String(error),
+		});
 		// Non-fatal: model works without vision
 	}
 }
 
-async function handleDownloadComplete(store: Store, result: { status: number } | null): Promise<void> {
+async function handleDownloadComplete(
+	store: Store,
+	result: { status: number } | null,
+): Promise<void> {
 	if (result?.status === 200 || result?.status === 206) {
 		// Mark the hfModels row as downloaded
-		const selectedModelId = store.getCell("aiProviders", PROVIDER_ID, "selectedModelId") as string;
+		const selectedModelId = store.getCell(
+			"aiProviders",
+			PROVIDER_ID,
+			"selectedModelId",
+		) as string;
 		if (selectedModelId) {
-			store.setCell("hfModels", selectedModelId, "downloadedAt", new Date().toISOString());
+			store.setCell(
+				"hfModels",
+				selectedModelId,
+				"downloadedAt",
+				new Date().toISOString(),
+			);
 
 			// Download mmproj for vision models (non-fatal on failure)
-			const mmprojDownloadUrl = store.getCell("hfModels", selectedModelId, "mmprojDownloadUrl") as string | undefined;
+			const mmprojDownloadUrl = store.getCell(
+				"hfModels",
+				selectedModelId,
+				"mmprojDownloadUrl",
+			) as string | undefined;
 			if (mmprojDownloadUrl) {
 				await downloadMmproj(store, selectedModelId);
 			}
@@ -238,17 +307,19 @@ async function handleDownloadComplete(store: Store, result: { status: number } |
 		store.setCell("aiProviders", PROVIDER_ID, "status", "ready");
 		cleanupDownloadState(store);
 		setActiveDownloadResumable(null);
-		console.info("[HuggingFace:Download] Download complete");
+		logger.info("Download complete");
 
 		// Start next queued download asynchronously
 		// Use setImmediate to ensure the current download state is fully cleaned up first
 		setImmediate(() => {
 			startNextQueuedDownload(store).catch((err) => {
-				console.error("[HuggingFace:Download] Error starting next queued download:", err);
+				logger.error("Error starting next queued download", {
+					error: err instanceof Error ? err.message : String(err),
+				});
 			});
 		});
 	} else {
-		console.error("[HuggingFace:Download] Download failed with status:", result?.status);
+		logger.error("Download failed with status", { status: result?.status });
 		throw new Error(`Download failed with status: ${result?.status}`);
 	}
 }
@@ -256,12 +327,16 @@ async function handleDownloadComplete(store: Store, result: { status: number } |
 function handleDownloadError(store: Store, error: unknown): void {
 	if (checkIfPaused(store)) return;
 
-	console.error("[HuggingFace:Download] Error occurred", error);
-	let errorMessage = error instanceof Error ? error.message : "Unknown error occurred";
+	logger.error("Error occurred", {
+		error: error instanceof Error ? error.message : String(error),
+	});
+	let errorMessage =
+		error instanceof Error ? error.message : "Unknown error occurred";
 
 	// Provide helpful message for 401 errors
 	if (errorMessage.includes("401") || errorMessage.includes("Unauthorized")) {
-		errorMessage = "Authentication failed. Please add or update your HuggingFace token for this gated model.";
+		errorMessage =
+			"Authentication failed. Please add or update your HuggingFace token for this gated model.";
 	}
 
 	store.setCell("aiProviders", PROVIDER_ID, "downloadError", errorMessage);
@@ -271,7 +346,9 @@ function handleDownloadError(store: Store, error: unknown): void {
 	// Start next queued download even on error
 	setImmediate(() => {
 		startNextQueuedDownload(store).catch((err) => {
-			console.error("[HuggingFace:Download] Error starting next queued download:", err);
+			logger.error("Error starting next queued download", {
+				error: err instanceof Error ? err.message : String(err),
+			});
 		});
 	});
 
@@ -294,17 +371,24 @@ export async function pauseDownload(store: Store): Promise<void> {
 		const savable = resumable.savable();
 
 		if (savable) {
-			store.setCell("aiProviders", PROVIDER_ID, "resumableState", JSON.stringify(savable));
+			store.setCell(
+				"aiProviders",
+				PROVIDER_ID,
+				"resumableState",
+				JSON.stringify(savable),
+			);
 			store.setCell("aiProviders", PROVIDER_ID, "isPaused", true);
 		} else {
-			console.warn("[HuggingFace:Download] savable() returned null after pauseAsync");
+			logger.warn("savable() returned null after pauseAsync");
 			store.setCell("aiProviders", PROVIDER_ID, "isPaused", true);
 		}
 
 		// Clear the module-level reference AFTER all operations are complete
 		setActiveDownloadResumable(null);
 	} catch (error) {
-		console.error("[HuggingFace:Download] Error pausing download", error);
+		logger.error("Error pausing download", {
+			error: error instanceof Error ? error.message : String(error),
+		});
 		throw error;
 	}
 }
@@ -314,27 +398,37 @@ export async function pauseDownload(store: Store): Promise<void> {
  * restarts the download from scratch.
  */
 export async function resumeDownload(store: Store): Promise<void> {
-	const resumableStateStr = store.getCell("aiProviders", PROVIDER_ID, "resumableState") as string | undefined;
+	const resumableStateStr = store.getCell(
+		"aiProviders",
+		PROVIDER_ID,
+		"resumableState",
+	) as string | undefined;
 
 	// If there's no resumable state (e.g., download failed immediately), restart from scratch
 	if (!resumableStateStr) {
-		console.info("[HuggingFace:Download] No resumable state, restarting download");
+		logger.info("No resumable state, restarting download");
 		await startDownload(store, true);
 		return;
 	}
 
 	try {
 		const resumableState = JSON.parse(resumableStateStr);
-		const filename = store.getCell("aiProviders", PROVIDER_ID, "filename") as string;
+		const filename = store.getCell(
+			"aiProviders",
+			PROVIDER_ID,
+			"filename",
+		) as string;
 		const fileUri = `${new FileSystem.Directory(FileSystem.Paths.document).uri}/${filename}`;
 
 		// Get fresh download options with current authentication
 		const downloadOptions = await getDownloadOptions();
 
 		// Merge the saved options with fresh authentication headers
-		const savedOptions = (resumableState.options as Record<string, unknown>) ?? {};
+		const savedOptions =
+			(resumableState.options as Record<string, unknown>) ?? {};
 		const savedHeaders = (savedOptions.headers as Record<string, string>) ?? {};
-		const freshHeaders = (downloadOptions.headers as Record<string, string>) ?? {};
+		const freshHeaders =
+			(downloadOptions.headers as Record<string, string>) ?? {};
 
 		const mergedOptions = {
 			...savedOptions,
@@ -394,7 +488,11 @@ export async function startDownload(
 	store: Store,
 	restart = false,
 ): Promise<boolean> {
-	const selectedModelId = store.getCell("aiProviders", PROVIDER_ID, "selectedModelId") as string;
+	const selectedModelId = store.getCell(
+		"aiProviders",
+		PROVIDER_ID,
+		"selectedModelId",
+	) as string;
 	if (!selectedModelId) {
 		throw new Error("No model selected for download");
 	}
@@ -409,8 +507,16 @@ export async function startDownload(
 	const fileSizeBytes = modelRow.fileSizeBytes as number;
 	const fileUri = `${new FileSystem.Directory(FileSystem.Paths.document).uri}/${localFilename}`;
 
-	const isPaused = store.getCell("aiProviders", PROVIDER_ID, "isPaused") as boolean;
-	const resumableStateStr = store.getCell("aiProviders", PROVIDER_ID, "resumableState") as string | undefined;
+	const isPaused = store.getCell(
+		"aiProviders",
+		PROVIDER_ID,
+		"isPaused",
+	) as boolean;
+	const resumableStateStr = store.getCell(
+		"aiProviders",
+		PROVIDER_ID,
+		"resumableState",
+	) as string | undefined;
 
 	// Resume if paused and not restarting
 	if (isPaused && resumableStateStr && !restart) {
@@ -419,14 +525,18 @@ export async function startDownload(
 	}
 
 	// Check if already downloaded
-	const downloadedAt = store.getCell("hfModels", selectedModelId, "downloadedAt") as string | undefined;
+	const downloadedAt = store.getCell(
+		"hfModels",
+		selectedModelId,
+		"downloadedAt",
+	) as string | undefined;
 	if (downloadedAt && !restart) return false;
 
 	// Check if a download is already active - if so, add to queue
 	if (isDownloadActive(store) && !restart) {
 		const added = addToDownloadQueue(store, selectedModelId);
 		if (added) {
-			console.info(`[HuggingFace:Download] Added ${selectedModelId} to download queue`);
+			logger.info("Added to download queue", { modelId: selectedModelId });
 		}
 		return false;
 	}
@@ -449,18 +559,27 @@ export async function startDownload(
 
 	// Set download state
 	store.setCell("aiProviders", PROVIDER_ID, "filename", localFilename);
-	store.setCell("aiProviders", PROVIDER_ID, "totalSizeGB", bytesToGB(fileSizeBytes));
+	store.setCell(
+		"aiProviders",
+		PROVIDER_ID,
+		"totalSizeGB",
+		bytesToGB(fileSizeBytes),
+	);
 	store.setCell("aiProviders", PROVIDER_ID, "downloadError", "");
 	store.setCell("aiProviders", PROVIDER_ID, "isPaused", false);
 	store.setCell("aiProviders", PROVIDER_ID, "status", "downloading");
 
-	const currentProgress = store.getCell("aiProviders", PROVIDER_ID, "progressSizeGB") as number;
+	const currentProgress = store.getCell(
+		"aiProviders",
+		PROVIDER_ID,
+		"progressSizeGB",
+	) as number;
 	if (!currentProgress) {
 		store.setCell("aiProviders", PROVIDER_ID, "progressSizeGB", 0);
 	}
 
 	try {
-		console.info(`[HuggingFace:Download] Starting download: ${localFilename}`);
+		logger.info("Starting download", { filename: localFilename });
 		const resumable = createDownloadResumable(
 			downloadUrl,
 			fileUri,
@@ -477,7 +596,9 @@ export async function startDownload(
 		await handleDownloadComplete(store, result ?? null);
 		return true;
 	} catch (error) {
-		console.error("[HuggingFace:Download] startDownload error:", error);
+		logger.error("startDownload error", {
+			error: error instanceof Error ? error.message : String(error),
+		});
 		handleDownloadError(store, error);
 		return false;
 	}

@@ -1,6 +1,9 @@
 import * as Device from "expo-device";
+import { createLogger } from "@/src/logger";
 import { getAvailableMemory } from "../utils/native-memory";
 import { estimateModelRAM } from "./estimator";
+
+const logger = createLogger("MemoryBudget");
 
 // ─── Device Memory Tier ──────────────────────────────────────
 
@@ -114,9 +117,14 @@ export async function checkBudget(
 
 	const canLoad = availableBytes >= estimatedModelBytes * headroomFactor;
 
-	console.info(
-		`[MemoryBudget] checkBudget: estimatedModel=${(estimatedModelBytes / (1024 * 1024)).toFixed(1)}MB, available=${(availableBytes / (1024 * 1024)).toFixed(1)}MB, source=${source}, headroomFactor=${headroomFactor}, requiredWithHeadroom=${((estimatedModelBytes * headroomFactor) / (1024 * 1024)).toFixed(1)}MB, canLoad=${canLoad}`,
-	);
+	logger.info("checkBudget", {
+		estimatedModelMB: (estimatedModelBytes / (1024 * 1024)).toFixed(1),
+		availableMB: (availableBytes / (1024 * 1024)).toFixed(1),
+		source,
+		headroomFactor,
+		requiredWithHeadroomMB: ((estimatedModelBytes * headroomFactor) / (1024 * 1024)).toFixed(1),
+		canLoad,
+	});
 
 	return {
 		canLoad,

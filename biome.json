@@ -26,10 +26,23 @@
 			},
 			"suspicious": {
 				"noExplicitAny": "warn",
-				"noArrayIndexKey": "off"
+				"noArrayIndexKey": "off",
+				"noConsole": "error"
 			}
 		}
 	},
+	"overrides": [
+		{
+			"includes": ["**/__tests__/**", "**/__mocks__/**", "jest.setup.js", "scripts/**", "*.config.js", "*.config.ts"],
+			"linter": {
+				"rules": {
+					"suspicious": {
+						"noConsole": "off"
+					}
+				}
+			}
+		}
+	],
 	"javascript": {
 		"formatter": {
 			"quoteStyle": "double"

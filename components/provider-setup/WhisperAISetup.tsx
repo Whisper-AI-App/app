@@ -22,6 +22,9 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import type { Store } from "tinybase";
 import { useCell, useValue } from "tinybase/ui-react";
 import type { WhisperLLMCard } from "whisper-llm-cards";
+import { createLogger } from "@/src/logger";
+
+const logger = createLogger("WhisperAISetup");
 
 export function WhisperAISetup() {
 	const router = useRouter();
@@ -86,7 +89,7 @@ export function WhisperAISetup() {
 				setModelCardId(result.cardId);
 				setConfigVersion(result.config.version);
 			} catch (err) {
-				console.error("[ProviderSetup] Failed to fetch latest model:", err);
+				logger.error("Failed to fetch latest model", { error: err instanceof Error ? err.message : String(err) });
 			} finally {
 				setIsFetchingModel(false);
 			}
@@ -112,7 +115,7 @@ export function WhisperAISetup() {
 					router.replace("/dashboard");
 				}
 			}).catch((err) => {
-				console.error("[WhisperAISetup] setActiveProvider failed:", err);
+				logger.error("setActiveProvider failed", { error: err instanceof Error ? err.message : String(err) });
 				router.replace("/dashboard");
 			});
 		}
@@ -151,7 +154,7 @@ export function WhisperAISetup() {
 				restart,
 			);
 		} catch (err) {
-			console.error(err);
+			logger.error("Download failed", { error: err instanceof Error ? err.message : String(err) });
 			setError("Failed to download, try again");
 			setIsDownloading(false);
 		}
@@ -162,7 +165,7 @@ export function WhisperAISetup() {
 			await pauseDownload(mainStore as unknown as Store);
 			setIsDownloading(false);
 		} catch (err) {
-			console.error(err);
+			logger.error("Pause download failed", { error: err instanceof Error ? err.message : String(err) });
 			setError("Failed to pause download");
 		}
 	};

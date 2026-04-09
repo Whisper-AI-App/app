@@ -50,6 +50,7 @@ export default function RootLayout() {
 											<Stack.Screen name="game" />
 											<Stack.Screen name="setup-ai" />
 											<Stack.Screen name="provider-setup/[providerId]" />
+											<Stack.Screen name="provider-setup/huggingface-download" />
 											<Stack.Screen name="callback/[provider]" />
 										</Stack>
 									</ErrorBoundary>
