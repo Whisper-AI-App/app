@@ -311,14 +311,16 @@ export function createOpenAIProvider(store: Store): AIProvider {
 					return {
 						content,
 						finishReason: "tool_calls",
-						toolCalls: toolCalls.map((tc: { toolCallId: string; toolName: string; args: Record<string, unknown> }) => ({
-							id: tc.toolCallId,
-							name: tc.toolName,
-							arguments: tc.args,
-						})),
+						toolCalls: toolCalls
+							.filter((tc) => "args" in tc)
+							.map((tc) => ({
+								id: tc.toolCallId,
+								name: tc.toolName,
+								arguments: (tc as { args: Record<string, unknown> }).args,
+							})),
 						usage: {
 							promptTokens: usage?.inputTokens,
-							completionTokens: usage?.completionTokens,
+							completionTokens: usage?.outputTokens,
 						},
 					};
 				}

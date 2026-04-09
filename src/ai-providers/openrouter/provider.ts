@@ -1,19 +1,21 @@
-import { createOpenRouter } from "@openrouter/ai-sdk-provider";
-import type { ModelMessage } from "ai";
-import { streamText } from "ai";
-import { fetch as expoFetch } from "expo/fetch";
-import type { Store } from "tinybase";
 import {
 	deleteProviderCredentials,
 	getCredential,
 } from "@/src/actions/secure-credentials";
 import { createLogger } from "@/src/logger";
+import { createOpenRouter } from "@openrouter/ai-sdk-provider";
+import type { ModelMessage } from "ai";
+import { streamText } from "ai";
+import { fetch as expoFetch } from "expo/fetch";
+import type { Store } from "tinybase";
 
 const logger = createLogger("OpenRouter");
 
 import { dispatch, getCapabilityStatus } from "../../memory/state";
 import { initSTT } from "../../stt";
+import type { ToolDefinition } from "../../tools/types";
 import { convertMessagesForAISDK } from "../message-converter";
+import { convertToAISDKTools } from "../tool-converter";
 import type {
 	AIProvider,
 	CompletionMessage,
@@ -23,9 +25,6 @@ import type {
 	ProviderModel,
 } from "../types";
 import { DEFAULT_CONSTRAINTS, NO_MULTIMODAL } from "../types";
-import { convertMessagesForAISDK } from "../message-converter";
-import { convertToAISDKTools } from "../tool-converter";
-import type { ToolDefinition } from "../../tools/types";
 import { handleOAuthCallback, startOAuth } from "./oauth";
 
 const OPENROUTER_MODELS_URL = "https://openrouter.ai/api/v1/models";
@@ -350,15 +349,17 @@ export function createOpenRouterProvider(store: Store): AIProvider {
 
 				// Handle tool calls
 				if (finishReason === "tool-calls") {
-					const toolCalls = await result.toolCalls ?? [];
+					const toolCalls = (await result.toolCalls) ?? [];
 					return {
 						content,
 						finishReason: "tool_calls",
-						toolCalls: toolCalls.map((tc: { toolCallId: string; toolName: string; args: Record<string, unknown> }) => ({
-							id: tc.toolCallId,
-							name: tc.toolName,
-							arguments: tc.args,
-						})),
+						toolCalls: toolCalls
+							.filter((tc) => "args" in tc)
+							.map((tc) => ({
+								id: tc.toolCallId,
+								name: tc.toolName,
+								arguments: (tc as { args: Record<string, unknown> }).args,
+							})),
 						usage: {
 							promptTokens: usage?.inputTokens,
 							completionTokens: usage?.outputTokens,
