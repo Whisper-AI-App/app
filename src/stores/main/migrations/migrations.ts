@@ -1187,7 +1187,7 @@ export const migrations = createAsyncMigrations()
 				values: {
 					...data.values,
 					version: "7",
-					enabled_skills: '["internet"]',
+					enabled_skills: '[]',
 				},
 				tables: {
 					chats: data.tables.chats ?? {},

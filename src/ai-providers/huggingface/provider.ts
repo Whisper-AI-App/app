@@ -35,8 +35,10 @@ import type {
 	MultimodalCapabilities,
 	ProviderModel,
 	ToolCapabilities,
+	ToolDefinition,
 } from "../types";
 import { DEFAULT_CONSTRAINTS, NO_MULTIMODAL, NO_TOOL_SUPPORT } from "../types";
+import { convertToLlamaTools } from "../tool-converter-llama";
 import {
 	startDownload as startHFDownload,
 	pauseDownload as pauseHFDownload,
@@ -663,6 +665,7 @@ export function createHuggingFaceProvider(store: Store): AIProvider {
 		async completion(
 			messages: CompletionMessage[],
 			onToken: (token: string) => void,
+			options?: { tools?: ToolDefinition[] },
 		): Promise<CompletionResult> {
 			if (!llamaContext) {
 				return {
@@ -673,6 +676,11 @@ export function createHuggingFaceProvider(store: Store): AIProvider {
 
 			const convertedMessages = convertToLlamaMessages(messages, resolvedMultimodalCaps.vision);
 
+			// Convert tools to OpenAI function-calling format for llama.rn
+			const llamaTools = options?.tools?.length
+				? convertToLlamaTools(options.tools)
+				: undefined;
+
 			const result = await llamaContext.completion(
 				{
 					messages: convertedMessages,
@@ -680,11 +688,31 @@ export function createHuggingFaceProvider(store: Store): AIProvider {
 					stop: [],
 					...DEFAULT_SAMPLING,
 					enable_thinking: false,
+					...(llamaTools ? { tools: llamaTools, tool_choice: "auto" } : {}),
 				},
 				(data) => {
 					onToken(data.token);
 				},
 			);
+
+			// Check for tool calls in the result
+			if (result.tool_calls && result.tool_calls.length > 0) {
+				return {
+					content: result.content,
+					finishReason: "tool_calls",
+					toolCalls: result.tool_calls.map((tc) => ({
+						id: tc.id || `tc_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
+						name: tc.function.name,
+						arguments: typeof tc.function.arguments === "string"
+							? JSON.parse(tc.function.arguments)
+							: tc.function.arguments,
+					})),
+					usage: {
+						promptTokens: result.tokens_evaluated,
+						completionTokens: result.tokens_predicted,
+					},
+				};
+			}
 
 			let finishReason: CompletionResult["finishReason"];
 			if (result.stopped_eos) {
@@ -692,7 +720,6 @@ export function createHuggingFaceProvider(store: Store): AIProvider {
 			} else if (result.context_full) {
 				finishReason = "length";
 			} else {
-				// catch-all for stopped_limit and other stop reasons
 				finishReason = "length";
 			}
 
@@ -730,9 +757,12 @@ export function createHuggingFaceProvider(store: Store): AIProvider {
 
 		getToolCapabilities(): ToolCapabilities {
 			const maxTools = Math.min(Math.floor(currentContextSize / 2000), 3);
+			// llama.rn supports native tool calling via Jinja chat templates.
+			// Whether the loaded model actually supports it depends on its template.
+			const hasNativeTools = !!(llamaContext?.model as { chatTemplates?: { jinja?: { toolUse?: boolean } } })?.chatTemplates?.jinja?.toolUse;
 			return {
 				supported: true,
-				nativeToolCalling: false,
+				nativeToolCalling: hasNativeTools,
 				promptFallback: true,
 				maxActiveTools: maxTools,
 				parallelCalls: true,

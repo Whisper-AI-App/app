@@ -2,7 +2,7 @@ import type { ModelMessage } from "ai";
 import { streamText } from "ai";
 import type { Store } from "tinybase";
 import { convertMessagesForAISDK } from "../message-converter";
-import { convertToAISDKTools } from "../tool-converter";
+import { convertToAppleTools } from "../tool-converter-apple";
 import type { ToolDefinition } from "../../tools/types";
 import type {
 	AIProvider,
@@ -111,7 +111,7 @@ export function createAppleModelsProvider(store: Store): AIProvider {
 			let content = "";
 
 			try {
-				const { apple } = require("@react-native-ai/apple");
+				const { apple, createAppleProvider } = require("@react-native-ai/apple");
 
 				// Pre-flight check: isAvailable() can flip to false if Apple
 				// Intelligence is disabled or model assets are evicted.
@@ -124,10 +124,15 @@ export function createAppleModelsProvider(store: Store): AIProvider {
 
 				const convertedMessages = await convertMessagesForAISDK(messages);
 				const systemMessage = provider.getSystemMessage(messages);
-				// Note: Apple's Foundation Models requires native Tool protocol
-				// registration. Don't pass AI SDK tools — use XML prompt fallback.
+
+				// Apple Intelligence: tools must be registered via createAppleProvider()
+				// because the native layer executes them during generation.
+				const model = options?.tools?.length
+					? createAppleProvider({ availableTools: convertToAppleTools(options.tools) })()
+					: apple();
+
 				const result = streamText({
-					model: apple(),
+					model,
 					system: systemMessage,
 					messages: convertedMessages as unknown as ModelMessage[],
 					abortSignal: localAbortController.signal,
@@ -138,23 +143,11 @@ export function createAppleModelsProvider(store: Store): AIProvider {
 					onToken(chunk);
 				}
 
+				// Apple executes tools internally during generation — the final
+				// result already incorporates tool outputs. No tool_calls finish reason.
 				const finishReason = await result.finishReason;
 
-				// Handle tool calls
-				if (finishReason === "tool-calls") {
-					const toolCalls = await result.toolCalls ?? [];
-					return {
-						content,
-						finishReason: "tool_calls",
-						toolCalls: toolCalls.map((tc: { toolCallId: string; toolName: string; args: Record<string, unknown> }) => ({
-							id: tc.toolCallId,
-							name: tc.toolName,
-							arguments: tc.args,
-						})),
-					};
-				}
-
-				if (finishReason === "error" || (!content && finishReason !== "stop" && finishReason !== "tool-calls")) {
+				if (finishReason === "error" || (!content && finishReason !== "stop")) {
 					if (SAFETY_ERROR_PATTERN.test(content)) {
 						onToken(CONTENT_SAFETY_MESSAGE);
 						return {
@@ -233,12 +226,12 @@ export function createAppleModelsProvider(store: Store): AIProvider {
 		},
 
 		getToolCapabilities(): ToolCapabilities {
-			// Apple's Foundation Models requires tools registered via the native
-			// Tool protocol — ad-hoc AI SDK tools aren't supported. Use XML
-			// prompt fallback until native registration is implemented.
+			// Apple Intelligence supports native tools via createAppleProvider().
+			// Tools are registered with execute functions — the native layer
+			// calls them during generation and feeds results back to the model.
 			return {
 				supported: true,
-				nativeToolCalling: false,
+				nativeToolCalling: true,
 				promptFallback: true,
 				maxActiveTools: 3,
 				parallelCalls: true,
