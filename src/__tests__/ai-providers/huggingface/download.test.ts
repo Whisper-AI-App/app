@@ -39,6 +39,10 @@ jest.mock("../../../utils/bytes", () => ({
 	bytesToGB: jest.fn((bytes: number) => bytes / (1024 * 1024 * 1024)),
 }));
 
+jest.mock("../../../utils/dev-proxy", () => ({
+	maybeProxyUrl: (url: string) => url,
+}));
+
 const mockGetCredential = jest.fn();
 
 jest.mock("../../../actions/secure-credentials", () => ({
