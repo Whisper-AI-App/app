@@ -15,6 +15,8 @@ module.exports = {
 	coverageDirectory: "coverage",
 	coverageReporters: ["text", "lcov", "html"],
 	testMatch: ["**/__tests__/**/*.test.[jt]s?(x)", "**/?(*.)+(spec|test).[jt]s?(x)"],
+	testPathIgnorePatterns: ["/node_modules/", "/.claude/worktrees/"],
+	modulePathIgnorePatterns: ["<rootDir>/.claude/worktrees/"],
 	setupFilesAfterEnv: ["<rootDir>/jest.setup.js"],
 	moduleNameMapper: {
 		"^@/(.*)$": "<rootDir>/$1",
