@@ -48,8 +48,10 @@ import type {
 	MultimodalCapabilities,
 	MultimodalConstraints,
 	ProviderModel,
+	ToolDefinition,
 } from "../types";
 import { DEFAULT_CONSTRAINTS, NO_MULTIMODAL } from "../types";
+import { convertToLlamaTools } from "../tool-converter-llama";
 import { pauseDownload, resumeDownload, startDownload } from "./download";
 import {
 	fetchLatestRecommendedModel,
@@ -881,6 +883,7 @@ export function createWhisperAIProvider(store: Store): AIProvider {
 		async completion(
 			messages: CompletionMessage[],
 			onToken: (token: string) => void,
+			options?: { tools?: ToolDefinition[] },
 		): Promise<CompletionResult> {
 			if (!llamaContext) {
 				return {
@@ -898,6 +901,11 @@ export function createWhisperAIProvider(store: Store): AIProvider {
 				resolvedMultimodalCaps.vision,
 			);
 
+			// Convert tools to OpenAI function-calling format for llama.rn
+			const llamaTools = options?.tools?.length
+				? convertToLlamaTools(options.tools)
+				: undefined;
+
 			const result = await llamaContext.completion(
 				{
 					messages: convertedMessages,
@@ -913,11 +921,31 @@ export function createWhisperAIProvider(store: Store): AIProvider {
 					penalty_present: sampling?.penalty_present,
 					seed: sampling?.seed,
 					enable_thinking: false,
+					...(llamaTools ? { tools: llamaTools, tool_choice: "auto" } : {}),
 				},
 				(data) => {
 					onToken(data.token);
 				},
 			);
+
+			// Check for tool calls in the result
+			if (result.tool_calls && result.tool_calls.length > 0) {
+				return {
+					content: result.content,
+					finishReason: "tool_calls",
+					toolCalls: result.tool_calls.map((tc) => ({
+						id: tc.id || `tc_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
+						name: tc.function.name,
+						arguments: typeof tc.function.arguments === "string"
+							? JSON.parse(tc.function.arguments)
+							: tc.function.arguments,
+					})),
+					usage: {
+						promptTokens: result.tokens_evaluated,
+						completionTokens: result.tokens_predicted,
+					},
+				};
+			}
 
 			// Map llama.rn result to unified CompletionResult
 			let finishReason: CompletionResult["finishReason"];
@@ -952,7 +980,7 @@ export function createWhisperAIProvider(store: Store): AIProvider {
 		getSystemMessage(conversationMessages: CompletionMessage[]): string {
 			const card = getStoredModelCard(store);
 			if (card) {
-				return processSystemMessage(card, conversationMessages);
+				return processSystemMessage(card, conversationMessages as unknown as Parameters<typeof processSystemMessage>[1]);
 			}
 			return `You are a 100% private on-device AI chat called Whisper. Conversations stay on the device. Help the user concisely. Be useful, creative, and accurate. Today's date is ${new Date().toLocaleString()}.`;
 		},
@@ -963,6 +991,18 @@ export function createWhisperAIProvider(store: Store): AIProvider {
 
 		getMultimodalCapabilities(): MultimodalCapabilities {
 			return resolvedMultimodalCaps;
+		},
+
+		getToolCapabilities() {
+			const maxTools = Math.min(Math.floor(currentContextSize / 2000), 3);
+			const hasNativeTools = !!(llamaContext?.model as { chatTemplates?: { jinja?: { toolUse?: boolean } } })?.chatTemplates?.jinja?.toolUse;
+			return {
+				supported: true,
+				nativeToolCalling: hasNativeTools,
+				promptFallback: true,
+				maxActiveTools: maxTools,
+				parallelCalls: true,
+			};
 		},
 
 		async teardown() {

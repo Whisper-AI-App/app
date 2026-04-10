@@ -44,6 +44,8 @@ describe("message actions", () => {
 				providerId: "whisper-ai",
 				modelId: "",
 				status: "done",
+				toolCalls: "",
+				toolResults: "",
 			});
 		});
 
@@ -78,6 +80,8 @@ describe("message actions", () => {
 				providerId: "whisper-ai", // Should preserve original providerId
 				modelId: "", // Should preserve original modelId
 				status: "done", // Should preserve original status
+				toolCalls: "",
+				toolResults: "",
 			});
 		});
 

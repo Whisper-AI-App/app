@@ -8,6 +8,8 @@ export function upsertMessage(
 	providerId?: string,
 	modelId?: string,
 	status?: string,
+	toolCalls?: string,
+	toolResults?: string,
 ) {
 	const existingMessage = mainStore.getRow("messages", id);
 
@@ -20,6 +22,8 @@ export function upsertMessage(
 		providerId: providerId || (existingMessage?.providerId as string) || "",
 		modelId: modelId || (existingMessage?.modelId as string) || "",
 		status: status || (existingMessage?.status as string) || "done",
+		toolCalls: toolCalls || (existingMessage?.toolCalls as string) || "",
+		toolResults: toolResults || (existingMessage?.toolResults as string) || "",
 	});
 }
 

@@ -922,7 +922,7 @@ describe("V6 migration", () => {
 		const state = createV5State({});
 		const result = await migrateAsync({ state, migrations });
 
-		expect((result as MigrationResult).values.version).toBe("6");
+		expect((result as MigrationResult).values.version).toBe("7");
 		expect((result as MigrationResult).tables.hfModels).toEqual({});
 	});
 

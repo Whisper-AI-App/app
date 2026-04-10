@@ -1,18 +1,21 @@
-import { createOpenRouter } from "@openrouter/ai-sdk-provider";
-import { streamText } from "ai";
-import { fetch as expoFetch } from "expo/fetch";
-import type { Store } from "tinybase";
 import {
 	deleteProviderCredentials,
 	getCredential,
 } from "@/src/actions/secure-credentials";
 import { createLogger } from "@/src/logger";
+import { createOpenRouter } from "@openrouter/ai-sdk-provider";
+import type { ModelMessage } from "ai";
+import { streamText } from "ai";
+import { fetch as expoFetch } from "expo/fetch";
+import type { Store } from "tinybase";
 
 const logger = createLogger("OpenRouter");
 
 import { dispatch, getCapabilityStatus } from "../../memory/state";
 import { initSTT } from "../../stt";
+import type { ToolDefinition } from "../../tools/types";
 import { convertMessagesForAISDK } from "../message-converter";
+import { convertToAISDKTools } from "../tool-converter";
 import type {
 	AIProvider,
 	CompletionMessage,
@@ -264,6 +267,7 @@ export function createOpenRouterProvider(store: Store): AIProvider {
 		async completion(
 			messages: CompletionMessage[],
 			onToken: (token: string) => void,
+			options?: { tools?: ToolDefinition[] },
 		): Promise<CompletionResult> {
 			await refreshApiKey();
 			const apiKey = getApiKey();
@@ -324,9 +328,14 @@ export function createOpenRouterProvider(store: Store): AIProvider {
 					fetch: expoFetch as unknown as typeof globalThis.fetch,
 				});
 
+				const aiTools = options?.tools?.length
+					? convertToAISDKTools(options.tools)
+					: undefined;
+
 				const result = streamText({
 					model: openrouter(modelId),
-					messages: convertedMessages,
+					messages: convertedMessages as unknown as ModelMessage[],
+					tools: aiTools,
 					abortSignal: localAbortController.signal,
 				});
 
@@ -335,15 +344,35 @@ export function createOpenRouterProvider(store: Store): AIProvider {
 					onToken(chunk);
 				}
 
-				const finalResult = await result;
+				const finishReason = await result.finishReason;
+				const usage = await result.usage;
+
+				// Handle tool calls
+				if (finishReason === "tool-calls") {
+					const toolCalls = (await result.toolCalls) ?? [];
+					return {
+						content,
+						finishReason: "tool_calls",
+						toolCalls: toolCalls
+							.filter((tc) => "args" in tc)
+							.map((tc) => ({
+								id: tc.toolCallId,
+								name: tc.toolName,
+								arguments: (tc as { args: Record<string, unknown> }).args,
+							})),
+						usage: {
+							promptTokens: usage?.inputTokens,
+							completionTokens: usage?.outputTokens,
+						},
+					};
+				}
 
 				return {
 					content,
-					finishReason:
-						finalResult.finishReason === "length" ? "length" : "stop",
+					finishReason: finishReason === "length" ? "length" : "stop",
 					usage: {
-						promptTokens: finalResult.usage?.promptTokens,
-						completionTokens: finalResult.usage?.completionTokens,
+						promptTokens: usage?.inputTokens,
+						completionTokens: usage?.outputTokens,
 					},
 				};
 			} catch (error) {
@@ -420,6 +449,16 @@ export function createOpenRouterProvider(store: Store): AIProvider {
 				audio: true,
 				files: modalities.includes("file"),
 				constraints: DEFAULT_CONSTRAINTS,
+			};
+		},
+
+		getToolCapabilities() {
+			return {
+				supported: true,
+				nativeToolCalling: true,
+				promptFallback: true,
+				maxActiveTools: 10,
+				parallelCalls: true,
 			};
 		},
 

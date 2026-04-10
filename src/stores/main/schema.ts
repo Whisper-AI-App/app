@@ -26,6 +26,8 @@ export const valuesSchemaMainStore = {
 	app_icon_variant: { type: "string" as const },
 	// Encryption migration tracking
 	encryptionMigratedAt: { type: "string" as const },
+	// Enabled skill IDs (JSON array)
+	enabled_skills: { type: "string" as const },
 };
 
 export const tablesSchemaMainStore = {
@@ -44,11 +46,13 @@ export const tablesSchemaMainStore = {
 		id: { type: "string" as const },
 		chatId: { type: "string" as const },
 		contents: { type: "string" as const },
-		role: { type: "string" as const },
+		role: { type: "string" as const }, // "user" | "assistant" | "system" | "tool"
 		createdAt: { type: "string" as const },
 		providerId: { type: "string" as const },
 		modelId: { type: "string" as const },
 		status: { type: "string" as const },
+		toolCalls: { type: "string" as const }, // JSON: ToolCall[]
+		toolResults: { type: "string" as const }, // JSON: ToolResult[]
 	},
 	aiProviders: {
 		id: { type: "string" as const },

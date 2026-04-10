@@ -1,19 +1,22 @@
-import { createAnthropic } from "@ai-sdk/anthropic";
-import { createOpenAI } from "@ai-sdk/openai";
-import { streamText } from "ai";
-import { fetch as expoFetch } from "expo/fetch";
-import type { Store } from "tinybase";
 import {
 	deleteProviderCredentials,
 	getCredential,
 } from "@/src/actions/secure-credentials";
 import { createLogger } from "@/src/logger";
+import { createAnthropic } from "@ai-sdk/anthropic";
+import { createOpenAI } from "@ai-sdk/openai";
+import type { ModelMessage } from "ai";
+import { streamText } from "ai";
+import { fetch as expoFetch } from "expo/fetch";
+import type { Store } from "tinybase";
 
 const logger = createLogger("CustomProvider");
 
 import { dispatch, getCapabilityStatus } from "../../memory/state";
 import { initSTT } from "../../stt";
+import type { ToolDefinition } from "../../tools/types";
 import { convertMessagesForAISDK } from "../message-converter";
+import { convertToAISDKTools } from "../tool-converter";
 import type {
 	AIProvider,
 	CompletionMessage,
@@ -207,6 +210,7 @@ export function createCustomProvider(store: Store): AIProvider {
 		async completion(
 			messages: CompletionMessage[],
 			onToken: (token: string) => void,
+			options?: { tools?: ToolDefinition[] },
 		): Promise<CompletionResult> {
 			await refreshApiKey();
 			const apiKey = getApiKey();
@@ -252,68 +256,65 @@ export function createCustomProvider(store: Store): AIProvider {
 				// Convert multimodal content parts to AI SDK format
 				const convertedMessages = await convertMessagesForAISDK(messages);
 				const baseURL = `${endpointUrl.replace(/\/+$/, "")}/`;
+				const aiTools = options?.tools?.length
+					? convertToAISDKTools(options.tools)
+					: undefined;
 
-				if (protocol === "anthropic") {
-					// Use Anthropic SDK
-					const anthropic = createAnthropic({
-						apiKey,
-						baseURL,
-						fetch: expoFetch as unknown as typeof globalThis.fetch,
-					});
+				const sdkModel =
+					protocol === "anthropic"
+						? createAnthropic({
+								apiKey,
+								baseURL,
+								fetch: expoFetch as unknown as typeof globalThis.fetch,
+							})(modelId)
+						: createOpenAI({
+								apiKey,
+								baseURL,
+								fetch: expoFetch as unknown as typeof globalThis.fetch,
+							})(modelId);
 
-					const result = streamText({
-						model: anthropic(modelId),
-						messages: convertedMessages,
-						abortSignal: localAbortController.signal,
-					});
+				const result = streamText({
+					model: sdkModel,
+					messages: convertedMessages as unknown as ModelMessage[],
+					tools: aiTools,
+					abortSignal: localAbortController.signal,
+				});
 
-					for await (const chunk of result.textStream) {
-						content += chunk;
-						onToken(chunk);
-					}
+				for await (const chunk of result.textStream) {
+					content += chunk;
+					onToken(chunk);
+				}
 
-					const finalResult = await result;
+				const finishReason = await result.finishReason;
+				const usage = await result.usage;
 
+				if (finishReason === "tool-calls") {
+					const toolCalls = (await result.toolCalls) ?? [];
 					return {
 						content,
-						finishReason:
-							finalResult.finishReason === "length" ? "length" : "stop",
+						finishReason: "tool_calls",
+						toolCalls: toolCalls
+							.filter((tc) => "args" in tc)
+							.map((tc) => ({
+								id: tc.toolCallId,
+								name: tc.toolName,
+								arguments: (tc as { args: Record<string, unknown> }).args,
+							})),
 						usage: {
-							promptTokens: finalResult.usage?.promptTokens,
-							completionTokens: finalResult.usage?.completionTokens,
-						},
-					};
-				} else {
-					// Use OpenAI SDK (default)
-					const openai = createOpenAI({
-						apiKey,
-						baseURL,
-						fetch: expoFetch as unknown as typeof globalThis.fetch,
-					});
-
-					const result = streamText({
-						model: openai(modelId),
-						messages: convertedMessages,
-						abortSignal: localAbortController.signal,
-					});
-
-					for await (const chunk of result.textStream) {
-						content += chunk;
-						onToken(chunk);
-					}
-
-					const finalResult = await result;
-
-					return {
-						content,
-						finishReason:
-							finalResult.finishReason === "length" ? "length" : "stop",
-						usage: {
-							promptTokens: finalResult.usage?.promptTokens,
-							completionTokens: finalResult.usage?.completionTokens,
+							promptTokens: usage?.inputTokens,
+							completionTokens: usage?.outputTokens,
 						},
 					};
 				}
+
+				return {
+					content,
+					finishReason: finishReason === "length" ? "length" : "stop",
+					usage: {
+						promptTokens: usage?.inputTokens,
+						completionTokens: usage?.outputTokens,
+					},
+				};
 			} catch (error) {
 				if (localAbortController.signal.aborted) {
 					return { content, finishReason: "cancelled" };
@@ -388,6 +389,16 @@ export function createCustomProvider(store: Store): AIProvider {
 				audio: true,
 				files,
 				constraints: DEFAULT_CONSTRAINTS,
+			};
+		},
+
+		getToolCapabilities() {
+			return {
+				supported: true,
+				nativeToolCalling: true,
+				promptFallback: true,
+				maxActiveTools: 10,
+				parallelCalls: true,
 			};
 		},
 

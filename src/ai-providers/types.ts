@@ -1,5 +1,8 @@
 import type { ImageSource } from "expo-image";
 import type { Store } from "tinybase";
+import type { ToolCapabilities, ToolDefinition } from "../tools/types";
+export type { ToolCapabilities, ToolDefinition };
+export { NO_TOOL_SUPPORT } from "../tools/types";
 
 export type ProviderStatus =
 	| "disabled"
@@ -10,11 +13,31 @@ export type ProviderStatus =
 
 // ─── Multimodal Message Parts ─────────────────────────────────
 
+export interface ToolCallMessagePart {
+	type: "tool_call";
+	toolCall: {
+		id: string;
+		name: string;
+		arguments: Record<string, unknown>;
+	};
+}
+
+export interface ToolResultMessagePart {
+	type: "tool_result";
+	toolResult: {
+		toolCallId: string;
+		content: string;
+		isError: boolean;
+	};
+}
+
 export type CompletionMessagePart =
 	| TextMessagePart
 	| ImageMessagePart
 	| AudioMessagePart
-	| FileMessagePart;
+	| FileMessagePart
+	| ToolCallMessagePart
+	| ToolResultMessagePart;
 
 export interface TextMessagePart {
 	type: "text";
@@ -227,13 +250,18 @@ export const TIER_STRATEGIES: Record<DeviceMemoryTier, TierStrategy> = {
 // ─── Messages ─────────────────────────────────────────────────
 
 export interface CompletionMessage {
-	role: "user" | "assistant" | "system";
+	role: "user" | "assistant" | "system" | "tool";
 	content: string | CompletionMessagePart[];
 }
 
 export interface CompletionResult {
 	content: string;
-	finishReason: "stop" | "length" | "error" | "cancelled";
+	finishReason: "stop" | "length" | "error" | "cancelled" | "tool_calls";
+	toolCalls?: Array<{
+		id: string;
+		name: string;
+		arguments: Record<string, unknown>;
+	}>;
 	usage?: {
 		promptTokens?: number;
 		completionTokens?: number;
@@ -281,6 +309,9 @@ export interface AIProvider {
 	completion(
 		messages: CompletionMessage[],
 		onToken: (token: string) => void,
+		options?: {
+			tools?: ToolDefinition[];
+		},
 	): Promise<CompletionResult>;
 	stopCompletion(): void;
 
@@ -311,6 +342,9 @@ export interface AIProvider {
 		attachments: PendingAttachment[],
 		capabilities: MultimodalCapabilities,
 	): Promise<ProcessedAttachment[]>;
+
+	// Tool support
+	getToolCapabilities(): ToolCapabilities;
 }
 
 export type AIProviderFactory = (store: Store) => AIProvider;

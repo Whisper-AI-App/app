@@ -77,6 +77,8 @@ export function useChatMessages(
 		const chatMessages = Object.entries(messagesTable)
 			.map(([, msg]) => {
 				if (msg?.chatId !== chatId) return null;
+				// Hide tool result messages — they're internal context for the model
+				if (msg.role === "tool") return null;
 
 				const msgId = msg.id as string;
 				return {
@@ -110,8 +112,11 @@ export function useChatMessages(
 			: null;
 
 		// Filter out empty-content error messages (they only carry status)
+		// and assistant messages that are just tool call placeholders
 		const filteredMessages = chatMessages.filter(
-			(msg) => !(msg.text === "" && msg.status === "error"),
+			(msg) =>
+				!(msg.text === "" && msg.status === "error") &&
+				!(msg.user._id === 2 && msg.text === "(called tools)"),
 		);
 
 		// Merge consecutive AI messages into a single bubble for display
