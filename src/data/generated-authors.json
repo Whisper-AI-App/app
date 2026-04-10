@@ -99,16 +99,6 @@
       "section": "libraries"
     },
     {
-      "author": "Felix Boehm",
-      "description": "Creator of htmlparser2",
-      "packages": [
-        "htmlparser2"
-      ],
-      "url": "https://github.com/fb55/htmlparser2",
-      "priority": 50,
-      "section": "libraries"
-    },
-    {
       "author": "Gowtham G",
       "description": "Creator of react-native-marked",
       "packages": [
@@ -313,16 +303,6 @@
           "react-native-gifted-chat"
         ],
         "url": "https://github.com/FaridSafi/react-native-gifted-chat#readme",
-        "priority": 50,
-        "section": "libraries"
-      },
-      {
-        "author": "Felix Boehm",
-        "description": "Creator of htmlparser2",
-        "packages": [
-          "htmlparser2"
-        ],
-        "url": "https://github.com/fb55/htmlparser2",
         "priority": 50,
         "section": "libraries"
       },
