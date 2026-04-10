@@ -7,6 +7,7 @@ import type { Store } from "tinybase";
 import type { WhisperLLMCard } from "whisper-llm-cards";
 import { createLogger } from "@/src/logger";
 import { bytesToGB } from "../../utils/bytes";
+import { maybeProxyUrl } from "../../utils/dev-proxy";
 import { generateModelFileName } from "../../utils/generate-model-filename";
 
 const logger = createLogger("WhisperAI:Download");
@@ -159,7 +160,7 @@ async function downloadMmproj(
 
 	try {
 		const resumable = createDownloadResumable(
-			card.multimodal.mmproj.sourceUrl,
+			maybeProxyUrl(card.multimodal.mmproj.sourceUrl),
 			fileUri,
 			{},
 			createProgressCallback(store),
@@ -383,7 +384,7 @@ export async function startDownload(
 	try {
 		logger.info("Starting download", { filename: versionedFilename });
 		const resumable = createDownloadResumable(
-			sourceUrl,
+			maybeProxyUrl(sourceUrl),
 			fileUri,
 			{},
 			createProgressCallback(store),

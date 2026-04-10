@@ -7,6 +7,7 @@ import type { Store } from "tinybase";
 import { createLogger } from "@/src/logger";
 import { getCredential } from "../../actions/secure-credentials";
 import { bytesToGB } from "../../utils/bytes";
+import { maybeProxyUrl } from "../../utils/dev-proxy";
 
 const logger = createLogger("HuggingFace:Download");
 
@@ -245,7 +246,7 @@ async function downloadMmproj(store: Store, modelId: string): Promise<void> {
 	try {
 		const downloadOptions = await getDownloadOptions();
 		const resumable = createDownloadResumable(
-			mmprojDownloadUrl,
+			maybeProxyUrl(mmprojDownloadUrl),
 			fileUri,
 			downloadOptions,
 			createProgressCallback(store),
@@ -581,7 +582,7 @@ export async function startDownload(
 	try {
 		logger.info("Starting download", { filename: localFilename });
 		const resumable = createDownloadResumable(
-			downloadUrl,
+			maybeProxyUrl(downloadUrl),
 			fileUri,
 			downloadOptions,
 			createProgressCallback(store),

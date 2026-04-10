@@ -26,7 +26,7 @@ Thanks for your interest in contributing to Whisper! We welcome contributions fr
 1. Fork the repository
 2. Clone your fork locally
 3. Install dependencies with `npm install`
-4. Run the app with `npm run ios` or `npm run android`
+4. Run the app with `npm run ios` or `npm run android` (see **Caching model downloads on emulators** below when running on an emulator)
 
 ## How to Contribute
 
@@ -47,6 +47,17 @@ Browse our open issues. If you find an unassigned issue you'd like to work on, c
 - Keep PRs focused on a single issue
 - Follow existing code patterns and conventions
 - Run `npm run lint` before submitting
+
+### Caching model downloads on emulators
+
+When working on model-download code, emulators re-fetch multi-gigabyte GGUF files on every fresh install. To avoid this, run the local caching proxy in a separate terminal:
+
+```bash
+npm run caching         # start proxy on http://localhost:8787
+npm run caching:clear   # wipe the .cache/ directory
+```
+
+`src/utils/dev-proxy.ts` automatically routes downloads through the proxy on emulators in dev mode; physical devices and production builds bypass it entirely.
 
 ## Community & Questions
 
