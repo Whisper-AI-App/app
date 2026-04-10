@@ -5,6 +5,7 @@ import {
 } from "expo-file-system/legacy";
 import type { Store } from "tinybase";
 import { bytesToGB } from "../../utils/bytes";
+import { maybeProxyUrl } from "../../utils/dev-proxy";
 import { getCredential } from "../../actions/secure-credentials";
 
 const PROVIDER_ID = "huggingface";
@@ -201,7 +202,7 @@ async function downloadMmproj(store: Store, modelId: string): Promise<void> {
 	try {
 		const downloadOptions = await getDownloadOptions();
 		const resumable = createDownloadResumable(
-			mmprojDownloadUrl,
+			maybeProxyUrl(mmprojDownloadUrl),
 			fileUri,
 			downloadOptions,
 			createProgressCallback(store),
@@ -462,7 +463,7 @@ export async function startDownload(
 	try {
 		console.info(`[HuggingFace:Download] Starting download: ${localFilename}`);
 		const resumable = createDownloadResumable(
-			downloadUrl,
+			maybeProxyUrl(downloadUrl),
 			fileUri,
 			downloadOptions,
 			createProgressCallback(store),

@@ -23,7 +23,9 @@
 		"process-icons": "npx tsx scripts/process-icons.ts",
 		"semgrep": "semgrep scan --config auto",
 		"audit": "npm audit",
-		"knip": "knip --no-config-hints"
+		"knip": "knip --no-config-hints",
+		"caching": "npx tsx scripts/caching-proxy.ts",
+		"caching:clear": "npx tsx scripts/clear-cache.ts"
 	},
 	"dependencies": {
 		"@ai-sdk/anthropic": "^3.0.50",
