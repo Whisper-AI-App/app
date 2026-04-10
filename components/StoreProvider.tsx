@@ -1,5 +1,6 @@
 import { MigrationErrorScreen } from "@/components/migration-error-screen";
 import { resetEverything } from "@/src/actions/reset";
+import { createLogger } from "@/src/logger";
 import type { ExpoFileSystemPersister } from "@/src/stores/main/encrypted-persister";
 import { createExpoFileSystemPersister } from "@/src/stores/main/encrypted-persister";
 import { loadEncryptionKey } from "@/src/stores/main/encryption-key";
@@ -13,6 +14,8 @@ import type { ReactNode } from "react";
 import { useRef, useState } from "react";
 import type { Store } from "tinybase";
 import { useCreatePersister } from "tinybase/ui-react";
+
+const logger = createLogger("StoreProvider");
 
 export function StoreProvider({ children }: { children: ReactNode }) {
 	const [migrationError, setMigrationError] = useState<Error | null>(null);
@@ -28,7 +31,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
 				mainStoreFilePath,
 				null,
 				(error) => {
-					console.error("Persister error:", error);
+					logger.error("Persister error", { error: String(error) });
 				},
 			);
 		},
@@ -48,7 +51,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
 			// Run migrations
 			const result = await runMigrations(mainStore as unknown as Store);
 
-			console.info("[State] Finished migrations. status:", result);
+			logger.info("Finished migrations", { status: result });
 
 			if (!result.success) {
 				setMigrationError(
@@ -76,7 +79,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
 				}
 				debounceSaveTimerRef.current = setTimeout(() => {
 					p.save().catch((err) => {
-						console.error("[StoreProvider] Auto-save FAILED:", err);
+						logger.error("Auto-save failed", { error: String(err) });
 					});
 				}, 500);
 			});
@@ -86,7 +89,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
 			// is the sole writer, it only detects our own saves and reloads them —
 			// overwriting any in-memory changes that occurred since the last save.
 			initMainStore();
-			console.info("[StoreProvider] Initialization complete");
+			logger.info("Initialization complete");
 		},
 	);
 

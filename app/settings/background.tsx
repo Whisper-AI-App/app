@@ -1,3 +1,4 @@
+import { createLogger } from "@/src/logger";
 import { useState, useEffect } from "react";
 import { Alert, StyleSheet, TouchableOpacity } from "react-native";
 import { ScrollView } from "react-native-gesture-handler";
@@ -29,6 +30,8 @@ import {
   type BackgroundType,
 } from "@/src/actions/chat-background";
 import { getPresetById, type BackgroundPreset } from "@/src/data/background-presets";
+
+const logger = createLogger("BackgroundSettings");
 
 export default function BackgroundSettings() {
   const colorScheme = useColorScheme() ?? "light";
@@ -66,7 +69,7 @@ export default function BackgroundSettings() {
         }
       })
       .catch((error) => {
-        console.error("Error picking background:", error);
+        logger.error("Error picking background", { error });
         Alert.alert("Error", "An unexpected error occurred");
       })
       .finally(() => {

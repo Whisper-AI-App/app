@@ -5,6 +5,9 @@ import {
 	migrations,
 	type StoreState,
 } from "./migrations";
+import { createLogger } from "@/src/logger";
+
+const logger = createLogger("Migration");
 
 export interface MigrationResult {
 	success: boolean;
@@ -138,9 +141,7 @@ export async function runMigrations(store: Store): Promise<MigrationResult> {
 		};
 	} catch (error) {
 		// Rollback to snapshot
-		if (__DEV__) {
-			console.error("Migration failed, rolling back:", error);
-		}
+		logger.error("Migration failed, rolling back", { error });
 		restoreFromSnapshot(store, snapshot);
 
 		const err = error instanceof Error ? error : new Error(String(error));

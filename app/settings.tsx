@@ -1,4 +1,5 @@
 import { ExportWarningSheet } from "@/components/export/ExportWarningSheet";
+import { createLogger } from "@/src/logger";
 import { Logo } from "@/components/logo";
 import { Button } from "@/components/ui/button";
 import { ModeToggle } from "@/components/ui/mode-toggle";
@@ -10,6 +11,7 @@ import {
 	exportAllChats,
 	getChatsSummary,
 } from "@/src/actions/export";
+import { shareDiagnostics } from "@/src/actions/diagnostics";
 import { clearConversations, resetEverything } from "@/src/actions/reset";
 import {
 	authenticate,
@@ -26,6 +28,8 @@ import { Switch, TouchableOpacity, useColorScheme } from "react-native";
 import { ScrollView } from "react-native-gesture-handler";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useValue } from "tinybase/ui-react";
+
+const logger = createLogger("Settings");
 
 export default function Settings() {
 	const colorScheme = useColorScheme() ?? "light";
@@ -46,6 +50,10 @@ export default function Settings() {
 	});
 	const [exportFormat, setExportFormat] = useState<ExportFormat>("markdown");
 	const [showExportWarning, setShowExportWarning] = useState(false);
+
+	// Diagnostics state
+	const [isSharing, setIsSharing] = useState(false);
+	const [diagnosticsMessage, setDiagnosticsMessage] = useState<string | null>(null);
 
 	// Encryption status
 	const encryptionMigratedAt = useValue("encryptionMigratedAt") as
@@ -173,11 +181,28 @@ export default function Settings() {
 				setExportMessage("No chats to export");
 			}
 		} catch (error) {
-			console.error("[Settings] Export failed:", error);
+			logger.error("Export failed", { error });
 			setExportMessage("Export failed. Please try again.");
 		} finally {
 			setIsExporting(false);
 			setTimeout(() => setExportMessage(null), 3000);
+		}
+	};
+
+	const handleShareDiagnostics = async () => {
+		setIsSharing(true);
+		setDiagnosticsMessage(null);
+		Haptics.selectionAsync();
+
+		try {
+			await shareDiagnostics();
+			setDiagnosticsMessage("Diagnostics shared!");
+		} catch (error) {
+			logger.error("Diagnostics share failed", { error });
+			setDiagnosticsMessage("Failed to share diagnostics. Please try again.");
+		} finally {
+			setIsSharing(false);
+			setTimeout(() => setDiagnosticsMessage(null), 3000);
 		}
 	};
 
@@ -557,6 +582,50 @@ export default function Settings() {
 									}}
 								>
 									{exportMessage}
+								</Text>
+							)}
+						</View>
+
+						<View style={{ marginBottom: 16 }}>
+							<Text
+								style={{
+									fontSize: 15,
+									fontWeight: "500",
+									marginBottom: 6,
+								}}
+							>
+								Share with Whisper Team
+							</Text>
+							<Text
+								style={{
+									fontSize: 13,
+									opacity: 0.6,
+									marginBottom: 12,
+									lineHeight: 18,
+								}}
+							>
+								Share device info and logs with the Whisper team for
+								troubleshooting
+							</Text>
+							<Button
+								variant="secondary"
+								size="sm"
+								onPress={handleShareDiagnostics}
+								disabled={isSharing}
+							>
+								{isSharing ? "Preparing..." : "Share Diagnostics"}
+							</Button>
+							{diagnosticsMessage && (
+								<Text
+									style={{
+										fontSize: 12,
+										color: diagnosticsMessage.includes("Failed")
+											? theme.destructive
+											: theme.green,
+										marginTop: 8,
+									}}
+								>
+									{diagnosticsMessage}
 								</Text>
 							)}
 						</View>

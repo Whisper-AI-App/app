@@ -1,10 +1,7 @@
 import { createAsyncMigrations } from "@nanocollective/json-up";
 import { z } from "zod";
-import {
-	generateEncryptionKey,
-	loadEncryptionKey,
-} from "../encryption-key";
 import { setCredential } from "../../../actions/secure-credentials";
+import { generateEncryptionKey, loadEncryptionKey } from "../encryption-key";
 
 /**
  * Type for TinyBase store state as JSON for json-up migrations.
@@ -545,99 +542,73 @@ export const migrations = createAsyncMigrations()
 			// Heal aiProviders and move credentials to secure store
 			const aiProviders = Object.fromEntries(
 				await Promise.all(
-					Object.entries((data.tables.aiProviders ?? {}) as Record<string, Record<string, unknown>>).map(
-						async ([id, row]) => {
-							const apiKey =
-								typeof row.apiKey === "string" ? row.apiKey : "";
-							const oAuthCodeVerifier =
-								typeof row.oAuthCodeVerifier === "string"
-									? row.oAuthCodeVerifier
-									: "";
+					Object.entries(
+						(data.tables.aiProviders ?? {}) as Record<
+							string,
+							Record<string, unknown>
+						>,
+					).map(async ([id, row]) => {
+						const apiKey = typeof row.apiKey === "string" ? row.apiKey : "";
+						const oAuthCodeVerifier =
+							typeof row.oAuthCodeVerifier === "string"
+								? row.oAuthCodeVerifier
+								: "";
 
-							// Move credentials to secure store
-							if (apiKey) {
-								await setCredential(id, "apiKey", apiKey);
-							}
-							if (oAuthCodeVerifier) {
-								await setCredential(
-									id,
-									"oAuthCodeVerifier",
-									oAuthCodeVerifier,
-								);
-							}
+						// Move credentials to secure store
+						if (apiKey) {
+							await setCredential(id, "apiKey", apiKey);
+						}
+						if (oAuthCodeVerifier) {
+							await setCredential(id, "oAuthCodeVerifier", oAuthCodeVerifier);
+						}
 
-							return [
-								id,
-								{
-									id: typeof row.id === "string" ? row.id : id,
-									status:
-										typeof row.status === "string"
-											? row.status
-											: "",
-									error:
-										typeof row.error === "string"
-											? row.error
-											: "",
-									selectedModelId:
-										typeof row.selectedModelId === "string"
-											? row.selectedModelId
-											: "",
-									modelCard:
-										typeof row.modelCard === "string"
-											? row.modelCard
-											: "",
-									modelCardId:
-										typeof row.modelCardId === "string"
-											? row.modelCardId
-											: "",
-									configVersion:
-										typeof row.configVersion === "string"
-											? row.configVersion
-											: "",
-									downloadedAt:
-										typeof row.downloadedAt === "string"
-											? row.downloadedAt
-											: "",
-									filename:
-										typeof row.filename === "string"
-											? row.filename
-											: "",
-									progressSizeGB:
-										typeof row.progressSizeGB === "number"
-											? row.progressSizeGB
-											: 0,
-									totalSizeGB:
-										typeof row.totalSizeGB === "number"
-											? row.totalSizeGB
-											: 0,
-									downloadError:
-										typeof row.downloadError === "string"
-											? row.downloadError
-											: "",
-									resumableState:
-										typeof row.resumableState === "string"
-											? row.resumableState
-											: "",
-									isPaused:
-										typeof row.isPaused === "boolean"
-											? row.isPaused
-											: false,
-									fileRemoved:
-										typeof row.fileRemoved === "boolean"
-											? row.fileRemoved
-											: false,
-									endpointUrl:
-										typeof row.endpointUrl === "string"
-											? row.endpointUrl
-											: "",
-									protocol:
-										typeof row.protocol === "string"
-											? row.protocol
-											: "",
-								},
-							] as const;
-						},
-					),
+						return [
+							id,
+							{
+								id: typeof row.id === "string" ? row.id : id,
+								status: typeof row.status === "string" ? row.status : "",
+								error: typeof row.error === "string" ? row.error : "",
+								selectedModelId:
+									typeof row.selectedModelId === "string"
+										? row.selectedModelId
+										: "",
+								modelCard:
+									typeof row.modelCard === "string" ? row.modelCard : "",
+								modelCardId:
+									typeof row.modelCardId === "string" ? row.modelCardId : "",
+								configVersion:
+									typeof row.configVersion === "string"
+										? row.configVersion
+										: "",
+								downloadedAt:
+									typeof row.downloadedAt === "string" ? row.downloadedAt : "",
+								filename: typeof row.filename === "string" ? row.filename : "",
+								progressSizeGB:
+									typeof row.progressSizeGB === "number"
+										? row.progressSizeGB
+										: 0,
+								totalSizeGB:
+									typeof row.totalSizeGB === "number" ? row.totalSizeGB : 0,
+								downloadError:
+									typeof row.downloadError === "string"
+										? row.downloadError
+										: "",
+								resumableState:
+									typeof row.resumableState === "string"
+										? row.resumableState
+										: "",
+								isPaused:
+									typeof row.isPaused === "boolean" ? row.isPaused : false,
+								fileRemoved:
+									typeof row.fileRemoved === "boolean"
+										? row.fileRemoved
+										: false,
+								endpointUrl:
+									typeof row.endpointUrl === "string" ? row.endpointUrl : "",
+								protocol: typeof row.protocol === "string" ? row.protocol : "",
+							},
+						] as const;
+					}),
 				),
 			);
 
@@ -652,32 +623,25 @@ export const migrations = createAsyncMigrations()
 					chats: data.tables.chats ?? {},
 					// Heal messages: rows created after v3 may lack providerId/modelId/status
 					messages: Object.fromEntries(
-						Object.entries(data.tables.messages ?? {}).map(
-							([msgId, msg]) => [
-								msgId,
-								{
-									...msg,
-									providerId:
-										typeof (msg as Record<string, unknown>)
-											.providerId === "string"
-											? (msg as Record<string, unknown>)
-													.providerId
-											: "",
-									modelId:
-										typeof (msg as Record<string, unknown>)
-											.modelId === "string"
-											? (msg as Record<string, unknown>)
-													.modelId
-											: "",
-									status:
-										typeof (msg as Record<string, unknown>)
-											.status === "string"
-											? (msg as Record<string, unknown>)
-													.status
-											: "done",
-								},
-							],
-						),
+						Object.entries(data.tables.messages ?? {}).map(([msgId, msg]) => [
+							msgId,
+							{
+								...msg,
+								providerId:
+									typeof (msg as Record<string, unknown>).providerId ===
+									"string"
+										? (msg as Record<string, unknown>).providerId
+										: "",
+								modelId:
+									typeof (msg as Record<string, unknown>).modelId === "string"
+										? (msg as Record<string, unknown>).modelId
+										: "",
+								status:
+									typeof (msg as Record<string, unknown>).status === "string"
+										? (msg as Record<string, unknown>).status
+										: "done",
+							},
+						]),
 					),
 					folders: data.tables.folders ?? {},
 					aiProviders,
@@ -706,98 +670,153 @@ export const migrations = createAsyncMigrations()
 				encryptionMigratedAt: z.string().optional(),
 			}),
 			tables: z.object({
-				chats: z.record(z.string(), z.object({
-					id: z.string(),
-					name: z.string(),
-					createdAt: z.string(),
-					folderId: z.string(),
-				})).optional().default({}),
-				messages: z.record(z.string(), z.object({
-					id: z.string(),
-					chatId: z.string(),
-					contents: z.string(),
-					role: z.string(),
-					createdAt: z.string(),
-					providerId: z.string(),
-					modelId: z.string(),
-					status: z.string(),
-				})).optional().default({}),
-				folders: z.record(z.string(), z.object({
-					id: z.string(),
-					name: z.string(),
-					createdAt: z.string(),
-				})).optional().default({}),
-				aiProviders: z.record(z.string(), z.object({
-					id: z.string(),
-					status: z.string(),
-					error: z.string(),
-					selectedModelId: z.string(),
-					modelCard: z.string(),
-					modelCardId: z.string(),
-					configVersion: z.string(),
-					downloadedAt: z.string(),
-					filename: z.string(),
-					progressSizeGB: z.number(),
-					totalSizeGB: z.number(),
-					downloadError: z.string(),
-					resumableState: z.string(),
-					isPaused: z.union([z.boolean(), z.number()]),
-					fileRemoved: z.union([z.boolean(), z.number()]),
-					mmprojFilename: z.string(),
-					endpointUrl: z.string().optional(),
-					protocol: z.string().optional(),
-					capabilitiesVersion: z.number().optional(),
-				})).optional().default({}),
-				attachments: z.record(
-					z.string(),
-					z.object({
-						id: z.string(),
-						messageId: z.string(),
-						type: z.string(),
-						uri: z.string(),
-						mimeType: z.string(),
-						fileName: z.string(),
-						fileSize: z.number(),
-						width: z.number(),
-						height: z.number(),
-						duration: z.number(),
-						alt: z.string(),
-						thumbnailUri: z.string(),
-						createdAt: z.string(),
-					}),
-				).optional().default({}),
+				chats: z
+					.record(
+						z.string(),
+						z.object({
+							id: z.string(),
+							name: z.string(),
+							createdAt: z.string(),
+							folderId: z.string(),
+						}),
+					)
+					.optional()
+					.default({}),
+				messages: z
+					.record(
+						z.string(),
+						z.object({
+							id: z.string(),
+							chatId: z.string(),
+							contents: z.string(),
+							role: z.string(),
+							createdAt: z.string(),
+							providerId: z.string(),
+							modelId: z.string(),
+							status: z.string(),
+						}),
+					)
+					.optional()
+					.default({}),
+				folders: z
+					.record(
+						z.string(),
+						z.object({
+							id: z.string(),
+							name: z.string(),
+							createdAt: z.string(),
+						}),
+					)
+					.optional()
+					.default({}),
+				aiProviders: z
+					.record(
+						z.string(),
+						z.object({
+							id: z.string(),
+							status: z.string(),
+							error: z.string(),
+							selectedModelId: z.string(),
+							modelCard: z.string(),
+							modelCardId: z.string(),
+							configVersion: z.string(),
+							downloadedAt: z.string(),
+							filename: z.string(),
+							progressSizeGB: z.number(),
+							totalSizeGB: z.number(),
+							downloadError: z.string(),
+							resumableState: z.string(),
+							isPaused: z.union([z.boolean(), z.number()]),
+							fileRemoved: z.union([z.boolean(), z.number()]),
+							mmprojFilename: z.string(),
+							endpointUrl: z.string().optional(),
+							protocol: z.string().optional(),
+							capabilitiesVersion: z.number().optional(),
+						}),
+					)
+					.optional()
+					.default({}),
+				attachments: z
+					.record(
+						z.string(),
+						z.object({
+							id: z.string(),
+							messageId: z.string(),
+							type: z.string(),
+							uri: z.string(),
+							mimeType: z.string(),
+							fileName: z.string(),
+							fileSize: z.number(),
+							width: z.number(),
+							height: z.number(),
+							duration: z.number(),
+							alt: z.string(),
+							thumbnailUri: z.string(),
+							createdAt: z.string(),
+						}),
+					)
+					.optional()
+					.default({}),
 			}),
 		}),
 		up: (data) => {
 			// v5: Add attachments table, mmprojFilename and capabilitiesVersion to aiProviders rows
 			const aiProviders = Object.fromEntries(
-				Object.entries((data.tables.aiProviders ?? {}) as Record<string, Record<string, unknown>>).map(
-					([id, row]) => {
-						return [
-							id,
-							{
-								id: typeof row.id === "string" ? row.id : id,
-								status: typeof row.status === "string" ? row.status : "",
-								error: typeof row.error === "string" ? row.error : "",
-								selectedModelId: typeof row.selectedModelId === "string" ? row.selectedModelId : "",
-								modelCard: typeof row.modelCard === "string" ? row.modelCard : "",
-								modelCardId: typeof row.modelCardId === "string" ? row.modelCardId : "",
-								configVersion: typeof row.configVersion === "string" ? row.configVersion : "",
-								downloadedAt: typeof row.downloadedAt === "string" ? row.downloadedAt : "",
-								filename: typeof row.filename === "string" ? row.filename : "",
-								progressSizeGB: typeof row.progressSizeGB === "number" ? row.progressSizeGB : 0,
-								totalSizeGB: typeof row.totalSizeGB === "number" ? row.totalSizeGB : 0,
-								downloadError: typeof row.downloadError === "string" ? row.downloadError : "",
-								resumableState: typeof row.resumableState === "string" ? row.resumableState : "",
-								isPaused: typeof row.isPaused === "boolean" || typeof row.isPaused === "number" ? row.isPaused : false,
-								fileRemoved: typeof row.fileRemoved === "boolean" || typeof row.fileRemoved === "number" ? row.fileRemoved : false,
-								mmprojFilename: "",
-								endpointUrl: typeof row.endpointUrl === "string" ? row.endpointUrl : undefined,
-								protocol: typeof row.protocol === "string" ? row.protocol : undefined,
-								capabilitiesVersion: 0,
-							},
-						];
-					}),
+				Object.entries(
+					(data.tables.aiProviders ?? {}) as Record<
+						string,
+						Record<string, unknown>
+					>,
+				).map(([id, row]) => {
+					return [
+						id,
+						{
+							id: typeof row.id === "string" ? row.id : id,
+							status: typeof row.status === "string" ? row.status : "",
+							error: typeof row.error === "string" ? row.error : "",
+							selectedModelId:
+								typeof row.selectedModelId === "string"
+									? row.selectedModelId
+									: "",
+							modelCard: typeof row.modelCard === "string" ? row.modelCard : "",
+							modelCardId:
+								typeof row.modelCardId === "string" ? row.modelCardId : "",
+							configVersion:
+								typeof row.configVersion === "string" ? row.configVersion : "",
+							downloadedAt:
+								typeof row.downloadedAt === "string" ? row.downloadedAt : "",
+							filename: typeof row.filename === "string" ? row.filename : "",
+							progressSizeGB:
+								typeof row.progressSizeGB === "number" ? row.progressSizeGB : 0,
+							totalSizeGB:
+								typeof row.totalSizeGB === "number" ? row.totalSizeGB : 0,
+							downloadError:
+								typeof row.downloadError === "string" ? row.downloadError : "",
+							resumableState:
+								typeof row.resumableState === "string"
+									? row.resumableState
+									: "",
+							isPaused:
+								typeof row.isPaused === "boolean" ||
+								typeof row.isPaused === "number"
+									? row.isPaused
+									: false,
+							fileRemoved:
+								typeof row.fileRemoved === "boolean" ||
+								typeof row.fileRemoved === "number"
+									? row.fileRemoved
+									: false,
+							mmprojFilename: "",
+							endpointUrl:
+								typeof row.endpointUrl === "string"
+									? row.endpointUrl
+									: undefined,
+							protocol:
+								typeof row.protocol === "string" ? row.protocol : undefined,
+							capabilitiesVersion: 0,
+						},
+					];
+				}),
 			);
 
 			return {
@@ -836,6 +855,169 @@ export const migrations = createAsyncMigrations()
 				encryptionMigratedAt: z.string().optional(),
 			}),
 			tables: z.object({
+				chats: z
+					.record(
+						z.string(),
+						z.object({
+							id: z.string(),
+							name: z.string(),
+							createdAt: z.string(),
+							folderId: z.string(),
+						}),
+					)
+					.optional()
+					.default({}),
+				messages: z
+					.record(
+						z.string(),
+						z.object({
+							id: z.string(),
+							chatId: z.string(),
+							contents: z.string(),
+							role: z.string(),
+							createdAt: z.string(),
+							providerId: z.string(),
+							modelId: z.string(),
+							status: z.string(),
+						}),
+					)
+					.optional()
+					.default({}),
+				folders: z
+					.record(
+						z.string(),
+						z.object({
+							id: z.string(),
+							name: z.string(),
+							createdAt: z.string(),
+						}),
+					)
+					.optional()
+					.default({}),
+				aiProviders: z
+					.record(
+						z.string(),
+						z.object({
+							id: z.string(),
+							status: z.string(),
+							error: z.string(),
+							selectedModelId: z.string(),
+							modelCard: z.string(),
+							modelCardId: z.string(),
+							configVersion: z.string(),
+							downloadedAt: z.string(),
+							filename: z.string(),
+							progressSizeGB: z.number(),
+							totalSizeGB: z.number(),
+							downloadError: z.string(),
+							resumableState: z.string(),
+							isPaused: z.union([z.boolean(), z.number()]),
+							fileRemoved: z.union([z.boolean(), z.number()]),
+							mmprojFilename: z.string(),
+							endpointUrl: z.string().optional(),
+							protocol: z.string().optional(),
+							capabilitiesVersion: z.number().optional(),
+							downloadQueue: z.string().optional(),
+						}),
+					)
+					.optional()
+					.default({}),
+				attachments: z
+					.record(
+						z.string(),
+						z.object({
+							id: z.string(),
+							messageId: z.string(),
+							type: z.string(),
+							uri: z.string(),
+							mimeType: z.string(),
+							fileName: z.string(),
+							fileSize: z.number(),
+							width: z.number(),
+							height: z.number(),
+							duration: z.number(),
+							alt: z.string(),
+							thumbnailUri: z.string(),
+							createdAt: z.string(),
+						}),
+					)
+					.optional()
+					.default({}),
+				hfModels: z
+					.record(
+						z.string(),
+						z.object({
+							id: z.string(),
+							repoId: z.string(),
+							filename: z.string(),
+							displayName: z.string(),
+							fileSizeBytes: z.number(),
+							parametersB: z.number(),
+							quantization: z.string(),
+							pipelineTag: z.string(),
+							sha256: z.string(),
+							localFilename: z.string(),
+							downloadedAt: z.string(),
+							downloadUrl: z.string(),
+							mmprojFilename: z.string(),
+							mmprojDownloadUrl: z.string(),
+							mmprojSizeBytes: z.number(),
+							mmprojLocalFilename: z.string(),
+							mmprojDownloadedAt: z.string(),
+							contextLength: z.number(),
+						}),
+					)
+					.optional()
+					.default({}),
+			}),
+		}),
+		up: (data) => {
+			// v6: Add hfModels table, add downloadQueue to aiProviders.
+			const aiProviders = Object.fromEntries(
+				Object.entries(data.tables.aiProviders ?? {}).map(([id, row]) => [
+					id,
+					{
+						...row,
+						downloadQueue: "",
+					},
+				]),
+			);
+
+			return {
+				values: {
+					...data.values,
+					version: "6",
+				},
+				tables: {
+					...data.tables,
+					aiProviders,
+					hfModels: {},
+				},
+			};
+		},
+	})
+	.add({
+		version: 7,
+		schema: z.object({
+			values: z.object({
+				version: z.string(),
+				name: z.string().optional(),
+				onboardedAt: z.string().optional(),
+				theme: z.string().optional(),
+				localAuthEnabled: z.boolean().optional(),
+				activeProviderId: z.string().optional(),
+				chat_background_type: z.string().optional(),
+				chat_background_uri: z.string().optional(),
+				chat_background_preset_id: z.string().optional(),
+				chat_background_blur: z.number().optional(),
+				chat_background_grain: z.number().optional(),
+				chat_background_opacity: z.number().optional(),
+				flappy_bird_high_score: z.number().optional(),
+				app_icon_variant: z.string().optional(),
+				encryptionMigratedAt: z.string().optional(),
+				enabled_skills: z.string().optional(),
+			}),
+			tables: z.object({
 				chats: z.record(z.string(), z.object({
 					id: z.string(),
 					name: z.string(),
@@ -851,6 +1033,8 @@ export const migrations = createAsyncMigrations()
 					providerId: z.string(),
 					modelId: z.string(),
 					status: z.string(),
+					toolCalls: z.string(),
+					toolResults: z.string(),
 				})).optional().default({}),
 				folders: z.record(z.string(), z.object({
 					id: z.string(),
@@ -923,28 +1107,142 @@ export const migrations = createAsyncMigrations()
 			}),
 		}),
 		up: (data) => {
-			// v6: Add hfModels table, add downloadQueue to aiProviders.
+			// v7: Add toolCalls and toolResults to messages, add enabled_skills value.
+			// Heal ALL tables defensively — rows created by app code after v6 migration
+			// may have undefined for fields that weren't explicitly set.
+			const str = (val: unknown, fallback = ""): string =>
+				typeof val === "string" ? val : fallback;
+			const num = (val: unknown, fallback = 0): number =>
+				typeof val === "number" ? val : fallback;
+			const boolOrNum = (val: unknown): boolean | number =>
+				typeof val === "boolean" || typeof val === "number" ? val : false;
+
+			const messages = Object.fromEntries(
+				Object.entries(data.tables.messages ?? {}).map(
+					([msgId, row]) => {
+						const msg = row as Record<string, unknown>;
+						return [
+							msgId,
+							{
+								id: str(msg.id, msgId),
+								chatId: str(msg.chatId),
+								contents: str(msg.contents),
+								role: str(msg.role, "user"),
+								createdAt: str(msg.createdAt, new Date().toISOString()),
+								providerId: str(msg.providerId),
+								modelId: str(msg.modelId),
+								status: str(msg.status, "done"),
+								toolCalls: "",
+								toolResults: "",
+							},
+						];
+					},
+				),
+			);
+
 			const aiProviders = Object.fromEntries(
 				Object.entries(data.tables.aiProviders ?? {}).map(
-					([id, row]) => [
-						id,
-						{
-							...row,
-							downloadQueue: "",
-						},
-					],
+					([id, row]) => {
+						const r = row as Record<string, unknown>;
+						return [
+							id,
+							{
+								id: str(r.id, id),
+								status: str(r.status),
+								error: str(r.error),
+								selectedModelId: str(r.selectedModelId),
+								modelCard: str(r.modelCard),
+								modelCardId: str(r.modelCardId),
+								configVersion: str(r.configVersion),
+								downloadedAt: str(r.downloadedAt),
+								filename: str(r.filename),
+								progressSizeGB: num(r.progressSizeGB),
+								totalSizeGB: num(r.totalSizeGB),
+								downloadError: str(r.downloadError),
+								resumableState: str(r.resumableState),
+								isPaused: boolOrNum(r.isPaused),
+								fileRemoved: boolOrNum(r.fileRemoved),
+								mmprojFilename: str(r.mmprojFilename),
+								endpointUrl: typeof r.endpointUrl === "string" ? r.endpointUrl : undefined,
+								protocol: typeof r.protocol === "string" ? r.protocol : undefined,
+								capabilitiesVersion: typeof r.capabilitiesVersion === "number" ? r.capabilitiesVersion : undefined,
+								downloadQueue: typeof r.downloadQueue === "string" ? r.downloadQueue : undefined,
+							},
+						];
+					},
+				),
+			);
+
+			const hfModels = Object.fromEntries(
+				Object.entries(data.tables.hfModels ?? {}).map(
+					([id, row]) => {
+						const r = row as Record<string, unknown>;
+						return [
+							id,
+							{
+								id: str(r.id, id),
+								repoId: str(r.repoId),
+								filename: str(r.filename),
+								displayName: str(r.displayName),
+								fileSizeBytes: num(r.fileSizeBytes),
+								parametersB: num(r.parametersB),
+								quantization: str(r.quantization),
+								pipelineTag: str(r.pipelineTag),
+								sha256: str(r.sha256),
+								localFilename: str(r.localFilename),
+								downloadedAt: str(r.downloadedAt),
+								downloadUrl: str(r.downloadUrl),
+								mmprojFilename: str(r.mmprojFilename),
+								mmprojDownloadUrl: str(r.mmprojDownloadUrl),
+								mmprojSizeBytes: num(r.mmprojSizeBytes),
+								mmprojLocalFilename: str(r.mmprojLocalFilename),
+								mmprojDownloadedAt: str(r.mmprojDownloadedAt),
+								contextLength: num(r.contextLength),
+							},
+						];
+					},
+				),
+			);
+
+			const attachments = Object.fromEntries(
+				Object.entries(data.tables.attachments ?? {}).map(
+					([id, row]) => {
+						const r = row as Record<string, unknown>;
+						return [
+							id,
+							{
+								id: str(r.id, id),
+								messageId: str(r.messageId),
+								type: str(r.type),
+								uri: str(r.uri),
+								mimeType: str(r.mimeType),
+								fileName: str(r.fileName),
+								fileSize: num(r.fileSize),
+								width: num(r.width),
+								height: num(r.height),
+								duration: num(r.duration),
+								alt: str(r.alt),
+								thumbnailUri: str(r.thumbnailUri),
+								createdAt: str(r.createdAt, new Date().toISOString()),
+							},
+						];
+					},
 				),
 			);
 
 			return {
 				values: {
 					...data.values,
-					version: "6",
+					version: "7",
+					enabled_skills: '[]',
 				},
 				tables: {
-					...data.tables,
+					chats: data.tables.chats ?? {},
+					folders: data.tables.folders ?? {},
+					messages,
 					aiProviders,
-					hfModels: {},
+					attachments,
+					hfModels,
 				},
 			};
 		},

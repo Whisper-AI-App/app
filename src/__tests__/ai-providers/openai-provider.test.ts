@@ -26,9 +26,9 @@ const mockTextStream = {
 };
 const mockStreamTextResult = {
 	textStream: mockTextStream,
-	// biome-ignore lint/suspicious/noThenProperty: mock must be thenable to simulate streamText's promise-like return
-	then: (resolve: (v: unknown) => void) =>
-		resolve({ finishReason: "stop", usage: { promptTokens: 10, completionTokens: 5 } }),
+	finishReason: Promise.resolve("stop"),
+	usage: Promise.resolve({ inputTokens: 10, outputTokens: 5 }),
+	toolCalls: Promise.resolve([]),
 };
 const mockStreamText = jest.fn(() => mockStreamTextResult);
 jest.mock("ai", () => ({
@@ -324,9 +324,9 @@ describe("OpenAI Provider", () => {
 		it("maps length finishReason", async () => {
 			mockStreamText.mockReturnValueOnce({
 				textStream: mockTextStream,
-				// biome-ignore lint/suspicious/noThenProperty: mock must be thenable to simulate streamText's promise-like return
-				then: (resolve: (v: unknown) => void) =>
-					resolve({ finishReason: "length", usage: {} }),
+				finishReason: Promise.resolve("length"),
+				usage: Promise.resolve({}),
+				toolCalls: Promise.resolve([]),
 			});
 
 			const result = await provider.completion(

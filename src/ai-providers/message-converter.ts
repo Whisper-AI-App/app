@@ -33,15 +33,34 @@ interface ConvertOptions {
  * - If the cloud model supports native audio: send as FilePart (base64 + mediaType)
  * - Otherwise: use alt text fallback (STT transcription happens at the preprocessing layer)
  */
+/** Messages with only the roles that AI SDK streamText() accepts. */
+export type AISDKCompatibleMessage = {
+	role: "user" | "assistant" | "system";
+	content: string | CompletionMessagePart[];
+};
+
 export async function convertMessagesForAISDK(
 	messages: CompletionMessage[],
 	options?: ConvertOptions,
-): Promise<CompletionMessage[]> {
-	const converted: CompletionMessage[] = [];
+): Promise<AISDKCompatibleMessage[]> {
+	const converted: AISDKCompatibleMessage[] = [];
 
 	for (const msg of messages) {
+		// Convert "tool" role messages to "user" role for AI SDK compatibility.
+		// The AI SDK has its own tool result format; we pass tool results as user text.
+		if (msg.role === "tool") {
+			const content = typeof msg.content === "string"
+				? msg.content
+				: msg.content.map((p) => ("text" in p ? (p as { text: string }).text : "")).join("\n");
+			converted.push({
+				role: "user",
+				content: `[Tool Result] ${content}`,
+			});
+			continue;
+		}
+
 		if (typeof msg.content === "string") {
-			converted.push(msg);
+			converted.push({ role: msg.role as "user" | "assistant" | "system", content: msg.content });
 			continue;
 		}
 
@@ -104,7 +123,7 @@ export async function convertMessagesForAISDK(
 		}
 
 		converted.push({
-			...msg,
+			role: msg.role as "user" | "assistant" | "system",
 			content: aiParts as CompletionMessagePart[],
 		});
 	}

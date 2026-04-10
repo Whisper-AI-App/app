@@ -17,6 +17,9 @@ import Animated, {
 import { Button } from "@/components/ui/button";
 import { Text } from "@/components/ui/text";
 import { useThemeColor } from "@/hooks/useThemeColor";
+import { createLogger } from "@/src/logger";
+
+const logger = createLogger("Onboarding");
 
 const { width: screenWidth } = Dimensions.get("window");
 
@@ -336,9 +339,9 @@ export function useOnboarding() {
 		try {
 			// In a real app, you'd save this to AsyncStorage or similar
 			setHasCompletedOnboarding(true);
-			console.log("Onboarding completed and saved");
+			logger.info("Onboarding completed and saved");
 		} catch (error) {
-			console.error("Failed to save onboarding completion:", error);
+			logger.error("Failed to save onboarding completion", { error: error instanceof Error ? error.message : String(error) });
 		}
 	};
 

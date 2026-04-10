@@ -428,7 +428,7 @@ function CloudProviderSection({
 	const isReady = status === "ready" || (isDownloadProvider && !!status && status !== "disabled");
 	const isActiveProvider = activeProviderId === provider.id;
 	const isSearching = searchQuery.length > 0;
-	const searchDebounceRef = useRef<ReturnType<typeof setTimeout>>();
+	const searchDebounceRef = useRef<ReturnType<typeof setTimeout>>(undefined);
 	const [searchModels, setSearchModels] = useState<ProviderModel[]>([]);
 	const [isSearchingApi, setIsSearchingApi] = useState(false);
 

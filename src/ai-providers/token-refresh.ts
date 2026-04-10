@@ -1,7 +1,7 @@
-import {
-	getCredential,
-	setCredential,
-} from "@/src/actions/secure-credentials";
+import { getCredential, setCredential } from "@/src/actions/secure-credentials";
+import { createLogger } from "@/src/logger";
+
+const logger = createLogger("TokenRefresh");
 
 const REFRESH_BUFFER_MS = 5 * 60 * 1000; // 5 minutes
 
@@ -54,9 +54,10 @@ async function refreshAccessToken(
 		});
 
 		if (!response.ok) {
-			console.error(
-				`[TokenRefresh] Refresh failed for ${config.providerId}: ${response.status}`,
-			);
+			logger.error("Refresh failed", {
+				providerId: config.providerId,
+				status: response.status,
+			});
 			return null;
 		}
 
@@ -79,19 +80,15 @@ async function refreshAccessToken(
 
 		if (data.expires_in) {
 			const expiresAt = Date.now() + data.expires_in * 1000;
-			await setCredential(
-				config.providerId,
-				"expiresAt",
-				String(expiresAt),
-			);
+			await setCredential(config.providerId, "expiresAt", String(expiresAt));
 		}
 
 		return data.access_token;
 	} catch (error) {
-		console.error(
-			`[TokenRefresh] Refresh failed for ${config.providerId}:`,
-			error,
-		);
+		logger.error("Refresh failed", {
+			providerId: config.providerId,
+			error: error instanceof Error ? error.message : String(error),
+		});
 		return null;
 	}
 }

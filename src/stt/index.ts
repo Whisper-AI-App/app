@@ -1,7 +1,10 @@
 import { Asset } from "expo-asset";
+import { createLogger } from "@/src/logger";
 import { checkBudget, getDeviceTierStrategy } from "../memory/budget";
 import { dispatch, getCapabilityStatus } from "../memory/state";
 import * as whisperSTT from "./whisper-stt";
+
+const logger = createLogger("STT");
 
 type STTStatus = "uninitialized" | "initializing" | "ready" | "released";
 
@@ -44,10 +47,11 @@ export async function initSTT(): Promise<void> {
 			// T068: Budget check before loading whisper context
 			const budget = await checkBudget(WHISPER_MODEL_SIZE_GB, 0);
 			if (!budget.canLoad) {
-				console.warn(
-					`[STT] Budget denied: ${(budget.availableBytes / (1024 * 1024 * 1024)).toFixed(1)}GB avail, ` +
-					`${(budget.estimatedModelBytes / (1024 * 1024 * 1024)).toFixed(1)}GB needed (${budget.source})`,
-				);
+				logger.warn("budget denied", {
+					availableGB: (budget.availableBytes / (1024 * 1024 * 1024)).toFixed(1),
+					neededGB: (budget.estimatedModelBytes / (1024 * 1024 * 1024)).toFixed(1),
+					source: budget.source,
+				});
 				status = "uninitialized";
 				throw new Error("Not enough memory to load speech-to-text model");
 			}
@@ -62,12 +66,12 @@ export async function initSTT(): Promise<void> {
 				throw new Error("Failed to resolve whisper model asset path");
 			}
 
-			console.log("[STT] Loading whisper model from:", asset.localUri);
+			logger.info("loading whisper model", { path: asset.localUri });
 			contextId = await whisperSTT.initWhisper(asset.localUri);
 			status = "ready";
-			console.log("[STT] Whisper model loaded successfully, contextId:", contextId);
+			logger.info("whisper model loaded successfully", { contextId });
 		} catch (error) {
-			console.error("[STT] Failed to initialize whisper:", error);
+			logger.error("failed to initialize whisper", { error: String(error) });
 			status = "uninitialized";
 			contextId = null;
 			throw error;
@@ -127,7 +131,7 @@ export async function getTranscription(audioUri: string, durationMs?: number): P
 	// which would otherwise cause noticeably slower token generation.
 	const tier = getDeviceTierStrategy();
 	if (tier.releaseSTTAfterUse) {
-		console.log("[STT] Releasing whisper model after transcription (low-memory tier)");
+		logger.info("releasing whisper model after transcription (low-memory tier)");
 		dispatch("stt", { type: "MEMORY_PRESSURE" });
 		await releaseSTT();
 		dispatch("stt", { type: "RELEASE_COMPLETE" });

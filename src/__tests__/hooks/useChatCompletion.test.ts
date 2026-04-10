@@ -26,6 +26,14 @@ const mockGetMultimodalCapabilities = jest.fn(() => ({
 	},
 }));
 
+const mockGetToolCapabilities = jest.fn(() => ({
+	supported: false,
+	nativeToolCalling: false,
+	promptFallback: false,
+	maxActiveTools: 0,
+	parallelCalls: false,
+}));
+
 const mockActiveProvider = {
 	id: "whisper-ai",
 	name: "Whisper AI",
@@ -36,6 +44,7 @@ const mockActiveProvider = {
 	getContextSize: mockGetContextSize,
 	isConfigured: mockIsConfigured,
 	getMultimodalCapabilities: mockGetMultimodalCapabilities,
+	getToolCapabilities: mockGetToolCapabilities,
 };
 
 jest.mock("@/contexts/AIProviderContext", () => ({
@@ -75,6 +84,32 @@ jest.mock("tinybase/ui-react", () => ({
 let mockUuidCounter = 0;
 jest.mock("uuid", () => ({
 	v4: () => `uuid-${++mockUuidCounter}`,
+}));
+
+// Tool system mocks
+jest.mock("@/src/tools/registry", () => ({
+	toolRegistry: {
+		getActiveTools: jest.fn(() => []),
+		getSkills: jest.fn(() => []),
+	},
+}));
+
+jest.mock("@/src/tools/prompt-formatter", () => ({
+	buildToolSystemPrompt: jest.fn(() => ""),
+}));
+
+jest.mock("@/src/tools/parser", () => ({
+	parseToolCallsFromText: jest.fn(() => ({ toolCalls: [], textContent: "", hasMalformed: false })),
+	isToolCallInCodeBlock: jest.fn(() => false),
+}));
+
+jest.mock("@/src/tools/executor", () => ({
+	executeToolCalls: jest.fn(async () => []),
+}));
+
+jest.mock("@/src/tools/error-correction", () => ({
+	buildCorrectionPrompt: jest.fn(() => ""),
+	truncateToolResult: jest.fn((content: string) => content),
 }));
 
 // Import after mocks

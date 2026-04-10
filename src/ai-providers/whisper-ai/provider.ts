@@ -1,3 +1,4 @@
+import { createLogger } from "@/src/logger";
 import * as Device from "expo-device";
 import * as FileSystem from "expo-file-system";
 import {
@@ -8,6 +9,9 @@ import {
 	toggleNativeLog,
 } from "llama.rn";
 import type { Store } from "tinybase";
+
+const logger = createLogger("WhisperAI");
+
 import type {
 	ResolvedRuntime,
 	RuntimeConfig,
@@ -44,8 +48,10 @@ import type {
 	MultimodalCapabilities,
 	MultimodalConstraints,
 	ProviderModel,
+	ToolDefinition,
 } from "../types";
 import { DEFAULT_CONSTRAINTS, NO_MULTIMODAL } from "../types";
+import { convertToLlamaTools } from "../tool-converter-llama";
 import { pauseDownload, resumeDownload, startDownload } from "./download";
 import {
 	fetchLatestRecommendedModel,
@@ -164,7 +170,7 @@ async function loadVisionOnDemand(
 	if (visionStatus === "loading") return false;
 
 	if (!llamaContext || !storedMmprojUri) {
-		console.warn("[WhisperAI] Cannot load vision: no context or mmproj URI");
+		logger.warn("Cannot load vision: no context or mmproj URI");
 		return false;
 	}
 
@@ -190,10 +196,11 @@ async function loadVisionOnDemand(
 
 	if (!budget.canLoad) {
 		dispatch("vision", { type: "LOAD_FAIL_BUDGET" });
-		console.warn(
-			`[WhisperAI] Vision budget denied: ${(budget.availableBytes / (1024 * 1024 * 1024)).toFixed(1)}GB avail, ` +
-				`${(budget.estimatedModelBytes / (1024 * 1024 * 1024)).toFixed(1)}GB needed (${budget.source})`,
-		);
+		logger.warn("Vision budget denied", {
+			availableGB: (budget.availableBytes / (1024 * 1024 * 1024)).toFixed(1),
+			neededGB: (budget.estimatedModelBytes / (1024 * 1024 * 1024)).toFixed(1),
+			source: budget.source,
+		});
 		return false;
 	}
 
@@ -215,20 +222,20 @@ async function loadVisionOnDemand(
 				...resolvedMultimodalCaps,
 				vision: true,
 			});
-			console.info("[WhisperAI] Vision capability unlocked (on-demand)");
+			logger.info("Vision capability unlocked (on-demand)");
 			return true;
 		}
 		dispatch("vision", {
 			type: "LOAD_FAIL_ERROR",
 			error: "vision not reported after init",
 		});
-		console.warn(
-			"[WhisperAI] initMultimodal completed but vision not available",
-		);
+		logger.warn("initMultimodal completed but vision not available");
 		return false;
 	} catch (err) {
 		dispatch("vision", { type: "LOAD_FAIL_ERROR", error: String(err) });
-		console.warn("[WhisperAI] Failed to init multimodal:", err);
+		logger.warn("Failed to init multimodal", {
+			error: err instanceof Error ? err.message : String(err),
+		});
 		return false;
 	}
 }
@@ -289,7 +296,9 @@ export function createWhisperAIProvider(store: Store): AIProvider {
 			try {
 				await releaseAllLlama();
 			} catch (error) {
-				console.error("[WhisperAI] Error releasing context on disable", error);
+				logger.error("Error releasing context on disable", {
+					error: error instanceof Error ? error.message : String(error),
+				});
 			}
 			llamaContext = null;
 			runtimeConfig = undefined;
@@ -316,7 +325,9 @@ export function createWhisperAIProvider(store: Store): AIProvider {
 						file.delete();
 					}
 				} catch (error) {
-					console.error("[WhisperAI] Error deleting model file", error);
+					logger.error("Error deleting model file", {
+						error: error instanceof Error ? error.message : String(error),
+					});
 				}
 			}
 
@@ -351,10 +362,7 @@ export function createWhisperAIProvider(store: Store): AIProvider {
 				// Check if file exists
 				const file = new FileSystem.File(fileUri);
 				if (!file.exists) {
-					console.warn(
-						"[WhisperAI] GGUF file missing, marking as needs_setup",
-						fileUri,
-					);
+					logger.warn("GGUF file missing, marking as needs_setup");
 					store.setCell("aiProviders", "whisper-ai", "filename", "");
 					store.setCell("aiProviders", "whisper-ai", "downloadedAt", "");
 					store.setCell("aiProviders", "whisper-ai", "fileRemoved", true);
@@ -362,7 +370,7 @@ export function createWhisperAIProvider(store: Store): AIProvider {
 					return;
 				}
 
-				console.info("[WhisperAI:Setup] Configuring model");
+				logger.info("Configuring model");
 				store.setCell("aiProviders", "whisper-ai", "status", "configuring");
 
 				try {
@@ -370,14 +378,17 @@ export function createWhisperAIProvider(store: Store): AIProvider {
 					// Allow native mmap unmap to complete before re-allocating
 					await new Promise((resolve) => setTimeout(resolve, 200));
 					const postReleaseMemory = await getAvailableMemory();
-					console.info(
-						`[WhisperAI:Setup] releaseAllLlama completed, 200ms settle done. Available memory: ${(postReleaseMemory.bytes / (1024 * 1024)).toFixed(1)}MB (source=${postReleaseMemory.source})`,
-					);
+					logger.info("releaseAllLlama completed, 200ms settle done", {
+						availableMemoryMB: (
+							postReleaseMemory.bytes /
+							(1024 * 1024)
+						).toFixed(1),
+						source: postReleaseMemory.source,
+					});
 				} catch (error) {
-					console.error(
-						"[WhisperAI] Trouble releasing existing context",
-						error,
-					);
+					logger.error("Trouble releasing existing context", {
+						error: error instanceof Error ? error.message : String(error),
+					});
 				}
 
 				try {
@@ -412,13 +423,20 @@ export function createWhisperAIProvider(store: Store): AIProvider {
 
 					// T065: Budget check gate before initLlama()
 					const modelSizeGB = file.size ? bytesToGB(file.size) : 1.0;
-					console.info(
-						`[WhisperAI:Setup] Budget check starting: modelSizeGB=${modelSizeGB.toFixed(2)}, contextSize=${contextSize}`,
-					);
+					logger.info("Budget check starting", {
+						modelSizeGB: modelSizeGB.toFixed(2),
+						contextSize,
+					});
 					const chatBudget = await checkBudget(modelSizeGB, contextSize);
-					console.info(
-						`[WhisperAI:Setup] Budget check result: estimatedModel=${(chatBudget.estimatedModelBytes / (1024 * 1024)).toFixed(1)}MB, available=${(chatBudget.availableBytes / (1024 * 1024)).toFixed(1)}MB, source=${chatBudget.source}, headroom=1.3x, canLoad=${chatBudget.canLoad}`,
-					);
+					logger.info("Budget check result", {
+						estimatedModelMB: (
+							chatBudget.estimatedModelBytes /
+							(1024 * 1024)
+						).toFixed(1),
+						availableMB: (chatBudget.availableBytes / (1024 * 1024)).toFixed(1),
+						source: chatBudget.source,
+						canLoad: chatBudget.canLoad,
+					});
 					if (!chatBudget.canLoad) {
 						const availGB = (
 							chatBudget.availableBytes /
@@ -429,9 +447,11 @@ export function createWhisperAIProvider(store: Store): AIProvider {
 							(1024 * 1024 * 1024)
 						).toFixed(1);
 						const errorMsg = `Not enough memory to load model. Available: ${availGB}GB, Required: ${needGB}GB. Close other apps and try again.`;
-						console.warn(
-							`[WhisperAI] Chat model budget denied (${chatBudget.source}): ${availGB}GB avail, need ${needGB}GB`,
-						);
+						logger.warn("Chat model budget denied", {
+							source: chatBudget.source,
+							availableGB: availGB,
+							requiredGB: needGB,
+						});
 						store.setCell("aiProviders", "whisper-ai", "error", errorMsg);
 						store.setCell("aiProviders", "whisper-ai", "status", "error");
 						throw new Error(errorMsg);
@@ -482,9 +502,11 @@ export function createWhisperAIProvider(store: Store): AIProvider {
 					let effectiveContextSize = contextSize;
 					if (deviceTier === "conservative" || deviceTier === "minimal") {
 						const cappedCtx = Math.min(contextSize, 512);
-						console.warn(
-							`[WhisperAI:DEBUG] Capping n_ctx from ${contextSize} to ${cappedCtx} for tier="${deviceTier}" (memory diagnostic)`,
-						);
+						logger.warn("Capping n_ctx for memory diagnostic", {
+							originalCtx: contextSize,
+							cappedCtx,
+							tier: deviceTier,
+						});
 						effectiveContextSize = cappedCtx;
 					}
 
@@ -495,26 +517,40 @@ export function createWhisperAIProvider(store: Store): AIProvider {
 					let effectiveCacheTypeK = runtime.cache_type_k;
 					let effectiveCacheTypeV = runtime.cache_type_v;
 					if (deviceTier === "conservative" || deviceTier === "minimal") {
-						console.warn(
-							`[WhisperAI:DEBUG] Overriding cache_type_k="${runtime.cache_type_k}" → "f16", cache_type_v="${runtime.cache_type_v}" → "f16" for tier="${deviceTier}" (KV cache diagnostic)`,
-						);
+						logger.warn("Overriding KV cache type for diagnostic", {
+							originalCacheTypeK: runtime.cache_type_k,
+							originalCacheTypeV: runtime.cache_type_v,
+							tier: deviceTier,
+						});
 						effectiveCacheTypeK = "f16";
 						effectiveCacheTypeV = "f16";
 					}
 
 					// Log actual file size on disk before initLlama
-					console.info(
-						`[WhisperAI:Setup] Model file size on disk: ${file.size} bytes (${((file.size ?? 0) / (1024 * 1024)).toFixed(1)} MB)`,
-					);
+					logger.info("Model file size on disk", {
+						bytes: file.size,
+						mb: ((file.size ?? 0) / (1024 * 1024)).toFixed(1),
+					});
 
-					console.info(
-						`[WhisperAI:Setup] Loading model (n_ctx=${effectiveContextSize}, gpu_layers=${gpuLayers}, mlock=${useMlock}, tier=${deviceTier}, ramGB=${ramGB.toFixed(1)}, budget=${(chatBudget.availableBytes / (1024 * 1024 * 1024)).toFixed(1)}GB/${chatBudget.source})`,
-					);
+					logger.info("Loading model", {
+						n_ctx: effectiveContextSize,
+						gpu_layers: gpuLayers,
+						mlock: useMlock,
+						tier: deviceTier,
+						ramGB: ramGB.toFixed(1),
+						budgetGB: (
+							chatBudget.availableBytes /
+							(1024 * 1024 * 1024)
+						).toFixed(1),
+						budgetSource: chatBudget.source,
+					});
 
 					// Enable native llama.cpp logging to capture crash details
 					await toggleNativeLog(true);
-					const _nativeLogSub = addNativeLogListener((level, text) => {
-						console.info(`[llama.cpp:${level}] ${text.trimEnd()}`);
+					addNativeLogListener((level, text) => {
+						if (level === "warn" || level === "error") {
+							logger.warn("llama.cpp", { level, text: text.trimEnd() });
+						}
 					});
 
 					// Try loading with computed GPU layers, retry CPU-only on failure
@@ -528,10 +564,7 @@ export function createWhisperAIProvider(store: Store): AIProvider {
 						cache_type_v: effectiveCacheTypeV,
 						ctx_shift: ctxShift,
 					};
-					console.info(
-						`[WhisperAI:Setup] Calling initLlama() with params:`,
-						JSON.stringify(initParams),
-					);
+					logger.info("Calling initLlama() with params", initParams);
 					try {
 						llamaContext = await initLlama({
 							model: fileUri,
@@ -543,23 +576,29 @@ export function createWhisperAIProvider(store: Store): AIProvider {
 							cache_type_v: effectiveCacheTypeV,
 							ctx_shift: ctxShift,
 						});
-						console.info(
-							`[WhisperAI:Setup] initLlama() succeeded. Context ID: ${(llamaContext as LlamaContext & { id?: unknown })?.id ?? "unknown"}, model loaded: ${!!llamaContext}`,
-						);
+						logger.info("initLlama() succeeded", {
+							contextId:
+								(llamaContext as LlamaContext & { id?: unknown })?.id ??
+								"unknown",
+						});
 					} catch (loadError) {
-						console.info(
-							`[WhisperAI:Setup] initLlama() FAILED (gpu_layers=${gpuLayers}):`,
-							loadError instanceof Error
-								? `${loadError.name}: ${loadError.message}`
-								: String(loadError),
-						);
+						logger.info("initLlama() FAILED", {
+							gpu_layers: gpuLayers,
+							error:
+								loadError instanceof Error
+									? `${loadError.name}: ${loadError.message}`
+									: String(loadError),
+						});
 						if (gpuLayers > 0) {
-							console.warn(
-								`[WhisperAI:Setup] Load failed with gpu_layers=${gpuLayers}, retrying CPU-only`,
-								loadError,
-							);
-							console.info(
-								`[WhisperAI:Setup] Retrying initLlama() with gpu_layers=0, use_mlock=false, flash_attn=false`,
+							logger.warn("Load failed, retrying CPU-only", {
+								gpu_layers: gpuLayers,
+								error:
+									loadError instanceof Error
+										? loadError.message
+										: String(loadError),
+							});
+							logger.info(
+								"Retrying initLlama() with gpu_layers=0, use_mlock=false, flash_attn=false",
 							);
 							llamaContext = await initLlama({
 								model: fileUri,
@@ -571,9 +610,11 @@ export function createWhisperAIProvider(store: Store): AIProvider {
 								cache_type_v: effectiveCacheTypeV,
 								ctx_shift: ctxShift,
 							});
-							console.info(
-								`[WhisperAI:Setup] initLlama() CPU-only retry succeeded. Context ID: ${(llamaContext as LlamaContext & { id?: unknown })?.id ?? "unknown"}`,
-							);
+							logger.info("initLlama() CPU-only retry succeeded", {
+								contextId:
+									(llamaContext as LlamaContext & { id?: unknown })?.id ??
+									"unknown",
+							});
 						} else {
 							throw loadError;
 						}
@@ -650,10 +691,9 @@ export function createWhisperAIProvider(store: Store): AIProvider {
 								}
 							}
 						} catch (e) {
-							console.warn(
-								"[WhisperAI] Failed to resolve multimodal config",
-								e,
-							);
+							logger.warn("Failed to resolve multimodal config", {
+								error: e instanceof Error ? e.message : String(e),
+							});
 						}
 					}
 
@@ -688,7 +728,7 @@ export function createWhisperAIProvider(store: Store): AIProvider {
 
 					store.setCell("aiProviders", "whisper-ai", "status", "ready");
 					store.setCell("aiProviders", "whisper-ai", "error", "");
-					console.info("[WhisperAI:Setup] Model loaded — ready");
+					logger.info("Model loaded — ready");
 
 					// Subscribe to state machine changes to update capabilities reactively
 					stateUnsubscribe?.();
@@ -710,7 +750,9 @@ export function createWhisperAIProvider(store: Store): AIProvider {
 							try {
 								await ctx.releaseMultimodal?.();
 							} catch (e) {
-								console.error("[WhisperAI] releaseMultimodal error:", e);
+								logger.error("releaseMultimodal error", {
+									error: e instanceof Error ? e.message : String(e),
+								});
 							}
 						});
 					}
@@ -732,11 +774,13 @@ export function createWhisperAIProvider(store: Store): AIProvider {
 							storedMmprojUri &&
 							llamaContext
 						) {
-							console.info("[WhisperAI] Pre-warming vision");
+							logger.info("Pre-warming vision");
 							try {
 								await loadVisionOnDemand(updateCapabilities);
 							} catch (err) {
-								console.warn("[WhisperAI] Vision pre-warm failed:", err);
+								logger.warn("Vision pre-warm failed", {
+									error: err instanceof Error ? err.message : String(err),
+								});
 							}
 
 							// Small delay to let memory settle before next allocation
@@ -745,28 +789,31 @@ export function createWhisperAIProvider(store: Store): AIProvider {
 
 						// 2. Then pre-warm STT (if tier allows)
 						if (tierStrategy.preWarmSTT) {
-							console.info("[WhisperAI] Pre-warming STT");
+							logger.info("Pre-warming STT");
 							dispatch("stt", { type: "PRE_WARM" });
 							try {
 								await initSTT();
 								dispatch("stt", { type: "LOAD_SUCCESS" });
-								console.info("[WhisperAI] STT pre-warmed successfully");
+								logger.info("STT pre-warmed successfully");
 							} catch (err: unknown) {
 								dispatch("stt", {
 									type: "LOAD_FAIL_ERROR",
 									error: String(err),
 								});
-								console.warn("[WhisperAI] STT pre-warm failed:", err);
+								logger.warn("STT pre-warm failed", {
+									error: err instanceof Error ? err.message : String(err),
+								});
 							}
 						}
 					})().catch((err) => {
-						console.warn(
-							"[WhisperAI] Sequential pre-warm IIFE failed unexpectedly:",
-							err,
-						);
+						logger.warn("Sequential pre-warm IIFE failed unexpectedly", {
+							error: err instanceof Error ? err.message : String(err),
+						});
 					});
 				} catch (error) {
-					console.error("[WhisperAI] Failed to load model", error);
+					logger.error("Failed to load model", {
+						error: error instanceof Error ? error.message : String(error),
+					});
 					const errorMessage =
 						error instanceof Error ? error.message : "Failed to load model";
 					store.setCell("aiProviders", "whisper-ai", "error", errorMessage);
@@ -836,6 +883,7 @@ export function createWhisperAIProvider(store: Store): AIProvider {
 		async completion(
 			messages: CompletionMessage[],
 			onToken: (token: string) => void,
+			options?: { tools?: ToolDefinition[] },
 		): Promise<CompletionResult> {
 			if (!llamaContext) {
 				return {
@@ -853,6 +901,11 @@ export function createWhisperAIProvider(store: Store): AIProvider {
 				resolvedMultimodalCaps.vision,
 			);
 
+			// Convert tools to OpenAI function-calling format for llama.rn
+			const llamaTools = options?.tools?.length
+				? convertToLlamaTools(options.tools)
+				: undefined;
+
 			const result = await llamaContext.completion(
 				{
 					messages: convertedMessages,
@@ -868,11 +921,31 @@ export function createWhisperAIProvider(store: Store): AIProvider {
 					penalty_present: sampling?.penalty_present,
 					seed: sampling?.seed,
 					enable_thinking: false,
+					...(llamaTools ? { tools: llamaTools, tool_choice: "auto" } : {}),
 				},
 				(data) => {
 					onToken(data.token);
 				},
 			);
+
+			// Check for tool calls in the result
+			if (result.tool_calls && result.tool_calls.length > 0) {
+				return {
+					content: result.content,
+					finishReason: "tool_calls",
+					toolCalls: result.tool_calls.map((tc) => ({
+						id: tc.id || `tc_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
+						name: tc.function.name,
+						arguments: typeof tc.function.arguments === "string"
+							? JSON.parse(tc.function.arguments)
+							: tc.function.arguments,
+					})),
+					usage: {
+						promptTokens: result.tokens_evaluated,
+						completionTokens: result.tokens_predicted,
+					},
+				};
+			}
 
 			// Map llama.rn result to unified CompletionResult
 			let finishReason: CompletionResult["finishReason"];
@@ -907,7 +980,7 @@ export function createWhisperAIProvider(store: Store): AIProvider {
 		getSystemMessage(conversationMessages: CompletionMessage[]): string {
 			const card = getStoredModelCard(store);
 			if (card) {
-				return processSystemMessage(card, conversationMessages);
+				return processSystemMessage(card, conversationMessages as unknown as Parameters<typeof processSystemMessage>[1]);
 			}
 			return `You are a 100% private on-device AI chat called Whisper. Conversations stay on the device. Help the user concisely. Be useful, creative, and accurate. Today's date is ${new Date().toLocaleString()}.`;
 		},
@@ -918,6 +991,18 @@ export function createWhisperAIProvider(store: Store): AIProvider {
 
 		getMultimodalCapabilities(): MultimodalCapabilities {
 			return resolvedMultimodalCaps;
+		},
+
+		getToolCapabilities() {
+			const maxTools = Math.min(Math.floor(currentContextSize / 2000), 3);
+			const hasNativeTools = !!(llamaContext?.model as { chatTemplates?: { jinja?: { toolUse?: boolean } } })?.chatTemplates?.jinja?.toolUse;
+			return {
+				supported: true,
+				nativeToolCalling: hasNativeTools,
+				promptFallback: true,
+				maxActiveTools: maxTools,
+				parallelCalls: true,
+			};
 		},
 
 		async teardown() {
@@ -932,7 +1017,9 @@ export function createWhisperAIProvider(store: Store): AIProvider {
 			try {
 				await releaseAllLlama();
 			} catch (error) {
-				console.error("[WhisperAI] Error releasing context", error);
+				logger.error("Error releasing context", {
+					error: error instanceof Error ? error.message : String(error),
+				});
 			}
 
 			// Complete release transitions

@@ -52,6 +52,7 @@ export interface UseChatCompletionReturn {
 	isProcessingMedia: boolean;
 	isContinuing: boolean;
 	streamingText: string;
+	activeToolCall: { name: string; args: Record<string, unknown> } | null;
 	sendMessage: (text: string, attachments?: import("@/src/ai-providers/types").PendingAttachment[]) => Promise<void>;
 	stopGeneration: () => void;
 	continueMessage: (() => Promise<void>) | null;

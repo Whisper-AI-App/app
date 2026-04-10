@@ -9,6 +9,10 @@
  * Replaces ad-hoc visionInitStatus, audioInitStatus, and memoryPressureTier variables.
  */
 
+import { createLogger } from "@/src/logger";
+
+const logger = createLogger("MemoryState");
+
 export type CapabilityMemoryStatus =
 	| "unloaded"
 	| "loading"
@@ -94,9 +98,11 @@ export function dispatch(
 	const nextStatus = validTransitions[event.type];
 
 	if (!nextStatus) {
-		console.warn(
-			`[MemoryState] Invalid transition: ${capability} ${currentStatus} + ${event.type}`,
-		);
+		logger.warn("invalid transition", {
+			capability,
+			currentStatus,
+			eventType: event.type,
+		});
 		return null;
 	}
 
@@ -106,7 +112,7 @@ export function dispatch(
 		try {
 			listener(capability, nextStatus);
 		} catch (err) {
-			console.error("[MemoryState] Listener error:", err);
+			logger.error("listener error", { error: String(err) });
 		}
 	}
 

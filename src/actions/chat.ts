@@ -1,5 +1,8 @@
 import { Share } from "react-native";
+import { createLogger } from "@/src/logger";
 import { mainStore } from "../stores/main/main-store";
+
+const logger = createLogger("Chat");
 
 export function upsertChat(id: string, name: string, folderId?: string | null) {
 	const existingChat = mainStore.getRow("chats", id);
@@ -56,7 +59,7 @@ export function moveChatToFolder(
 export async function shareChat(chatId: string) {
 	const chat = mainStore.getRow("chats", chatId);
 	if (!chat) {
-		console.log("[shareChat] Chat not found:", chatId);
+		logger.warn("chat not found", { chatId });
 		return;
 	}
 
@@ -91,26 +94,20 @@ export async function shareChat(chatId: string) {
 
 	chatText += `Conversation with Whisper, 100% private AI (https://usewhisper.org)`;
 
-	console.log(
-		"[shareChat] Attempting to share:",
-		chatText.length,
-		"characters",
-	);
+	logger.info("attempting to share", { chatId, characters: chatText.length });
 
 	try {
 		const result = await Share.share({
 			message: chatText,
 		});
 
-		console.log("[shareChat] Share result:", result);
-
 		if (result.action === Share.sharedAction) {
-			console.log("[shareChat] Successfully shared");
+			logger.info("successfully shared", { chatId });
 		} else if (result.action === Share.dismissedAction) {
-			console.log("[shareChat] Share dismissed");
+			logger.info("share dismissed", { chatId });
 		}
 	} catch (error) {
-		console.error("[shareChat] Error sharing:", error);
+		logger.error("error sharing", { chatId, error: error instanceof Error ? error.message : String(error) });
 		throw error;
 	}
 }

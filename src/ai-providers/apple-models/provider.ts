@@ -2,14 +2,20 @@ import type { ModelMessage } from "ai";
 import { streamText } from "ai";
 import type { Store } from "tinybase";
 import { convertMessagesForAISDK } from "../message-converter";
+import { convertToAppleTools } from "../tool-converter-apple";
+import type { ToolDefinition } from "../../tools/types";
 import type {
 	AIProvider,
 	CompletionMessage,
 	CompletionResult,
 	MultimodalCapabilities,
 	ProviderModel,
+	ToolCapabilities,
 } from "../types";
 import { NO_MULTIMODAL } from "../types";
+import { createLogger } from "@/src/logger";
+
+const logger = createLogger("AppleModels");
 
 // Module-scoped runtime state
 let abortController: AbortController | null = null;
@@ -74,7 +80,7 @@ export function createAppleModelsProvider(store: Store): AIProvider {
 				store.setCell("aiProviders", "apple-models", "error", "");
 				store.setCell("aiProviders", "apple-models", "status", "ready");
 			} catch (error) {
-				console.error("[AppleModels] Setup failed:", error);
+				logger.error("Setup failed", { error: error instanceof Error ? error.message : String(error) });
 				const errorMessage =
 					error instanceof Error ? error.message : "Setup failed";
 				store.setCell("aiProviders", "apple-models", "error", errorMessage);
@@ -100,6 +106,7 @@ export function createAppleModelsProvider(store: Store): AIProvider {
 		async completion(
 			messages: CompletionMessage[],
 			onToken: (token: string) => void,
+			options?: { tools?: ToolDefinition[] },
 		): Promise<CompletionResult> {
 			const localAbortController = new AbortController();
 			abortController = localAbortController;
@@ -107,7 +114,7 @@ export function createAppleModelsProvider(store: Store): AIProvider {
 			let content = "";
 
 			try {
-				const { apple } = require("@react-native-ai/apple");
+				const { apple, createAppleProvider } = require("@react-native-ai/apple");
 
 				// Pre-flight check: isAvailable() can flip to false if Apple
 				// Intelligence is disabled or model assets are evicted.
@@ -121,8 +128,14 @@ export function createAppleModelsProvider(store: Store): AIProvider {
 				const convertedMessages = await convertMessagesForAISDK(messages);
 				const systemMessage = provider.getSystemMessage(messages);
 
+				// Apple Intelligence: tools must be registered via createAppleProvider()
+				// because the native layer executes them during generation.
+				const model = options?.tools?.length
+					? createAppleProvider({ availableTools: convertToAppleTools(options.tools) })()
+					: apple();
+
 				const result = streamText({
-					model: apple(),
+					model,
 					system: systemMessage,
 					messages: convertedMessages as unknown as ModelMessage[],
 					abortSignal: localAbortController.signal,
@@ -133,9 +146,8 @@ export function createAppleModelsProvider(store: Store): AIProvider {
 					onToken(chunk);
 				}
 
-				// Await the full result to catch errors the AI SDK may have
-				// swallowed during stream processing (e.g. GenerationError
-				// surfaces as finishReason "error" instead of throwing).
+				// Apple executes tools internally during generation — the final
+				// result already incorporates tool outputs. No tool_calls finish reason.
 				const finishReason = await result.finishReason;
 
 				if (finishReason === "error" || (!content && finishReason !== "stop")) {
@@ -161,7 +173,7 @@ export function createAppleModelsProvider(store: Store): AIProvider {
 				if (localAbortController.signal.aborted) {
 					return { content, finishReason: "cancelled" };
 				}
-				console.warn("[AppleModels] Completion failed:", error);
+				logger.warn("Completion failed", { error: error instanceof Error ? error.message : String(error) });
 
 				const errorMsg =
 					error instanceof Error ? error.message : String(error);
@@ -214,6 +226,19 @@ export function createAppleModelsProvider(store: Store): AIProvider {
 
 		getMultimodalCapabilities(): MultimodalCapabilities {
 			return NO_MULTIMODAL;
+		},
+
+		getToolCapabilities(): ToolCapabilities {
+			// Apple Intelligence supports native tools via createAppleProvider().
+			// Tools are registered with execute functions — the native layer
+			// calls them during generation and feeds results back to the model.
+			return {
+				supported: true,
+				nativeToolCalling: true,
+				promptFallback: true,
+				maxActiveTools: 3,
+				parallelCalls: true,
+			};
 		},
 
 		async teardown() {
