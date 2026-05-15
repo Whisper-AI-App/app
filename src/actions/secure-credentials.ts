@@ -6,10 +6,8 @@ import * as SecureStore from "expo-secure-store";
  * expo-secure-store does not support listing keys.
  */
 const PROVIDER_CREDENTIAL_FIELDS: Record<string, string[]> = {
-	openrouter: ["apiKey", "oAuthCodeVerifier"],
 	"custom-provider": ["apiKey"],
 	huggingface: ["apiToken"],
-	openai: ["accessToken", "refreshToken", "expiresAt", "accountId"],
 };
 
 function credentialKey(providerId: string, field: string): string {

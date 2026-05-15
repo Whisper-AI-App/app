@@ -42,7 +42,6 @@ export async function resetEverything() {
 
 	// Delete encryption key and all provider credentials from secure store
 	await SecureStore.deleteItemAsync(ENCRYPTION_KEY_STORE_ID);
-	await deleteProviderCredentials("openrouter");
 	await deleteProviderCredentials("custom-provider");
 
 	mainStore.delValues();

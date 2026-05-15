@@ -719,22 +719,22 @@ describe("V4 migration", () => {
 
 	it("migrates API key from state to secure store", async () => {
 		const state = createV3State({
-			openrouter: fullProviderRow({
-				id: "openrouter",
-				apiKey: "sk-or-test-key",
+			"custom-provider": fullProviderRow({
+				id: "custom-provider",
+				apiKey: "sk-custom-test-key",
 			}),
 		});
 
 		await migrateAsync({ state, migrations });
 
-		const credential = await getCredential("openrouter", "apiKey");
-		expect(credential).toBe("sk-or-test-key");
+		const credential = await getCredential("custom-provider", "apiKey");
+		expect(credential).toBe("sk-custom-test-key");
 	});
 
 	it("migrates oAuthCodeVerifier from state to secure store", async () => {
 		const state = createV3State({
-			openrouter: fullProviderRow({
-				id: "openrouter",
+			"custom-provider": fullProviderRow({
+				id: "custom-provider",
 				status: "configuring",
 				oAuthCodeVerifier: "verifier-123",
 			}),
@@ -742,24 +742,26 @@ describe("V4 migration", () => {
 
 		await migrateAsync({ state, migrations });
 
-		const credential = await getCredential(
-			"openrouter",
-			"oAuthCodeVerifier",
+		// v4 moves oAuthCodeVerifier to secure store, but it's not in
+		// custom-provider's known fields so it won't be retrievable via
+		// getProviderCredentials — verify it was written to secure store directly
+		const credential = await SecureStore.getItemAsync(
+			"credential_custom-provider_oAuthCodeVerifier",
 		);
 		expect(credential).toBe("verifier-123");
 	});
 
 	it("strips credential fields from migrated state", async () => {
 		const state = createV3State({
-			openrouter: fullProviderRow({
-				id: "openrouter",
-				apiKey: "sk-or-test-key",
+			"custom-provider": fullProviderRow({
+				id: "custom-provider",
+				apiKey: "sk-custom-test-key",
 				oAuthCodeVerifier: "verifier-123",
 			}),
 		});
 
 		const result = await migrateAsync({ state, migrations });
-		const provider = (result as MigrationResult).tables.aiProviders.openrouter;
+		const provider = (result as MigrationResult).tables.aiProviders["custom-provider"];
 		expect(provider.apiKey).toBeUndefined();
 		expect(provider.oAuthCodeVerifier).toBeUndefined();
 	});
@@ -922,7 +924,7 @@ describe("V6 migration", () => {
 		const state = createV5State({});
 		const result = await migrateAsync({ state, migrations });
 
-		expect((result as MigrationResult).values.version).toBe("7");
+		expect((result as MigrationResult).values.version).toBe(String(CURRENT_SCHEMA_VERSION));
 		expect((result as MigrationResult).tables.hfModels).toEqual({});
 	});
 
@@ -943,5 +945,211 @@ describe("V6 migration", () => {
 		const result = await migrateAsync({ state, migrations });
 
 		expect((result as MigrationResult).tables.hfModels).toEqual({});
+	});
+});
+
+// ─── V8 migration isolated tests ─────────────────────────────────────────────
+
+describe("V8 migration", () => {
+	/**
+	 * Build a minimal v7 state that the v8 migration will receive.
+	 */
+	function createV7State(
+		overrides: {
+			activeProviderId?: string;
+			aiProviders?: Record<string, Record<string, unknown>>;
+		} = {},
+	) {
+		return {
+			_version: 7,
+			values: {
+				version: "7",
+				name: "Test",
+				onboardedAt: "2026-01-01T00:00:00.000Z",
+				activeProviderId: overrides.activeProviderId ?? "",
+				enabled_skills: "[]",
+			},
+			tables: {
+				chats: {},
+				messages: {},
+				folders: {},
+				aiProviders: overrides.aiProviders ?? {},
+				attachments: {},
+				hfModels: {},
+			},
+		};
+	}
+
+	function fullProviderRow(overrides: Record<string, unknown> = {}) {
+		return {
+			id: "test",
+			status: "ready",
+			error: "",
+			selectedModelId: "",
+			modelCard: "",
+			modelCardId: "",
+			configVersion: "",
+			downloadedAt: "",
+			filename: "",
+			progressSizeGB: 0,
+			totalSizeGB: 0,
+			downloadError: "",
+			resumableState: "",
+			isPaused: false,
+			fileRemoved: false,
+			mmprojFilename: "",
+			...overrides,
+		};
+	}
+
+	it("resets activeProviderId when set to openai", async () => {
+		const state = createV7State({
+			activeProviderId: "openai",
+			aiProviders: {
+				openai: fullProviderRow({ id: "openai" }),
+			},
+		});
+		const result = await migrateAsync({ state, migrations });
+
+		expect((result as MigrationResult).values.activeProviderId).toBe("");
+	});
+
+	it("resets activeProviderId when set to openrouter", async () => {
+		const state = createV7State({
+			activeProviderId: "openrouter",
+			aiProviders: {
+				openrouter: fullProviderRow({ id: "openrouter" }),
+			},
+		});
+		const result = await migrateAsync({ state, migrations });
+
+		expect((result as MigrationResult).values.activeProviderId).toBe("");
+	});
+
+	it("preserves activeProviderId when set to a non-removed provider", async () => {
+		const state = createV7State({
+			activeProviderId: "whisper-ai",
+			aiProviders: {
+				"whisper-ai": fullProviderRow({ id: "whisper-ai" }),
+			},
+		});
+		const result = await migrateAsync({ state, migrations });
+
+		expect((result as MigrationResult).values.activeProviderId).toBe(
+			"whisper-ai",
+		);
+	});
+
+	it("removes openai row from aiProviders", async () => {
+		const state = createV7State({
+			aiProviders: {
+				openai: fullProviderRow({ id: "openai" }),
+				"whisper-ai": fullProviderRow({ id: "whisper-ai" }),
+			},
+		});
+		const result = await migrateAsync({ state, migrations });
+
+		expect(
+			(result as MigrationResult).tables.aiProviders.openai,
+		).toBeUndefined();
+		expect(
+			(result as MigrationResult).tables.aiProviders["whisper-ai"],
+		).toBeDefined();
+	});
+
+	it("removes openrouter row from aiProviders", async () => {
+		const state = createV7State({
+			aiProviders: {
+				openrouter: fullProviderRow({ id: "openrouter" }),
+				"custom-provider": fullProviderRow({ id: "custom-provider" }),
+			},
+		});
+		const result = await migrateAsync({ state, migrations });
+
+		expect(
+			(result as MigrationResult).tables.aiProviders.openrouter,
+		).toBeUndefined();
+		expect(
+			(result as MigrationResult).tables.aiProviders["custom-provider"],
+		).toBeDefined();
+	});
+
+	it("preserves other providers when removing openai and openrouter", async () => {
+		const state = createV7State({
+			aiProviders: {
+				openai: fullProviderRow({ id: "openai" }),
+				openrouter: fullProviderRow({ id: "openrouter" }),
+				"whisper-ai": fullProviderRow({ id: "whisper-ai" }),
+				huggingface: fullProviderRow({ id: "huggingface" }),
+				"custom-provider": fullProviderRow({ id: "custom-provider" }),
+			},
+		});
+		const result = await migrateAsync({ state, migrations });
+
+		const providers = Object.keys(
+			(result as MigrationResult).tables.aiProviders,
+		);
+		expect(providers).toEqual(
+			expect.arrayContaining(["whisper-ai", "huggingface", "custom-provider"]),
+		);
+		expect(providers).not.toContain("openai");
+		expect(providers).not.toContain("openrouter");
+	});
+
+	it("cleans up openai credentials from Secure Store", async () => {
+		// Pre-populate secure store with openai credentials
+		await SecureStore.setItemAsync("credential_openai_accessToken", "token");
+		await SecureStore.setItemAsync("credential_openai_refreshToken", "refresh");
+		await SecureStore.setItemAsync("credential_openai_expiresAt", "123");
+		await SecureStore.setItemAsync("credential_openai_accountId", "acc");
+
+		const state = createV7State({
+			aiProviders: {
+				openai: fullProviderRow({ id: "openai" }),
+			},
+		});
+		await migrateAsync({ state, migrations });
+
+		expect(
+			await SecureStore.getItemAsync("credential_openai_accessToken"),
+		).toBeNull();
+		expect(
+			await SecureStore.getItemAsync("credential_openai_refreshToken"),
+		).toBeNull();
+		expect(
+			await SecureStore.getItemAsync("credential_openai_expiresAt"),
+		).toBeNull();
+		expect(
+			await SecureStore.getItemAsync("credential_openai_accountId"),
+		).toBeNull();
+	});
+
+	it("cleans up openrouter credentials from Secure Store", async () => {
+		await SecureStore.setItemAsync("credential_openrouter_apiKey", "sk-key");
+		await SecureStore.setItemAsync(
+			"credential_openrouter_oAuthCodeVerifier",
+			"verifier",
+		);
+
+		const state = createV7State({
+			aiProviders: {
+				openrouter: fullProviderRow({ id: "openrouter" }),
+			},
+		});
+		await migrateAsync({ state, migrations });
+
+		expect(
+			await SecureStore.getItemAsync("credential_openrouter_apiKey"),
+		).toBeNull();
+		expect(
+			await SecureStore.getItemAsync("credential_openrouter_oAuthCodeVerifier"),
+		).toBeNull();
+	});
+
+	it("sets version to 8", async () => {
+		const state = createV7State();
+		const result = await migrateAsync({ state, migrations });
+
+		expect((result as MigrationResult).values.version).toBe("8");
 	});
 });

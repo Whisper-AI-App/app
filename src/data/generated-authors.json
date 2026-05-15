@@ -119,16 +119,6 @@
       "section": "libraries"
     },
     {
-      "author": "Jhen-Jie Hong",
-      "description": "Creator of whisper.rn",
-      "packages": [
-        "whisper.rn"
-      ],
-      "url": "https://github.com/mybigday/whisper.rn#readme",
-      "priority": 50,
-      "section": "libraries"
-    },
-    {
       "author": "Kiryl Ziusko",
       "description": "Creator of react-native-keyboard-controller",
       "packages": [
@@ -191,12 +181,12 @@
     },
     {
       "author": "Other Libraries",
-      "description": "Contributing 11 open source libraries",
+      "description": "Contributing 10 open source libraries",
       "packages": [
         "@ai-sdk/anthropic",
         "@ai-sdk/openai",
         "@nanocollective/json-up",
-        "+ 8 more"
+        "+ 7 more"
       ],
       "priority": 99,
       "section": "libraries"
@@ -327,16 +317,6 @@
         "section": "libraries"
       },
       {
-        "author": "Jhen-Jie Hong",
-        "description": "Creator of whisper.rn",
-        "packages": [
-          "whisper.rn"
-        ],
-        "url": "https://github.com/mybigday/whisper.rn#readme",
-        "priority": 50,
-        "section": "libraries"
-      },
-      {
         "author": "Kiryl Ziusko",
         "description": "Creator of react-native-keyboard-controller",
         "packages": [
@@ -399,12 +379,12 @@
       },
       {
         "author": "Other Libraries",
-        "description": "Contributing 11 open source libraries",
+        "description": "Contributing 10 open source libraries",
         "packages": [
           "@ai-sdk/anthropic",
           "@ai-sdk/openai",
           "@nanocollective/json-up",
-          "+ 8 more"
+          "+ 7 more"
         ],
         "priority": 99,
         "section": "libraries"

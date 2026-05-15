@@ -1,6 +1,9 @@
 import { createAsyncMigrations } from "@nanocollective/json-up";
 import { z } from "zod";
-import { setCredential } from "../../../actions/secure-credentials";
+import {
+	deleteCredential,
+	setCredential,
+} from "../../../actions/secure-credentials";
 import { generateEncryptionKey, loadEncryptionKey } from "../encryption-key";
 
 /**
@@ -1243,6 +1246,162 @@ export const migrations = createAsyncMigrations()
 					aiProviders,
 					attachments,
 					hfModels,
+				},
+			};
+		},
+	})
+	.add({
+		version: 8,
+		schema: z.object({
+			values: z.object({
+				version: z.string(),
+				name: z.string().optional(),
+				onboardedAt: z.string().optional(),
+				theme: z.string().optional(),
+				localAuthEnabled: z.boolean().optional(),
+				activeProviderId: z.string().optional(),
+				chat_background_type: z.string().optional(),
+				chat_background_uri: z.string().optional(),
+				chat_background_preset_id: z.string().optional(),
+				chat_background_blur: z.number().optional(),
+				chat_background_grain: z.number().optional(),
+				chat_background_opacity: z.number().optional(),
+				flappy_bird_high_score: z.number().optional(),
+				app_icon_variant: z.string().optional(),
+				encryptionMigratedAt: z.string().optional(),
+				enabled_skills: z.string().optional(),
+			}),
+			tables: z.object({
+				chats: z.record(z.string(), z.object({
+					id: z.string(),
+					name: z.string(),
+					createdAt: z.string(),
+					folderId: z.string(),
+				})).optional().default({}),
+				messages: z.record(z.string(), z.object({
+					id: z.string(),
+					chatId: z.string(),
+					contents: z.string(),
+					role: z.string(),
+					createdAt: z.string(),
+					providerId: z.string(),
+					modelId: z.string(),
+					status: z.string(),
+					toolCalls: z.string(),
+					toolResults: z.string(),
+				})).optional().default({}),
+				folders: z.record(z.string(), z.object({
+					id: z.string(),
+					name: z.string(),
+					createdAt: z.string(),
+				})).optional().default({}),
+				aiProviders: z.record(z.string(), z.object({
+					id: z.string(),
+					status: z.string(),
+					error: z.string(),
+					selectedModelId: z.string(),
+					modelCard: z.string(),
+					modelCardId: z.string(),
+					configVersion: z.string(),
+					downloadedAt: z.string(),
+					filename: z.string(),
+					progressSizeGB: z.number(),
+					totalSizeGB: z.number(),
+					downloadError: z.string(),
+					resumableState: z.string(),
+					isPaused: z.union([z.boolean(), z.number()]),
+					fileRemoved: z.union([z.boolean(), z.number()]),
+					mmprojFilename: z.string(),
+					endpointUrl: z.string().optional(),
+					protocol: z.string().optional(),
+					capabilitiesVersion: z.number().optional(),
+					downloadQueue: z.string().optional(),
+				})).optional().default({}),
+				attachments: z.record(
+					z.string(),
+					z.object({
+						id: z.string(),
+						messageId: z.string(),
+						type: z.string(),
+						uri: z.string(),
+						mimeType: z.string(),
+						fileName: z.string(),
+						fileSize: z.number(),
+						width: z.number(),
+						height: z.number(),
+						duration: z.number(),
+						alt: z.string(),
+						thumbnailUri: z.string(),
+						createdAt: z.string(),
+					}),
+				).optional().default({}),
+				hfModels: z.record(
+					z.string(),
+					z.object({
+						id: z.string(),
+						repoId: z.string(),
+						filename: z.string(),
+						displayName: z.string(),
+						fileSizeBytes: z.number(),
+						parametersB: z.number(),
+						quantization: z.string(),
+						pipelineTag: z.string(),
+						sha256: z.string(),
+						localFilename: z.string(),
+						downloadedAt: z.string(),
+						downloadUrl: z.string(),
+						mmprojFilename: z.string(),
+						mmprojDownloadUrl: z.string(),
+						mmprojSizeBytes: z.number(),
+						mmprojLocalFilename: z.string(),
+						mmprojDownloadedAt: z.string(),
+						contextLength: z.number(),
+					}),
+				).optional().default({}),
+			}),
+		}),
+		up: async (data) => {
+			// v8: Remove OpenAI and OpenRouter providers.
+			// - Reset activeProviderId if set to "openai" or "openrouter"
+			// - Filter out "openai" and "openrouter" rows from aiProviders
+			// - Clean up Secure Store credentials for both providers
+			const REMOVED_PROVIDERS = ["openai", "openrouter"];
+
+			const values = data.values as Record<string, unknown>;
+			const activeProviderId = values.activeProviderId;
+			const newActiveProviderId =
+				typeof activeProviderId === "string" &&
+				REMOVED_PROVIDERS.includes(activeProviderId)
+					? ""
+					: activeProviderId;
+
+			// Filter out removed providers from aiProviders table
+			const aiProviders = Object.fromEntries(
+				Object.entries(data.tables.aiProviders ?? {}).filter(
+					([id]) => !REMOVED_PROVIDERS.includes(id),
+				),
+			);
+
+			// Clean up Secure Store credentials for removed providers
+			const credentialFields: Record<string, string[]> = {
+				openrouter: ["apiKey", "oAuthCodeVerifier"],
+				openai: ["accessToken", "refreshToken", "expiresAt", "accountId"],
+			};
+			for (const [providerId, fields] of Object.entries(credentialFields)) {
+				for (const field of fields) {
+					await deleteCredential(providerId, field);
+				}
+			}
+
+			return {
+				values: {
+					...values,
+					version: "8",
+					activeProviderId: newActiveProviderId,
+				},
+				tables: {
+					...data.tables,
+					aiProviders,
 				},
 			};
 		},
