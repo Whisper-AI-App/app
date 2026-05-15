@@ -19,7 +19,7 @@
 		"npm:version": "npm --version",
 		"node:version": "node --version",
 		"generate-credits": "node ./scripts/generate-credits.js",
-		"postinstall": "node ./scripts/generate-credits.js && node ./scripts/download-whisper-model.js",
+		"postinstall": "node ./scripts/generate-credits.js",
 		"process-icons": "npx tsx scripts/process-icons.ts",
 		"semgrep": "semgrep scan --config auto",
 		"audit": "npm audit",
@@ -87,7 +87,6 @@
 		"tinybase": "^8.0.0",
 		"uuid": "^13.0.0",
 		"whisper-llm-cards": "github:Whisper-AI-App/marketplace#semver:^8.4.0",
-		"whisper.rn": "^0.5.5",
 		"zod": "^4.3.6"
 	},
 	"devDependencies": {

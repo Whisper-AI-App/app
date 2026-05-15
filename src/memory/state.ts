@@ -1,12 +1,12 @@
 /**
  * Capability memory state machine.
  *
- * Each capability (vision, STT) has an independent 5-state lifecycle:
+ * Each capability (vision) has an independent 5-state lifecycle:
  *   unloaded → loading → ready → releasing → unloaded
  *   loading → budget_denied (insufficient memory)
  *   budget_denied → loading (retry)
  *
- * Replaces ad-hoc visionInitStatus, audioInitStatus, and memoryPressureTier variables.
+ * Replaces ad-hoc visionInitStatus and memoryPressureTier variables.
  */
 
 import { createLogger } from "@/src/logger";
@@ -22,7 +22,6 @@ export type CapabilityMemoryStatus =
 
 export interface CapabilityMemoryState {
 	vision: CapabilityMemoryStatus;
-	stt: CapabilityMemoryStatus;
 }
 
 export type CapabilityEvent =
@@ -64,7 +63,6 @@ const TRANSITIONS: Record<CapabilityMemoryStatus, Partial<Record<CapabilityEvent
 // Module-scoped state
 let state: CapabilityMemoryState = {
 	vision: "unloaded",
-	stt: "unloaded",
 };
 
 // Listeners notified on state changes
@@ -134,5 +132,5 @@ export function subscribe(listener: StateListener): () => void {
  * Used during provider teardown or testing.
  */
 export function resetState(): void {
-	state = { vision: "unloaded", stt: "unloaded" };
+	state = { vision: "unloaded" };
 }

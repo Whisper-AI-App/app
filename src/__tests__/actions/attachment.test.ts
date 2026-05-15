@@ -154,29 +154,13 @@ describe("attachment actions", () => {
 							thumbnailUri: "",
 							createdAt: "2024-06-01T12:00:00.000Z",
 						},
-						"att-3": {
-							id: "att-3",
-							messageId: "msg-1",
-							type: "audio",
-							uri: "file:///path/audio.wav",
-							mimeType: "audio/wav",
-							fileName: "recording.wav",
-							fileSize: 200000,
-							width: 0,
-							height: 0,
-							duration: 15,
-							alt: "Audio",
-							thumbnailUri: "",
-							createdAt: "2024-06-01T12:01:00.000Z",
-						},
 					},
 				},
 			);
 
 			const result = getAttachmentsByMessage("msg-1");
-			expect(result).toHaveLength(2);
+			expect(result).toHaveLength(1);
 			expect(result[0].id).toBe("att-1");
-			expect(result[1].id).toBe("att-3");
 		});
 
 		it("returns empty array when no attachments match", () => {

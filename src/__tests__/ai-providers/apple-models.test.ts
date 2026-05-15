@@ -353,7 +353,6 @@ describe("Apple Models Provider", () => {
 		it("returns NO_MULTIMODAL", () => {
 			const caps = provider.getMultimodalCapabilities();
 			expect(caps.vision).toBe(false);
-			expect(caps.audio).toBe(false);
 			expect(caps.files).toBe(false);
 		});
 	});

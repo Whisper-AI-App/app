@@ -371,13 +371,12 @@ export function createOpenAIProvider(store: Store): AIProvider {
 
 		getMultimodalCapabilities(): MultimodalCapabilities {
 			const modelId = getSelectedModelId();
-			if (!modelId) return { ...NO_MULTIMODAL, audio: true };
+			if (!modelId) return NO_MULTIMODAL;
 
 			const supportsVision = modelId.includes("gpt-5");
 
 			return {
 				vision: supportsVision,
-				audio: true,
 				files: false,
 				constraints: DEFAULT_CONSTRAINTS,
 			};

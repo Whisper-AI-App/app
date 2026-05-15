@@ -11,16 +11,6 @@ function formatSize(bytes: number): string {
 }
 
 /**
- * Formats duration in seconds to human-readable form.
- */
-function formatDuration(seconds: number): string {
-	if (seconds < 60) return `${Math.round(seconds)}s`;
-	const mins = Math.floor(seconds / 60);
-	const secs = Math.round(seconds % 60);
-	return secs > 0 ? `${mins}m ${secs}s` : `${mins}m`;
-}
-
-/**
  * Extracts the format from a MIME type (e.g., "image/jpeg" → "JPEG").
  */
 function formatFromMime(mimeType: string): string {
@@ -43,12 +33,6 @@ export function generateAltText(
 					? `${attachment.width}\u00D7${attachment.height} `
 					: "";
 			return `Image: ${dims}${format} (${formatSize(attachment.fileSize)})`;
-		}
-		case "audio": {
-			const dur = attachment.duration
-				? `${formatDuration(attachment.duration)} `
-				: "";
-			return `Audio recording: ${dur}${format}`;
 		}
 		case "file": {
 			return `File: ${attachment.fileName} (${formatSize(attachment.fileSize)}, ${format})`;

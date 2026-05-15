@@ -11,15 +11,12 @@ import type { Store } from "tinybase";
 
 const logger = createLogger("OpenRouter");
 
-import { dispatch, getCapabilityStatus } from "../../memory/state";
-import { initSTT } from "../../stt";
 import type { ToolDefinition } from "../../tools/types";
 import { convertMessagesForAISDK } from "../message-converter";
 import { convertToAISDKTools } from "../tool-converter";
 import type {
 	AIProvider,
 	CompletionMessage,
-	CompletionMessagePart,
 	CompletionResult,
 	MultimodalCapabilities,
 	ProviderModel,
@@ -286,40 +283,7 @@ export function createOpenRouterProvider(store: Store): AIProvider {
 
 			try {
 				// Convert multimodal content parts to AI SDK format
-				// Check if the current model supports native audio
-				const model = cachedModels.find((m) => m.id === modelId);
-				const supportsNativeAudio =
-					model?.inputModalities?.includes("audio") ?? false;
-				// T070: STT budget coordination — ensure whisper.rn is loaded before audio processing
-				if (!supportsNativeAudio) {
-					const hasAudioParts = messages.some(
-						(m) =>
-							Array.isArray(m.content) &&
-							m.content.some((p: CompletionMessagePart) => p.type === "audio"),
-					);
-					if (hasAudioParts) {
-						const sttStatus = getCapabilityStatus("stt");
-						if (sttStatus === "unloaded" || sttStatus === "budget_denied") {
-							dispatch(
-								"stt",
-								sttStatus === "budget_denied"
-									? { type: "RETRY" }
-									: { type: "USER_REQUEST" },
-							);
-							try {
-								await initSTT();
-								dispatch("stt", { type: "LOAD_SUCCESS" });
-							} catch {
-								dispatch("stt", { type: "LOAD_FAIL_BUDGET" });
-								// STT not available — audio will fall through to alt-text
-							}
-						}
-					}
-				}
-
-				const convertedMessages = await convertMessagesForAISDK(messages, {
-					supportsNativeAudio,
-				});
+				const convertedMessages = await convertMessagesForAISDK(messages);
 
 				// Pass expo/fetch to createOpenRouter so its internal postToApi uses
 				// the streaming-capable fetch required by React Native / Hermes.
@@ -419,7 +383,7 @@ export function createOpenRouterProvider(store: Store): AIProvider {
 
 		getMultimodalCapabilities(): MultimodalCapabilities {
 			const modelId = getSelectedModelId();
-			if (!modelId) return { ...NO_MULTIMODAL, audio: true };
+			if (!modelId) return NO_MULTIMODAL;
 
 			let modalities: string[] = [];
 			const model = cachedModels.find((m) => m.id === modelId);
@@ -444,9 +408,6 @@ export function createOpenRouterProvider(store: Store): AIProvider {
 
 			return {
 				vision: modalities.includes("image"),
-				// Audio is always available — whisper.rn (bundled) provides
-				// universal transcription as fallback for models without native audio
-				audio: true,
 				files: modalities.includes("file"),
 				constraints: DEFAULT_CONSTRAINTS,
 			};

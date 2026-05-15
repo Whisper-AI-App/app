@@ -483,14 +483,12 @@ describe("OpenAI Provider", () => {
 			provider.setModel("gpt-5.4");
 			const caps = provider.getMultimodalCapabilities();
 			expect(caps.vision).toBe(true);
-			expect(caps.audio).toBe(true);
 			expect(caps.files).toBe(false);
 		});
 
 		it("returns no vision when no model selected", () => {
 			const caps = provider.getMultimodalCapabilities();
 			expect(caps.vision).toBe(false);
-			expect(caps.audio).toBe(true);
 		});
 	});
 

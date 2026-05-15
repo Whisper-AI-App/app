@@ -209,27 +209,6 @@ describe("media-preprocessor", () => {
 		});
 	});
 
-	describe("audio preprocessing", () => {
-		it("processes audio attachment with alt text", async () => {
-			const attachment: PendingAttachment = {
-				id: "audio-1",
-				type: "audio",
-				uri: "file:///recording.wav",
-				mimeType: "audio/wav",
-				fileName: "recording.wav",
-				fileSize: 320000,
-				duration: 10,
-			};
-
-			const results = await defaultPreprocessMedia([attachment], defaultCaps);
-
-			expect(results).toHaveLength(1);
-			expect(results[0].type).toBe("audio");
-			expect(results[0].duration).toBe(10);
-			expect(results[0].alt).toContain("Audio recording:");
-		});
-	});
-
 	describe("mixed attachments", () => {
 		it("processes multiple attachment types", async () => {
 			const attachments: PendingAttachment[] = [

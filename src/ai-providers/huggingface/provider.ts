@@ -24,7 +24,6 @@ import {
 	resetState,
 	subscribe,
 } from "../../memory/state";
-import { initSTT } from "../../stt";
 import { bytesToGB } from "../../utils/bytes";
 import {
 	setReleaseMultimodalFn,
@@ -107,11 +106,9 @@ function convertToLlamaMessages(
 				const alt =
 					part.type === "image"
 						? part.alt
-						: part.type === "audio"
+						: part.type === "file"
 							? part.alt
-							: part.type === "file"
-								? part.alt
-								: "";
+							: "";
 				if (alt) {
 					llamaParts.push({ type: "text", text: `[${alt}]` });
 				}
@@ -128,7 +125,6 @@ function convertToLlamaMessages(
  */
 export function getCapabilityInitStatus() {
 	const visionStatus = getCapabilityStatus("vision");
-	const sttStatus = getCapabilityStatus("stt");
 
 	const vision =
 		visionStatus === "ready"
@@ -136,14 +132,8 @@ export function getCapabilityInitStatus() {
 			: visionStatus === "loading"
 				? ("loading" as const)
 				: ("unavailable" as const);
-	const audio =
-		sttStatus === "ready"
-			? ("ready" as const)
-			: sttStatus === "loading"
-				? ("loading" as const)
-				: ("unavailable" as const);
 
-	return { vision, audio };
+	return { vision };
 }
 
 /**
@@ -582,10 +572,9 @@ export function createHuggingFaceProvider(store: Store): AIProvider {
 					// Reset state machine for fresh setup
 					resetState();
 
-					// Set initial capabilities — audio always true, vision deferred to on-demand loading
+					// Set initial capabilities — vision deferred to on-demand loading
 					updateCapabilities({
 						vision: false,
-						audio: true,
 						files: false,
 						constraints: DEFAULT_CONSTRAINTS,
 					});
@@ -622,17 +611,16 @@ export function createHuggingFaceProvider(store: Store): AIProvider {
 					// Start centralized memory pressure monitor
 					startMemoryPressureMonitor();
 
-					// Tier-based background pre-warming (sequential to avoid OOM)
+					// Tier-based background pre-warming
 					const tierStrategy = getDeviceTierStrategy();
 
-					(async () => {
-						// 1. Pre-warm vision first (if tier allows and mmproj is available)
-						if (
-							tierStrategy.preWarmVision &&
-							storedIsVisionModel &&
-							storedMmprojUri &&
-							llamaContext
-						) {
+					if (
+						tierStrategy.preWarmVision &&
+						storedIsVisionModel &&
+						storedMmprojUri &&
+						llamaContext
+					) {
+						(async () => {
 							logger.info("Pre-warming vision");
 							try {
 								await loadVisionOnDemand(updateCapabilities);
@@ -641,34 +629,12 @@ export function createHuggingFaceProvider(store: Store): AIProvider {
 									error: err instanceof Error ? err.message : String(err),
 								});
 							}
-
-							// Small delay to let memory settle before next allocation
-							await new Promise((resolve) => setTimeout(resolve, 500));
-						}
-
-						// 2. Then pre-warm STT (if tier allows)
-						if (tierStrategy.preWarmSTT) {
-							logger.info("Pre-warming STT");
-							dispatch("stt", { type: "PRE_WARM" });
-							try {
-								await initSTT();
-								dispatch("stt", { type: "LOAD_SUCCESS" });
-								logger.info("STT pre-warmed successfully");
-							} catch (err: unknown) {
-								dispatch("stt", {
-									type: "LOAD_FAIL_ERROR",
-									error: String(err),
-								});
-								logger.warn("STT pre-warm failed", {
-									error: err instanceof Error ? err.message : String(err),
-								});
-							}
-						}
-					})().catch((err) => {
-						logger.warn("Sequential pre-warm IIFE failed unexpectedly", {
-							error: err instanceof Error ? err.message : String(err),
+						})().catch((err) => {
+							logger.warn("Vision pre-warm IIFE failed unexpectedly", {
+								error: err instanceof Error ? err.message : String(err),
+							});
 						});
-					});
+					}
 				} catch (error) {
 					logger.error("Failed to load model", {
 						error: error instanceof Error ? error.message : String(error),
@@ -865,9 +831,6 @@ export function createHuggingFaceProvider(store: Store): AIProvider {
 			if (getCapabilityStatus("vision") === "ready") {
 				dispatch("vision", { type: "TEARDOWN" });
 			}
-			if (getCapabilityStatus("stt") === "ready") {
-				dispatch("stt", { type: "TEARDOWN" });
-			}
 
 			try {
 				await releaseAllLlama();
@@ -880,9 +843,6 @@ export function createHuggingFaceProvider(store: Store): AIProvider {
 			// Complete release transitions
 			if (getCapabilityStatus("vision") === "releasing") {
 				dispatch("vision", { type: "RELEASE_COMPLETE" });
-			}
-			if (getCapabilityStatus("stt") === "releasing") {
-				dispatch("stt", { type: "RELEASE_COMPLETE" });
 			}
 
 			llamaContext = null;

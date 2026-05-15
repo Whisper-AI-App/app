@@ -1,9 +1,8 @@
+import { Text } from "@/components/ui/text";
+import { View } from "@/components/ui/view";
 import type { ViewStyle } from "react-native";
 import type { AnimatedStyle } from "react-native-reanimated";
 import Animated from "react-native-reanimated";
-import { Text } from "@/components/ui/text";
-import { View } from "@/components/ui/view";
-
 
 interface DashboardGreetingProps {
 	chatCount: number;
@@ -31,7 +30,8 @@ export function DashboardGreeting({
 			style={[
 				{
 					position: "absolute",
-					top: 128 + 40 + folderSelectorOffset + (showUpdateAlert ? 72 : 0),
+					top:
+						128 + 16 + 40 + folderSelectorOffset + (showUpdateAlert ? 72 : 0),
 					left: 0,
 					width: "100%",
 					display: "flex",

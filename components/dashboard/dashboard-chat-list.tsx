@@ -2,7 +2,9 @@ import { ChatPreview } from "@/components/chat-preview";
 import { Button } from "@/components/ui/button";
 import { Text } from "@/components/ui/text";
 import { View } from "@/components/ui/view";
-import Animated, { type useAnimatedScrollHandler } from "react-native-reanimated";
+import Animated, {
+	type useAnimatedScrollHandler,
+} from "react-native-reanimated";
 
 export interface ChatPreviewData {
 	chatId: string;
@@ -47,7 +49,7 @@ export function DashboardChatList({
 						key={preview.chatId}
 						style={{
 							paddingBottom: index >= array.length - 1 ? 160 : 0,
-							paddingTop: index === 0 ? 148 : 16,
+							paddingTop: index === 0 ? 128 : 16,
 						}}
 					>
 						<ChatPreview
@@ -56,8 +58,16 @@ export function DashboardChatList({
 							name={preview.name}
 							text={preview.text}
 							onPress={() => onChatPress(preview.chatId)}
-							onMoveToFolder={onMoveToFolder ? () => onMoveToFolder(preview.chatId) : undefined}
-							onRename={onRename ? () => onRename(preview.chatId, preview.name) : undefined}
+							onMoveToFolder={
+								onMoveToFolder
+									? () => onMoveToFolder(preview.chatId)
+									: undefined
+							}
+							onRename={
+								onRename
+									? () => onRename(preview.chatId, preview.name)
+									: undefined
+							}
 						/>
 					</View>
 				))
@@ -72,11 +82,7 @@ export function DashboardChatList({
 						{searchQuery.trim() ? "No chats found" : "No chats yet"}
 					</Text>
 					{!searchQuery.trim() && (
-						<Button
-							variant="secondary"
-							size="lg"
-							onPress={onStartConversation}
-						>
+						<Button variant="secondary" size="lg" onPress={onStartConversation}>
 							Start a conversation
 						</Button>
 					)}
