@@ -2,8 +2,6 @@ import { ChatPreview } from "@/components/chat-preview";
 import { Button } from "@/components/ui/button";
 import { Text } from "@/components/ui/text";
 import { View } from "@/components/ui/view";
-import { Colors } from "@/theme/colors";
-import { Linking, Pressable, useColorScheme } from "react-native";
 import Animated, { type useAnimatedScrollHandler } from "react-native-reanimated";
 
 export interface ChatPreviewData {
@@ -33,9 +31,6 @@ export function DashboardChatList({
 	onMoveToFolder,
 	onRename,
 }: DashboardChatListProps) {
-	const colorScheme = useColorScheme() ?? "light";
-	const theme = Colors[colorScheme];
-
 	return (
 		<Animated.ScrollView
 			style={{
@@ -85,55 +80,6 @@ export function DashboardChatList({
 							Start a conversation
 						</Button>
 					)}
-
-					<View
-						style={{
-							display: "flex",
-							flexDirection: "row",
-							gap: 12,
-							paddingVertical: 6,
-							opacity: 0.5,
-						}}
-					>
-						<Pressable
-							onPress={() => Linking.openURL("https://usewhisper.org/labs")}
-						>
-							<Text
-								style={{
-									display: "flex",
-									flexDirection: "row",
-									alignItems: "center",
-									paddingBottom: 0.05,
-									borderBottomColor: "rgba(150,150,150,0.25)",
-									borderBottomWidth: 2,
-									fontSize: 12,
-									color: theme.textMuted,
-								}}
-							>
-								Latest news
-							</Text>
-						</Pressable>
-						<Pressable
-							onPress={() =>
-								Linking.openURL("https://usewhisper.org/chat-with-us")
-							}
-						>
-							<Text
-								style={{
-									display: "flex",
-									flexDirection: "row",
-									alignItems: "center",
-									paddingBottom: 0.05,
-									borderBottomColor: "rgba(150,150,150,0.25)",
-									borderBottomWidth: 2,
-									fontSize: 12,
-									color: theme.textMuted,
-								}}
-							>
-								Report problem
-							</Text>
-						</Pressable>
-					</View>
 				</View>
 			)}
 		</Animated.ScrollView>
