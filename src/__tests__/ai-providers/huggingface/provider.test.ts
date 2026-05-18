@@ -80,12 +80,6 @@ jest.mock("../../../utils/memory-pressure", () => ({
 	startMemoryPressureMonitor: (...args: unknown[]) => mockStartMemoryPressureMonitor(...args),
 }));
 
-const mockInitSTT = jest.fn();
-
-jest.mock("../../../stt", () => ({
-	initSTT: (...args: unknown[]) => mockInitSTT(...args),
-}));
-
 const mockGetAvailableMemory = jest.fn();
 
 jest.mock("../../../utils/native-memory", () => ({
@@ -268,16 +262,12 @@ function setupDefaultMocks() {
 	mockGetDeviceTierStrategy.mockReturnValue({
 		maxChatModelGB: 4.0,
 		preWarmVision: true,
-		preWarmSTT: true,
 		allowOnDemandVision: true,
-		allowOnDemandSTT: true,
-		releaseSTTAfterUse: false,
 	});
 	mockGetCapabilityStatus.mockReturnValue("unloaded");
 	mockSubscribe.mockReturnValue(jest.fn()); // returns unsubscribe fn
 	mockResetState.mockReturnValue(undefined);
 	mockDispatch.mockReturnValue("loading");
-	mockInitSTT.mockResolvedValue(undefined);
 }
 
 // ─── Tests ───────────────────────────────────────────────────────────────────
@@ -998,14 +988,13 @@ describe("HuggingFace provider", () => {
 	// ── getMultimodalCapabilities ─────────────────────────────────────────
 
 	describe("getMultimodalCapabilities", () => {
-		it("returns vision: false, audio: true, files: false after setup", async () => {
+		it("returns vision: false, files: false after setup", async () => {
 			seedStoreWithDownloadedModel(store);
 			mockInitLlama.mockResolvedValue(createMockLlamaContext());
 			await provider.setup();
 
 			const caps = provider.getMultimodalCapabilities();
 			expect(caps.vision).toBe(false);
-			expect(caps.audio).toBe(true);
 			expect(caps.files).toBe(false);
 		});
 
@@ -1018,7 +1007,6 @@ describe("HuggingFace provider", () => {
 
 			const caps = provider.getMultimodalCapabilities();
 			expect(caps.vision).toBe(false);
-			expect(caps.audio).toBe(false);
 			expect(caps.files).toBe(false);
 		});
 	});
@@ -1184,10 +1172,7 @@ describe("HuggingFace provider", () => {
 			mockGetDeviceTierStrategy.mockReturnValue({
 				maxChatModelGB: 1.5,
 				preWarmVision: false,
-				preWarmSTT: false,
 				allowOnDemandVision: false,
-				allowOnDemandSTT: true,
-				releaseSTTAfterUse: true,
 			});
 
 			await provider.setup();
@@ -1244,14 +1229,11 @@ describe("HuggingFace provider", () => {
 
 			await provider.setup();
 
-			// After setup, caps have audio: true
-			expect(provider.getMultimodalCapabilities().audio).toBe(true);
-
 			await provider.teardown();
 
 			// After teardown, should reset to NO_MULTIMODAL
 			expect(provider.getMultimodalCapabilities().vision).toBe(false);
-			expect(provider.getMultimodalCapabilities().audio).toBe(false);
+			expect(provider.getMultimodalCapabilities().files).toBe(false);
 		});
 
 		it("converts image parts to image_url when vision is loaded via pre-warm", async () => {
@@ -1359,10 +1341,7 @@ describe("HuggingFace provider", () => {
 			mockGetDeviceTierStrategy.mockReturnValue({
 				maxChatModelGB: 1.5,
 				preWarmVision: false,
-				preWarmSTT: false,
 				allowOnDemandVision: true,
-				allowOnDemandSTT: true,
-				releaseSTTAfterUse: true,
 			});
 
 			await provider.setup();

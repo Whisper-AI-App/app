@@ -84,32 +84,6 @@ async function preprocessImage(
 }
 
 /**
- * Pre-processes audio: validates format, creates alt text.
- * Actual format conversion (resampling) deferred to provider-specific handling.
- */
-async function preprocessAudio(
-	attachment: PendingAttachment,
-	_capabilities: MultimodalCapabilities,
-): Promise<ProcessedAttachment> {
-	const processed: ProcessedAttachment = {
-		id: attachment.id,
-		type: "audio",
-		uri: attachment.uri,
-		mimeType: attachment.mimeType,
-		fileName: attachment.fileName,
-		fileSize: attachment.fileSize,
-		width: 0,
-		height: 0,
-		duration: attachment.duration ?? 0,
-		alt: "",
-		thumbnailUri: "",
-	};
-	processed.alt = generateAltText(processed);
-
-	return processed;
-}
-
-/**
  * Pre-processes a file: validate type/size, extract text preview for alt.
  */
 async function preprocessFile(
@@ -187,9 +161,6 @@ export async function defaultPreprocessMedia(
 		switch (attachment.type) {
 			case "image":
 				results.push(await preprocessImage(attachment, capabilities));
-				break;
-			case "audio":
-				results.push(await preprocessAudio(attachment, capabilities));
 				break;
 			case "file":
 				results.push(await preprocessFile(attachment, capabilities));

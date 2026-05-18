@@ -33,7 +33,6 @@ import {
 	resetState,
 	subscribe,
 } from "../../memory/state";
-import { initSTT } from "../../stt";
 import { bytesToGB } from "../../utils/bytes";
 import {
 	setReleaseMultimodalFn,
@@ -81,7 +80,6 @@ let stateUnsubscribe: (() => void) | null = null;
  */
 export function getCapabilityInitStatus() {
 	const visionStatus = getCapabilityStatus("vision");
-	const sttStatus = getCapabilityStatus("stt");
 
 	// Map state machine statuses to the legacy API format for backward compatibility
 	const vision =
@@ -90,14 +88,8 @@ export function getCapabilityInitStatus() {
 			: visionStatus === "loading"
 				? ("loading" as const)
 				: ("unavailable" as const);
-	const audio =
-		sttStatus === "ready"
-			? ("ready" as const)
-			: sttStatus === "loading"
-				? ("loading" as const)
-				: ("unavailable" as const);
 
-	return { vision, audio };
+	return { vision };
 }
 
 /**
@@ -129,11 +121,9 @@ function convertToLlamaMessages(
 				const alt =
 					part.type === "image"
 						? part.alt
-						: part.type === "audio"
+						: part.type === "file"
 							? part.alt
-							: part.type === "file"
-								? part.alt
-								: "";
+							: "";
 				if (alt) {
 					llamaParts.push({ type: "text", text: `[${alt}]` });
 				}
@@ -672,21 +662,12 @@ export function createWhisperAIProvider(store: Store): AIProvider {
 										maxFileSize:
 											resolved.files?.maxSizeBytes ??
 											DEFAULT_CONSTRAINTS.maxFileSize,
-										maxAudioDuration:
-											resolved.audio?.maxDurationSeconds ??
-											DEFAULT_CONSTRAINTS.maxAudioDuration,
 										supportedImageFormats:
 											resolved.vision?.supportedFormats ??
 											DEFAULT_CONSTRAINTS.supportedImageFormats,
 										supportedFileTypes:
 											resolved.files?.supportedTypes ??
 											DEFAULT_CONSTRAINTS.supportedFileTypes,
-										audioFormat:
-											(resolved.audio?.format as "wav" | "mp3") ??
-											DEFAULT_CONSTRAINTS.audioFormat,
-										audioSampleRate:
-											resolved.audio?.sampleRate ??
-											DEFAULT_CONSTRAINTS.audioSampleRate,
 									};
 								}
 							}
@@ -717,11 +698,9 @@ export function createWhisperAIProvider(store: Store): AIProvider {
 					// Reset state machine for fresh setup
 					resetState();
 
-					// Set initial capabilities — audio always true (whisper.rn bundled),
-					// vision deferred to on-demand loading
+					// Set initial capabilities — vision deferred to on-demand loading
 					updateCapabilities({
 						vision: false,
-						audio: true,
 						files: cardWantsFiles,
 						constraints: resolvedConstraints,
 					});
@@ -739,8 +718,6 @@ export function createWhisperAIProvider(store: Store): AIProvider {
 								vision: newStatus === "ready",
 							});
 						}
-						// STT state changes don't affect audio capability
-						// (audio is always true — whisper.rn provides universal transcription)
 					});
 
 					// Set up memory pressure release function for centralized handler
@@ -760,20 +737,16 @@ export function createWhisperAIProvider(store: Store): AIProvider {
 					// Start centralized memory pressure monitor
 					startMemoryPressureMonitor();
 
-					// T067: DeviceMemoryTier-based background pre-warming
-					// Run vision and STT pre-warm SEQUENTIALLY (not concurrently) to avoid
-					// OOM crashes — after loading a large chat model there isn't enough
-					// headroom for both to allocate at the same time.
+					// DeviceMemoryTier-based background pre-warming
 					const tierStrategy = getDeviceTierStrategy();
 
-					(async () => {
-						// 1. Pre-warm vision first (if tier allows and mmproj is available)
-						if (
-							tierStrategy.preWarmVision &&
-							storedCardWantsVision &&
-							storedMmprojUri &&
-							llamaContext
-						) {
+					if (
+						tierStrategy.preWarmVision &&
+						storedCardWantsVision &&
+						storedMmprojUri &&
+						llamaContext
+					) {
+						(async () => {
 							logger.info("Pre-warming vision");
 							try {
 								await loadVisionOnDemand(updateCapabilities);
@@ -782,34 +755,12 @@ export function createWhisperAIProvider(store: Store): AIProvider {
 									error: err instanceof Error ? err.message : String(err),
 								});
 							}
-
-							// Small delay to let memory settle before next allocation
-							await new Promise((resolve) => setTimeout(resolve, 500));
-						}
-
-						// 2. Then pre-warm STT (if tier allows)
-						if (tierStrategy.preWarmSTT) {
-							logger.info("Pre-warming STT");
-							dispatch("stt", { type: "PRE_WARM" });
-							try {
-								await initSTT();
-								dispatch("stt", { type: "LOAD_SUCCESS" });
-								logger.info("STT pre-warmed successfully");
-							} catch (err: unknown) {
-								dispatch("stt", {
-									type: "LOAD_FAIL_ERROR",
-									error: String(err),
-								});
-								logger.warn("STT pre-warm failed", {
-									error: err instanceof Error ? err.message : String(err),
-								});
-							}
-						}
-					})().catch((err) => {
-						logger.warn("Sequential pre-warm IIFE failed unexpectedly", {
-							error: err instanceof Error ? err.message : String(err),
+						})().catch((err) => {
+							logger.warn("Vision pre-warm IIFE failed unexpectedly", {
+								error: err instanceof Error ? err.message : String(err),
+							});
 						});
-					});
+					}
 				} catch (error) {
 					logger.error("Failed to load model", {
 						error: error instanceof Error ? error.message : String(error),
@@ -1010,9 +961,6 @@ export function createWhisperAIProvider(store: Store): AIProvider {
 			if (getCapabilityStatus("vision") === "ready") {
 				dispatch("vision", { type: "TEARDOWN" });
 			}
-			if (getCapabilityStatus("stt") === "ready") {
-				dispatch("stt", { type: "TEARDOWN" });
-			}
 
 			try {
 				await releaseAllLlama();
@@ -1025,9 +973,6 @@ export function createWhisperAIProvider(store: Store): AIProvider {
 			// Complete release transitions
 			if (getCapabilityStatus("vision") === "releasing") {
 				dispatch("vision", { type: "RELEASE_COMPLETE" });
-			}
-			if (getCapabilityStatus("stt") === "releasing") {
-				dispatch("stt", { type: "RELEASE_COMPLETE" });
 			}
 
 			llamaContext = null;

@@ -15,7 +15,6 @@ describe("CapabilityMemoryState", () => {
 		it("starts with all capabilities unloaded", () => {
 			const state = getCapabilityState();
 			expect(state.vision).toBe("unloaded");
-			expect(state.stt).toBe("unloaded");
 		});
 	});
 
@@ -27,9 +26,9 @@ describe("CapabilityMemoryState", () => {
 		});
 
 		it("unloaded → loading via PRE_WARM", () => {
-			const result = dispatch("stt", { type: "PRE_WARM" });
+			const result = dispatch("vision", { type: "PRE_WARM" });
 			expect(result).toBe("loading");
-			expect(getCapabilityStatus("stt")).toBe("loading");
+			expect(getCapabilityStatus("vision")).toBe("loading");
 		});
 
 		it("loading → ready via LOAD_SUCCESS", () => {
@@ -40,10 +39,10 @@ describe("CapabilityMemoryState", () => {
 		});
 
 		it("loading → budget_denied via LOAD_FAIL_BUDGET", () => {
-			dispatch("stt", { type: "USER_REQUEST" });
-			const result = dispatch("stt", { type: "LOAD_FAIL_BUDGET" });
+			dispatch("vision", { type: "USER_REQUEST" });
+			const result = dispatch("vision", { type: "LOAD_FAIL_BUDGET" });
 			expect(result).toBe("budget_denied");
-			expect(getCapabilityStatus("stt")).toBe("budget_denied");
+			expect(getCapabilityStatus("vision")).toBe("budget_denied");
 		});
 
 		it("loading → unloaded via LOAD_FAIL_ERROR", () => {
@@ -57,9 +56,9 @@ describe("CapabilityMemoryState", () => {
 		});
 
 		it("ready → releasing via MEMORY_PRESSURE", () => {
-			dispatch("stt", { type: "USER_REQUEST" });
-			dispatch("stt", { type: "LOAD_SUCCESS" });
-			const result = dispatch("stt", { type: "MEMORY_PRESSURE" });
+			dispatch("vision", { type: "USER_REQUEST" });
+			dispatch("vision", { type: "LOAD_SUCCESS" });
+			const result = dispatch("vision", { type: "MEMORY_PRESSURE" });
 			expect(result).toBe("releasing");
 		});
 
@@ -71,12 +70,12 @@ describe("CapabilityMemoryState", () => {
 		});
 
 		it("releasing → unloaded via RELEASE_COMPLETE", () => {
-			dispatch("stt", { type: "USER_REQUEST" });
-			dispatch("stt", { type: "LOAD_SUCCESS" });
-			dispatch("stt", { type: "MEMORY_PRESSURE" });
-			const result = dispatch("stt", { type: "RELEASE_COMPLETE" });
+			dispatch("vision", { type: "USER_REQUEST" });
+			dispatch("vision", { type: "LOAD_SUCCESS" });
+			dispatch("vision", { type: "MEMORY_PRESSURE" });
+			const result = dispatch("vision", { type: "RELEASE_COMPLETE" });
 			expect(result).toBe("unloaded");
-			expect(getCapabilityStatus("stt")).toBe("unloaded");
+			expect(getCapabilityStatus("vision")).toBe("unloaded");
 		});
 
 		it("budget_denied → loading via RETRY", () => {
@@ -95,7 +94,7 @@ describe("CapabilityMemoryState", () => {
 		});
 
 		it("returns null for MEMORY_PRESSURE when unloaded", () => {
-			const result = dispatch("stt", { type: "MEMORY_PRESSURE" });
+			const result = dispatch("vision", { type: "MEMORY_PRESSURE" });
 			expect(result).toBeNull();
 		});
 
@@ -107,22 +106,8 @@ describe("CapabilityMemoryState", () => {
 		});
 
 		it("returns null for RETRY when not budget_denied", () => {
-			const result = dispatch("stt", { type: "RETRY" });
+			const result = dispatch("vision", { type: "RETRY" });
 			expect(result).toBeNull();
-		});
-	});
-
-	describe("independent tracking", () => {
-		it("vision and stt states are independent", () => {
-			dispatch("vision", { type: "USER_REQUEST" });
-			dispatch("vision", { type: "LOAD_SUCCESS" });
-
-			expect(getCapabilityStatus("vision")).toBe("ready");
-			expect(getCapabilityStatus("stt")).toBe("unloaded");
-
-			dispatch("stt", { type: "PRE_WARM" });
-			expect(getCapabilityStatus("vision")).toBe("ready");
-			expect(getCapabilityStatus("stt")).toBe("loading");
 		});
 	});
 
@@ -147,9 +132,9 @@ describe("CapabilityMemoryState", () => {
 			const events: string[] = [];
 			const unsub = subscribe((_cap, status) => events.push(status));
 
-			dispatch("stt", { type: "USER_REQUEST" });
+			dispatch("vision", { type: "USER_REQUEST" });
 			unsub();
-			dispatch("stt", { type: "LOAD_SUCCESS" });
+			dispatch("vision", { type: "LOAD_SUCCESS" });
 
 			expect(events).toHaveLength(1);
 		});
@@ -159,12 +144,10 @@ describe("CapabilityMemoryState", () => {
 		it("resets all capabilities to unloaded", () => {
 			dispatch("vision", { type: "USER_REQUEST" });
 			dispatch("vision", { type: "LOAD_SUCCESS" });
-			dispatch("stt", { type: "USER_REQUEST" });
 
 			resetState();
 
 			expect(getCapabilityStatus("vision")).toBe("unloaded");
-			expect(getCapabilityStatus("stt")).toBe("unloaded");
 		});
 	});
 });

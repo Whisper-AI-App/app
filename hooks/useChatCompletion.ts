@@ -12,8 +12,6 @@ import type {
 	TextMessagePart,
 } from "@/src/ai-providers/types";
 import { createLogger } from "@/src/logger";
-import { getTranscription } from "@/src/stt";
-import { enrichAltText } from "@/src/utils/alt-text";
 import type {
 	UseChatCompletionOptions,
 	UseChatCompletionReturn,
@@ -149,7 +147,7 @@ export function useChatCompletion(
 				const userMessageId = uuidv4();
 				const modelId = getModelId();
 
-				// ── Phase 1: Pre-process media (transcription, image resize) ──
+				// ── Phase 1: Pre-process media (image resize, file prep) ──
 				let userContent: string | CompletionMessagePart[] = text;
 				let displayText = text;
 				let processedAttachments: ProcessedAttachment[] = [];
@@ -159,14 +157,6 @@ export function useChatCompletion(
 					pendingAttachments.length > 0 &&
 					activeProvider
 				) {
-					// Only show processing indicator when audio needs transcription at send-time
-					// (i.e. no pre-computed transcription from eager STT)
-					const needsLiveTranscription = pendingAttachments.some(
-						(a) => a.type === "audio" && !a.transcription,
-					);
-					if (needsLiveTranscription) {
-						setIsProcessingMedia(true);
-					}
 					try {
 						const capabilities =
 							activeProvider.getMultimodalCapabilities();
@@ -185,14 +175,6 @@ export function useChatCompletion(
 							parts.push({ type: "text", text });
 						}
 
-						// Match processed attachments back to pending to find pre-computed transcriptions
-						const transcriptionById = new Map<string, string>();
-						for (const pa of pendingAttachments) {
-							if (pa.transcription) {
-								transcriptionById.set(pa.id, pa.transcription);
-							}
-						}
-
 						for (const att of processed) {
 							if (att.type === "image") {
 								if (capabilities.vision) {
@@ -206,45 +188,6 @@ export function useChatCompletion(
 									parts.push({
 										type: "text",
 										text: `[${att.alt}]`,
-									});
-								}
-							} else if (att.type === "audio") {
-								// Use pre-computed transcription if available, otherwise transcribe now
-								let transcription =
-									transcriptionById.get(att.id) ?? "";
-								if (!transcription) {
-									try {
-										transcription = await getTranscription(
-											att.uri,
-											att.duration
-												? att.duration * 1000
-												: undefined,
-										);
-									} catch (sttError) {
-										logger.warn("STT transcription failed", { error: sttError instanceof Error ? sttError.message : String(sttError) });
-
-									}
-								}
-
-								if (transcription?.trim()) {
-									parts.push({
-										type: "text",
-										text: transcription,
-									});
-									enrichAltText(att.id, transcription);
-								} else {
-									logger.warn("STT returned empty", { attachmentId: att.id });
-
-									const durationInfo = att.duration
-										? `${Math.round(att.duration)}s`
-										: "unknown duration";
-									parts.push({
-										type: "audio",
-										uri: att.uri,
-										format: att.mimeType.includes("mp3")
-											? "mp3"
-											: "wav",
-										alt: `Voice message (${durationInfo}). Automatic transcription was not available.`,
 									});
 								}
 							} else if (att.type === "file") {

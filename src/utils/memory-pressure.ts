@@ -1,16 +1,14 @@
 import { AppState, type NativeEventSubscription } from "react-native";
 import { createLogger } from "@/src/logger";
 import { dispatch, getCapabilityStatus } from "../memory/state";
-import { releaseSTT } from "../stt";
 
 const logger = createLogger("MemoryPressure");
 
 /**
  * Tiered memory pressure handler integrated with the capability state machine.
  *
- * Tier 1: Release WhisperContext (~150MB freed) → stt transitions to "releasing" → "unloaded"
- * Tier 2: Call releaseMultimodal() (~670MB freed) → vision transitions to "releasing" → "unloaded"
- * Tier 3: Never auto-release chat model (OS kills process if needed)
+ * Tier 1: Call releaseMultimodal() (~670MB freed) → vision transitions to "releasing" → "unloaded"
+ * Tier 2: Never auto-release chat model (OS kills process if needed)
  *
  * Each OS memory warning escalates to the next available tier.
  */
@@ -40,32 +38,16 @@ export function setOnTierChanged(fn: ((tier: number, action: string) => void) | 
  * the current capability state machine status.
  */
 async function handleMemoryWarning(): Promise<void> {
-	const sttStatus = getCapabilityStatus("stt");
 	const visionStatus = getCapabilityStatus("vision");
 
-	// Tier 1: Release whisper.rn STT if it's loaded
-	if (sttStatus === "ready") {
-		dispatch("stt", { type: "MEMORY_PRESSURE" });
-		try {
-			await releaseSTT();
-			dispatch("stt", { type: "RELEASE_COMPLETE" });
-			logger.warn("Tier 1: released WhisperContext", { freedMB: 150 });
-			onTierChanged?.(1, "Released audio transcription to free memory");
-		} catch (err) {
-			logger.error("failed to release STT", { error: String(err) });
-			dispatch("stt", { type: "RELEASE_COMPLETE" });
-		}
-		return;
-	}
-
-	// Tier 2: Release multimodal (mmproj/vision) if loaded
+	// Tier 1: Release multimodal (mmproj/vision) if loaded
 	if (visionStatus === "ready" && releaseMultimodalFn) {
 		dispatch("vision", { type: "MEMORY_PRESSURE" });
 		try {
 			await releaseMultimodalFn();
 			dispatch("vision", { type: "RELEASE_COMPLETE" });
-			logger.warn("Tier 2: released multimodal/vision", { freedMB: 670 });
-			onTierChanged?.(2, "Released vision capability to free memory");
+			logger.warn("Tier 1: released multimodal/vision", { freedMB: 670 });
+			onTierChanged?.(1, "Released vision capability to free memory");
 		} catch (err) {
 			logger.error("failed to release multimodal", { error: String(err) });
 			dispatch("vision", { type: "RELEASE_COMPLETE" });
@@ -73,7 +55,7 @@ async function handleMemoryWarning(): Promise<void> {
 		return;
 	}
 
-	// Tier 3: Never auto-release chat model
+	// Tier 2: Never auto-release chat model
 	logger.warn("no more resources to release, chat model preserved");
 }
 

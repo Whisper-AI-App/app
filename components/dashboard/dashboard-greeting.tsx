@@ -1,10 +1,8 @@
-import type { ViewStyle } from "react-native";
-import { Linking, Pressable, useColorScheme } from "react-native";
-import type { AnimatedStyle } from "react-native-reanimated";
-import Animated from "react-native-reanimated";
 import { Text } from "@/components/ui/text";
 import { View } from "@/components/ui/view";
-import { Colors } from "@/theme/colors";
+import type { ViewStyle } from "react-native";
+import type { AnimatedStyle } from "react-native-reanimated";
+import Animated from "react-native-reanimated";
 
 interface DashboardGreetingProps {
 	chatCount: number;
@@ -19,9 +17,6 @@ export function DashboardGreeting({
 	showUpdateAlert,
 	folderSelectorOffset = 0,
 }: DashboardGreetingProps) {
-	const colorScheme = useColorScheme() ?? "light";
-	const theme = Colors[colorScheme];
-
 	const getGreeting = () => {
 		const hour = new Date().getHours();
 		if (hour < 5) return "Good night";
@@ -35,7 +30,8 @@ export function DashboardGreeting({
 			style={[
 				{
 					position: "absolute",
-					top: 128 + 40 + folderSelectorOffset + (showUpdateAlert ? 72 : 0),
+					top:
+						128 + 16 + 40 + folderSelectorOffset + (showUpdateAlert ? 72 : 0),
 					left: 0,
 					width: "100%",
 					display: "flex",
@@ -60,52 +56,6 @@ export function DashboardGreeting({
 			>
 				<Text style={{ fontSize: 18, fontWeight: "500" }}>{getGreeting()}</Text>
 				<Text style={{ fontSize: 16 }}>👋</Text>
-			</View>
-
-			<View
-				style={{
-					display: "flex",
-					flexDirection: "row",
-					gap: 12,
-					paddingVertical: 6,
-				}}
-			>
-				<Pressable
-					onPress={() => Linking.openURL("https://usewhisper.org/labs")}
-				>
-					<Text
-						style={{
-							display: "flex",
-							flexDirection: "row",
-							alignItems: "center",
-							paddingBottom: 0.05,
-							borderBottomColor: "rgba(150,150,150,0.25)",
-							borderBottomWidth: 2,
-							fontSize: 12,
-							color: theme.textMuted,
-						}}
-					>
-						Latest updates
-					</Text>
-				</Pressable>
-				<Pressable
-					onPress={() => Linking.openURL("https://usewhisper.org/chat-with-us")}
-				>
-					<Text
-						style={{
-							display: "flex",
-							flexDirection: "row",
-							alignItems: "center",
-							paddingBottom: 0.05,
-							borderBottomColor: "rgba(150,150,150,0.25)",
-							borderBottomWidth: 2,
-							fontSize: 12,
-							color: theme.textMuted,
-						}}
-					>
-						Request feature
-					</Text>
-				</Pressable>
 			</View>
 
 			{chatCount > 0 && (

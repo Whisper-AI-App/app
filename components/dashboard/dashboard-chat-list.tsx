@@ -2,9 +2,9 @@ import { ChatPreview } from "@/components/chat-preview";
 import { Button } from "@/components/ui/button";
 import { Text } from "@/components/ui/text";
 import { View } from "@/components/ui/view";
-import { Colors } from "@/theme/colors";
-import { Linking, Pressable, useColorScheme } from "react-native";
-import Animated, { type useAnimatedScrollHandler } from "react-native-reanimated";
+import Animated, {
+	type useAnimatedScrollHandler,
+} from "react-native-reanimated";
 
 export interface ChatPreviewData {
 	chatId: string;
@@ -33,9 +33,6 @@ export function DashboardChatList({
 	onMoveToFolder,
 	onRename,
 }: DashboardChatListProps) {
-	const colorScheme = useColorScheme() ?? "light";
-	const theme = Colors[colorScheme];
-
 	return (
 		<Animated.ScrollView
 			style={{
@@ -52,7 +49,7 @@ export function DashboardChatList({
 						key={preview.chatId}
 						style={{
 							paddingBottom: index >= array.length - 1 ? 160 : 0,
-							paddingTop: index === 0 ? 148 : 16,
+							paddingTop: index === 0 ? 128 : 16,
 						}}
 					>
 						<ChatPreview
@@ -61,8 +58,16 @@ export function DashboardChatList({
 							name={preview.name}
 							text={preview.text}
 							onPress={() => onChatPress(preview.chatId)}
-							onMoveToFolder={onMoveToFolder ? () => onMoveToFolder(preview.chatId) : undefined}
-							onRename={onRename ? () => onRename(preview.chatId, preview.name) : undefined}
+							onMoveToFolder={
+								onMoveToFolder
+									? () => onMoveToFolder(preview.chatId)
+									: undefined
+							}
+							onRename={
+								onRename
+									? () => onRename(preview.chatId, preview.name)
+									: undefined
+							}
 						/>
 					</View>
 				))
@@ -77,63 +82,10 @@ export function DashboardChatList({
 						{searchQuery.trim() ? "No chats found" : "No chats yet"}
 					</Text>
 					{!searchQuery.trim() && (
-						<Button
-							variant="secondary"
-							size="lg"
-							onPress={onStartConversation}
-						>
+						<Button variant="secondary" size="lg" onPress={onStartConversation}>
 							Start a conversation
 						</Button>
 					)}
-
-					<View
-						style={{
-							display: "flex",
-							flexDirection: "row",
-							gap: 12,
-							paddingVertical: 6,
-							opacity: 0.5,
-						}}
-					>
-						<Pressable
-							onPress={() => Linking.openURL("https://usewhisper.org/labs")}
-						>
-							<Text
-								style={{
-									display: "flex",
-									flexDirection: "row",
-									alignItems: "center",
-									paddingBottom: 0.05,
-									borderBottomColor: "rgba(150,150,150,0.25)",
-									borderBottomWidth: 2,
-									fontSize: 12,
-									color: theme.textMuted,
-								}}
-							>
-								Latest news
-							</Text>
-						</Pressable>
-						<Pressable
-							onPress={() =>
-								Linking.openURL("https://usewhisper.org/chat-with-us")
-							}
-						>
-							<Text
-								style={{
-									display: "flex",
-									flexDirection: "row",
-									alignItems: "center",
-									paddingBottom: 0.05,
-									borderBottomColor: "rgba(150,150,150,0.25)",
-									borderBottomWidth: 2,
-									fontSize: 12,
-									color: theme.textMuted,
-								}}
-							>
-								Report problem
-							</Text>
-						</Pressable>
-					</View>
 				</View>
 			)}
 		</Animated.ScrollView>

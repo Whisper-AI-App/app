@@ -4,7 +4,7 @@ This document defines key terms used throughout the Whisper codebase to ensure c
 
 | Term | Definition | Notes/Disambiguation |
 |------|-----------|----------------------|
-| Provider | AI service backend that handles inference requests (e.g., Whisper AI, OpenRouter, OpenAI, HuggingFace, Custom). | Not to be confused with React Context providers. |
+| Provider | AI service backend that handles inference requests (e.g., Whisper AI, HuggingFace, Apple Models, Custom). | Not to be confused with React Context providers. |
 | Context | Depends on usage: (1) React Context -- React state container wrapping child components; (2) LlamaContext -- llama.rn instance for on-device inference; (3) Context management in regards to LLMs | Disambiguate by prefix: "React Context" vs "LlamaContext". |
 | Store | TinyBase state container holding all app state (chats, messages, settings). | Single store instance, accessed via Provider pattern. |
 | Chat | A conversation session containing messages. | Stored in TinyBase `chats` table. |

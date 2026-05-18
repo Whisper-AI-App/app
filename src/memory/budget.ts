@@ -17,53 +17,34 @@ export type DeviceMemoryTier =
 export interface TierStrategy {
 	maxChatModelGB: number;
 	preWarmVision: boolean;
-	preWarmSTT: boolean;
 	allowOnDemandVision: boolean;
-	allowOnDemandSTT: boolean;
-	/** Release STT model immediately after transcription to reclaim ~150MB for chat inference. */
-	releaseSTTAfterUse: boolean;
 }
 
 export const TIER_STRATEGIES: Record<DeviceMemoryTier, TierStrategy> = {
 	minimal: {
 		maxChatModelGB: 0.5,
 		preWarmVision: false,
-		preWarmSTT: false,
 		allowOnDemandVision: false,
-		allowOnDemandSTT: true,
-		releaseSTTAfterUse: true,
 	},
 	conservative: {
 		maxChatModelGB: 1.5,
 		preWarmVision: false,
-		preWarmSTT: false,
 		allowOnDemandVision: false,
-		allowOnDemandSTT: true,
-		releaseSTTAfterUse: true,
 	},
 	balanced: {
 		maxChatModelGB: 2.0,
 		preWarmVision: false,
-		preWarmSTT: true,
 		allowOnDemandVision: true,
-		allowOnDemandSTT: true,
-		releaseSTTAfterUse: false,
 	},
 	full: {
 		maxChatModelGB: 4.0,
 		preWarmVision: true,
-		preWarmSTT: true,
 		allowOnDemandVision: true,
-		allowOnDemandSTT: true,
-		releaseSTTAfterUse: false,
 	},
 	unrestricted: {
 		maxChatModelGB: 8.0,
 		preWarmVision: true,
-		preWarmSTT: true,
 		allowOnDemandVision: true,
-		allowOnDemandSTT: true,
-		releaseSTTAfterUse: false,
 	},
 };
 

@@ -19,7 +19,7 @@
 		"npm:version": "npm --version",
 		"node:version": "node --version",
 		"generate-credits": "node ./scripts/generate-credits.js",
-		"postinstall": "node ./scripts/generate-credits.js && node ./scripts/download-whisper-model.js",
+		"postinstall": "node ./scripts/generate-credits.js",
 		"process-icons": "npx tsx scripts/process-icons.ts",
 		"semgrep": "semgrep scan --config auto",
 		"audit": "npm audit",
@@ -34,8 +34,7 @@
 		"@expo/metro-runtime": "~55.0.6",
 		"@expo/vector-icons": "^15.0.3",
 		"@nanocollective/json-up": "^0.2.0",
-		"@openrouter/ai-sdk-provider": "^2.2.3",
-		"@react-native-ai/apple": "^0.12.0",
+"@react-native-ai/apple": "^0.12.0",
 		"@react-navigation/native": "^7.1.8",
 		"@shopify/react-native-skia": "2.4.18",
 		"ai": "^6.0.103",
@@ -85,9 +84,8 @@
 		"react-native-web": "~0.21.0",
 		"react-native-worklets": "0.7.2",
 		"tinybase": "^8.0.0",
-		"uuid": "^13.0.0",
+		"uuid": "^13.0.2",
 		"whisper-llm-cards": "github:Whisper-AI-App/marketplace#semver:^8.4.0",
-		"whisper.rn": "^0.5.5",
 		"zod": "^4.3.6"
 	},
 	"devDependencies": {
@@ -112,7 +110,9 @@
 			"react-dom": "$react-dom",
 			"expo": "$expo"
 		},
-		"@tootallnate/once": "3.0.1"
+		"@tootallnate/once": "3.0.1",
+		"@xmldom/xmldom": "^0.9.10",
+		"postcss": "^8.5.14"
 	},
 	"private": true
 }

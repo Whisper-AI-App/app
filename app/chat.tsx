@@ -1,8 +1,6 @@
 import { ChatBackground } from "@/components/chat-background";
-import { createLogger } from "@/src/logger";
 import { AttachmentButton } from "@/components/chat/attachment-button";
 import { AttachmentPreview } from "@/components/chat/attachment-preview";
-import { AudioRecorderOverlay } from "@/components/chat/audio-recorder-overlay";
 import { ChatPageHeader } from "@/components/chat/chat-page-header";
 import { ImageViewer } from "@/components/chat/image-viewer";
 import { MoveToFolderSheet } from "@/components/move-to-folder-sheet";
@@ -14,7 +12,6 @@ import { Text } from "@/components/ui/text";
 import { View } from "@/components/ui/view";
 import { useAIProvider } from "@/contexts/AIProviderContext";
 import { useAttachments } from "@/hooks/useAttachments";
-import { useAudioRecorder } from "@/hooks/useAudioRecorder";
 import { useChatCompletion } from "@/hooks/useChatCompletion";
 import { useChatMessages } from "@/hooks/useChatMessages";
 import { useChatRenderers } from "@/hooks/useChatRenderers";
@@ -22,16 +19,12 @@ import { useChatState } from "@/hooks/useChatState";
 import { useColorScheme } from "@/hooks/useColorScheme";
 import { useNetworkState } from "@/hooks/useNetworkState";
 import { setMessageStatus } from "@/src/actions/message";
-import {
-	NO_MULTIMODAL,
-	type PendingAttachment,
-} from "@/src/ai-providers/types";
-import { getTranscription } from "@/src/stt";
+import { NO_MULTIMODAL } from "@/src/ai-providers/types";
 import { wouldTruncate } from "@/src/utils/context-window";
 import { Colors } from "@/theme/colors";
 import * as ImagePicker from "expo-image-picker";
 import { useLocalSearchParams, useRouter } from "expo-router";
-import { Camera, Mic } from "lucide-react-native";
+import { Camera } from "lucide-react-native";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
 	ActivityIndicator,
@@ -43,8 +36,6 @@ import {
 import { GiftedChat, type IMessage } from "react-native-gifted-chat";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useCell, useSortedRowIds, useTable } from "tinybase/ui-react";
-
-const logger = createLogger("Chat");
 
 export default function ChatPage() {
 	const router = useRouter();
@@ -121,11 +112,9 @@ export default function ChatPage() {
 	const {
 		attachments,
 		addImageAttachment,
-		addAudioAttachment,
 		removeAttachment,
 		clearAttachments,
 		canAddImage,
-		canAddAudio,
 	} = useAttachments();
 
 	const handleTakePhoto = useCallback(async () => {
@@ -158,12 +147,6 @@ export default function ChatPage() {
 		}
 	}, [addImageAttachment]);
 
-	// Audio recorder
-	const { recorderState, startRecording, stopRecording, cancelRecording } =
-		useAudioRecorder(multimodalCaps.constraints);
-
-	const [isTranscribing, setIsTranscribing] = useState(false);
-
 	// AI completion orchestration
 	const {
 		isAiTyping,
@@ -181,70 +164,6 @@ export default function ChatPage() {
 		folderId: folderIdParam || null,
 	});
 
-	const handleSendRecording = useCallback(async () => {
-		const uri = await stopRecording();
-		if (!uri) return;
-
-		// Build the audio attachment object directly (don't rely on async state updates)
-		const audioAtt: PendingAttachment = {
-			id: `rec_${Date.now()}`,
-			type: "audio",
-			uri,
-			mimeType: "audio/wav",
-			fileName: `recording_${Date.now()}.wav`,
-			fileSize: 0,
-			duration: recorderState.durationMs / 1000,
-		};
-
-		// Snapshot current input text and any pre-existing attachments
-		const capturedText = inputText.trim();
-		const priorAttachments = [...attachments];
-
-		// Also add to React state so the preview shows while transcribing
-		addAudioAttachment(
-			uri,
-			"audio/wav",
-			audioAtt.fileName,
-			0,
-			audioAtt.duration,
-		);
-
-		// Transcribe, then send.
-		// whisper.rn runs on its own native context (whisper.cpp), independent of
-		// llama.rn (llama.cpp). No need to suspend/reload the LLM — they coexist.
-		setIsTranscribing(true);
-
-		const transcribeAndSend = async () => {
-			try {
-				const transcription = await getTranscription(uri, recorderState.durationMs);
-
-				if (transcription?.trim()) {
-					audioAtt.transcription = transcription;
-				}
-			} catch (err) {
-				logger.warn("STT failed", { error: err instanceof Error ? err.message : String(err) });
-			} finally {
-				setIsTranscribing(false);
-			}
-
-			// Send message with our locally-built attachment list
-			const allAttachments = [...priorAttachments, audioAtt];
-			setInputText("");
-			clearAttachments();
-			await sendMessage(capturedText, allAttachments);
-		};
-
-		transcribeAndSend();
-	}, [
-		stopRecording,
-		addAudioAttachment,
-		recorderState.durationMs,
-		inputText,
-		attachments,
-		clearAttachments,
-		sendMessage,
-	]);
-
 	// Clear incompatible attachments when provider/model changes
 	const activeProviderId = activeProvider?.id;
 	useEffect(() => {
@@ -257,7 +176,6 @@ export default function ChatPage() {
 		// Remove attachments not supported by new provider
 		const hasIncompatible = attachments.some((att) => {
 			if (att.type === "image" && !caps.vision) return true;
-			if (att.type === "audio" && !caps.audio) return true;
 			if (att.type === "file" && !caps.files) return true;
 			return false;
 		});
@@ -497,41 +415,28 @@ export default function ChatPage() {
 				onChangeText={setInputText}
 				canSend={
 					!!(inputText.trim() || attachments.length > 0) &&
-					!recorderState.isRecording &&
 					!isProcessingMedia &&
-					!isAiTyping &&
-					!isTranscribing
+					!isAiTyping
 				}
 				onSend={() => {
 					if (
 						(inputText.trim() || attachments.length > 0) &&
-						!recorderState.isRecording &&
 						!isProcessingMedia &&
-						!isAiTyping &&
-						!isTranscribing
+						!isAiTyping
 					) {
 						onSend([{ text: inputText.trim() } as IMessage]);
 					}
 				}}
 				topAccessory={
 					<>
-						{recorderState.isRecording && (
-							<AudioRecorderOverlay
-								isRecording={recorderState.isRecording}
-								isStopped={recorderState.isStopped}
-								durationMs={recorderState.durationMs}
-								onSend={handleSendRecording}
-								onCancel={cancelRecording}
-							/>
-						)}
-						{attachments.length > 0 && !recorderState.isRecording && (
+						{attachments.length > 0 && (
 							<AttachmentPreview
 								attachments={attachments}
 								onRemove={removeAttachment}
 								isCloudProvider={isCloudProvider}
 							/>
 						)}
-						{(isTranscribing || isProcessingMedia) && (
+						{isProcessingMedia && (
 							<RNView
 								style={{
 									flexDirection: "row",
@@ -543,47 +448,32 @@ export default function ChatPage() {
 							>
 								<ActivityIndicator size="small" color={theme.tint} />
 								<Text style={{ fontSize: 13, color: theme.mutedForeground }}>
-									{isProcessingMedia
-										? "Processing media..."
-										: "Transcribing audio..."}
+									Processing media...
 								</Text>
 							</RNView>
 						)}
 					</>
 				}
 				leftAccessory={
-					!recorderState.isRecording ? (
-						<AttachmentButton
-							capabilities={multimodalCaps}
-							canAddImage={canAddImage}
-							disabled={isAiTyping}
-							onImageSelected={addImageAttachment}
-						/>
-					) : null
+					<AttachmentButton
+						capabilities={multimodalCaps}
+						canAddImage={canAddImage}
+						disabled={isAiTyping}
+						onImageSelected={addImageAttachment}
+					/>
 				}
 				rightAccessory={
-					!recorderState.isRecording && !isTranscribing ? (
-						<RNView style={{ flexDirection: "row", alignItems: "center" }}>
-							{multimodalCaps.vision && (
-								<TouchableOpacity
-									onPress={handleTakePhoto}
-									style={{ padding: 8 }}
-									activeOpacity={0.6}
-								>
-									<Camera size={22} color={theme.text} strokeWidth={2} />
-								</TouchableOpacity>
-							)}
-							{multimodalCaps.audio && canAddAudio && (
-								<TouchableOpacity
-									onPress={startRecording}
-									style={{ padding: 8 }}
-									activeOpacity={0.6}
-								>
-									<Mic size={22} color={theme.text} strokeWidth={2} />
-								</TouchableOpacity>
-							)}
-						</RNView>
-					) : null
+					<RNView style={{ flexDirection: "row", alignItems: "center" }}>
+						{multimodalCaps.vision && (
+							<TouchableOpacity
+								onPress={handleTakePhoto}
+								style={{ padding: 8 }}
+								activeOpacity={0.6}
+							>
+								<Camera size={22} color={theme.text} strokeWidth={2} />
+							</TouchableOpacity>
+						)}
+					</RNView>
 				}
 			/>
 			{currentChatId && (

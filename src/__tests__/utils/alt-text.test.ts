@@ -35,36 +35,6 @@ describe("alt-text utils", () => {
 			expect(alt).toContain("488.3KB");
 		});
 
-		it("generates audio alt from duration and format", () => {
-			const attachment: PendingAttachment = {
-				id: "att-2",
-				type: "audio",
-				uri: "file:///audio.wav",
-				mimeType: "audio/wav",
-				fileName: "recording.wav",
-				fileSize: 320000,
-				duration: 15,
-			};
-			const alt = generateAltText(attachment);
-			expect(alt).toContain("Audio recording:");
-			expect(alt).toContain("15s");
-			expect(alt).toContain("WAV");
-		});
-
-		it("generates audio alt with minutes for longer recordings", () => {
-			const attachment: PendingAttachment = {
-				id: "att-3",
-				type: "audio",
-				uri: "file:///long.wav",
-				mimeType: "audio/wav",
-				fileName: "long.wav",
-				fileSize: 1000000,
-				duration: 90,
-			};
-			const alt = generateAltText(attachment);
-			expect(alt).toContain("1m 30s");
-		});
-
 		it("generates file alt from name, size, and type", () => {
 			const attachment: PendingAttachment = {
 				id: "att-4",

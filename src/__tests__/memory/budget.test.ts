@@ -45,15 +45,14 @@ describe("getDeviceMemoryTier", () => {
 });
 
 describe("TIER_STRATEGIES", () => {
-	it("sets releaseSTTAfterUse=true for minimal and conservative tiers", () => {
-		expect(TIER_STRATEGIES.minimal.releaseSTTAfterUse).toBe(true);
-		expect(TIER_STRATEGIES.conservative.releaseSTTAfterUse).toBe(true);
+	it("disables preWarmVision for minimal and conservative tiers", () => {
+		expect(TIER_STRATEGIES.minimal.preWarmVision).toBe(false);
+		expect(TIER_STRATEGIES.conservative.preWarmVision).toBe(false);
 	});
 
-	it("sets releaseSTTAfterUse=false for balanced, full, and unrestricted tiers", () => {
-		expect(TIER_STRATEGIES.balanced.releaseSTTAfterUse).toBe(false);
-		expect(TIER_STRATEGIES.full.releaseSTTAfterUse).toBe(false);
-		expect(TIER_STRATEGIES.unrestricted.releaseSTTAfterUse).toBe(false);
+	it("enables preWarmVision for full and unrestricted tiers", () => {
+		expect(TIER_STRATEGIES.full.preWarmVision).toBe(true);
+		expect(TIER_STRATEGIES.unrestricted.preWarmVision).toBe(true);
 	});
 });
 

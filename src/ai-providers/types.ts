@@ -34,7 +34,6 @@ export interface ToolResultMessagePart {
 export type CompletionMessagePart =
 	| TextMessagePart
 	| ImageMessagePart
-	| AudioMessagePart
 	| FileMessagePart
 	| ToolCallMessagePart
 	| ToolResultMessagePart;
@@ -48,13 +47,6 @@ export interface ImageMessagePart {
 	type: "image";
 	uri: string;
 	mimeType: string;
-	alt: string;
-}
-
-export interface AudioMessagePart {
-	type: "audio";
-	uri: string;
-	format: "wav" | "mp3";
 	alt: string;
 }
 
@@ -73,33 +65,25 @@ export interface MultimodalConstraints {
 	maxImageHeight: number;
 	imageMaxTokens?: number;
 	maxFileSize: number;
-	maxAudioDuration: number;
 	supportedImageFormats: string[];
 	supportedFileTypes: string[];
-	audioFormat: "wav" | "mp3";
-	audioSampleRate: number;
 }
 
 export interface MultimodalCapabilities {
 	vision: boolean;
-	audio: boolean;
 	files: boolean;
 	constraints: MultimodalConstraints;
 }
 
 export const NO_MULTIMODAL: MultimodalCapabilities = {
 	vision: false,
-	audio: false,
 	files: false,
 	constraints: {
 		maxImageWidth: 0,
 		maxImageHeight: 0,
 		maxFileSize: 0,
-		maxAudioDuration: 0,
 		supportedImageFormats: [],
 		supportedFileTypes: [],
-		audioFormat: "wav",
-		audioSampleRate: 16000,
 	},
 };
 
@@ -107,39 +91,32 @@ export const DEFAULT_CONSTRAINTS: MultimodalConstraints = {
 	maxImageWidth: 1024,
 	maxImageHeight: 1024,
 	maxFileSize: 10 * 1024 * 1024, // 10 MB
-	maxAudioDuration: 300, // 5 minutes
 	supportedImageFormats: ["jpeg", "png"],
 	supportedFileTypes: ["txt", "md", "json", "csv"],
-	audioFormat: "wav",
-	audioSampleRate: 16000,
 };
 
 // ─── Attachment Types ─────────────────────────────────────────
 
 export interface PendingAttachment {
 	id: string;
-	type: "image" | "file" | "audio";
+	type: "image" | "file";
 	uri: string;
 	mimeType: string;
 	fileName: string;
 	fileSize: number;
 	width?: number;
 	height?: number;
-	duration?: number;
-	/** Pre-computed transcription (eager STT started on recording stop). */
-	transcription?: string;
 }
 
 export interface ProcessedAttachment {
 	id: string;
-	type: "image" | "file" | "audio";
+	type: "image" | "file";
 	uri: string;
 	mimeType: string;
 	fileName: string;
 	fileSize: number;
 	width: number;
 	height: number;
-	duration: number;
 	alt: string;
 	thumbnailUri: string;
 }
@@ -155,7 +132,6 @@ export type CapabilityMemoryStatus =
 
 export interface CapabilityMemoryState {
 	vision: CapabilityMemoryStatus;
-	stt: CapabilityMemoryStatus;
 }
 
 export type CapabilityEvent =
@@ -186,7 +162,6 @@ export interface MemoryBudgetResult {
 export interface OnDemandLoadConfig {
 	preWarmMinRAM: {
 		vision: number;
-		stt: number;
 	};
 	headroomFactor: number;
 	postTeardownSettleMs: number;
@@ -195,7 +170,6 @@ export interface OnDemandLoadConfig {
 export const DEFAULT_LOAD_CONFIG: OnDemandLoadConfig = {
 	preWarmMinRAM: {
 		vision: 8,
-		stt: 6,
 	},
 	headroomFactor: 1.3,
 	postTeardownSettleMs: 100,
@@ -204,46 +178,34 @@ export const DEFAULT_LOAD_CONFIG: OnDemandLoadConfig = {
 export interface TierStrategy {
 	maxChatModelGB: number;
 	preWarmVision: boolean;
-	preWarmSTT: boolean;
 	allowOnDemandVision: boolean;
-	allowOnDemandSTT: boolean;
 }
 
 export const TIER_STRATEGIES: Record<DeviceMemoryTier, TierStrategy> = {
 	minimal: {
 		maxChatModelGB: 0.5,
 		preWarmVision: false,
-		preWarmSTT: false,
 		allowOnDemandVision: false,
-		allowOnDemandSTT: true,
 	},
 	conservative: {
 		maxChatModelGB: 1.5,
 		preWarmVision: false,
-		preWarmSTT: false,
 		allowOnDemandVision: false,
-		allowOnDemandSTT: true,
 	},
 	balanced: {
 		maxChatModelGB: 2.0,
 		preWarmVision: false,
-		preWarmSTT: true,
 		allowOnDemandVision: true,
-		allowOnDemandSTT: true,
 	},
 	full: {
 		maxChatModelGB: 4.0,
 		preWarmVision: true,
-		preWarmSTT: true,
 		allowOnDemandVision: true,
-		allowOnDemandSTT: true,
 	},
 	unrestricted: {
 		maxChatModelGB: 8.0,
 		preWarmVision: true,
-		preWarmSTT: true,
 		allowOnDemandVision: true,
-		allowOnDemandSTT: true,
 	},
 };
 
