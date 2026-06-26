@@ -6,6 +6,7 @@ import { ModeToggle } from "@/components/ui/mode-toggle";
 import { Separator } from "@/components/ui/separator";
 import { Text } from "@/components/ui/text";
 import { View } from "@/components/ui/view";
+import { ContributorsList } from "@/components/ContributorsList";
 import {
 	type ExportFormat,
 	exportAllChats,
@@ -811,7 +812,21 @@ export default function Settings() {
 							Open Source Credits
 						</Button>
 					</View>
-
+                    {/* Contributors Section */}
+					<View style={{ marginBottom: 8 }}>
+						<Text
+							variant="label"
+							style={{
+								fontSize: 13,
+								fontWeight: "600",
+								opacity: 0.7,
+								marginBottom: 12,
+							}}
+						>
+							CONTRIBUTORS
+						</Text>
+						<ContributorsList variant="settings" />
+					</View>
 					<Separator />
 
 					{/* Footer */}

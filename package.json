@@ -5,6 +5,8 @@
 	"scripts": {
 		"start": "expo start",
 		"reset-project": "node ./scripts/reset-project.js",
+		"prestart": "node scripts/generate-contributors.js",
+		"generate-contributors": "node scripts/generate-contributors.js",
 		"android": "expo run:android",
 		"ios": "expo run:ios",
 		"web": "expo start --web",
