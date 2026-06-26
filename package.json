@@ -111,7 +111,7 @@
 			"expo": "$expo"
 		},
 		"@tootallnate/once": "3.0.1",
-		"@xmldom/xmldom": "^0.9.10",
+		"@xmldom/xmldom": "^0.8.10",
 		"postcss": "^8.5.14"
 	},
 	"private": true
