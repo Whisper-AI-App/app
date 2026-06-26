@@ -15,6 +15,7 @@ interface ContributorsListProps {
 	variant: "onboarding" | "settings";
 }
 
+export const ContributorsList: React.FC<ContributorsListProps> = ({ variant }) => {
 	const openProfile = (url: string) => {
 		if (url) {
 			// biome-ignore lint/suspicious/noConsole: Needed for openURL catch logging
