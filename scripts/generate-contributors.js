@@ -1,6 +1,6 @@
 // scripts/generate-contributors.js
-const fs = require('fs');
-const path = require('path');
+const fs = require('node:fs');
+const path = require('node:path');
 
 const GITHUB_API_URL = 'https://api.github.com/repos/Whisper-AI-App/app/contributors';
 const MANUAL_FILE_PATH = path.join(__dirname, '../manual-contributors.json');
