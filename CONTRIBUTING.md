@@ -59,6 +59,108 @@ npm run caching:clear   # wipe the .cache/ directory
 
 `src/utils/dev-proxy.ts` automatically routes downloads through the proxy on emulators in dev mode; physical devices and production builds bypass it entirely.
 
+## Running on Emulators
+
+### Android
+
+#### Standard (macOS / Linux / Windows native)
+
+1. Install [Android Studio](https://developer.android.com/studio)
+2. Once installed, open Android Studio and go to **Device Manager** (phone icon in the right sidebar)
+3. Click **+** → **Create Virtual Device** → Select **Pixel 8** → Click **Next**
+4. Download and select **API 35** as the system image → Click **Finish**
+5. Press the **▶ Play** button next to your device to start the emulator — wait for it to fully boot
+6. In your terminal, run:
+```bash
+   npx expo start
+```
+7. Press **a** to open the app on your Android emulator
+
+---
+
+#### WSL2 (Windows Subsystem for Linux)
+
+> **Important:** Android Studio must be installed on **Windows**, not inside WSL. WSL cannot run `.exe` binaries directly, so the Android SDK needs to live on the Windows side.
+
+**Step 1 — Install Android Studio on Windows**
+
+Download and install [Android Studio](https://developer.android.com/studio) on Windows. During setup, make sure the following are checked:
+- Android SDK
+- Android SDK Platform-Tools
+- Android Virtual Device
+
+**Step 2 — Create and start a virtual device**
+
+- Open Android Studio → **Device Manager** (right sidebar)
+- Click **+** → **Create Virtual Device** → **Pixel 8** → **API 35** → **Finish**
+- Press **▶** to start the emulator and wait for it to fully boot before continuing
+
+**Step 3 — Point WSL to the Windows Android SDK**
+
+Open your WSL terminal and find your Windows username:
+```bash
+ls /mnt/c/Users/
+```
+
+Then add the Android SDK path to your shell config:
+```bash
+echo 'export ANDROID_HOME=/mnt/c/Users/<your-windows-username>/AppData/Local/Android/Sdk' >> ~/.bashrc
+echo 'export PATH=$PATH:$ANDROID_HOME/platform-tools' >> ~/.bashrc
+source ~/.bashrc
+```
+
+Replace `<your-windows-username>` with the folder name you saw in the previous step.
+
+**Step 4 — Run the app**
+
+```bash
+npx expo start
+```
+
+Press **a** — Expo will detect the running emulator and deploy the app to it.
+
+> **Troubleshooting:** If you see `adb ENOENT`, double check that:
+> - The emulator is fully booted in Android Studio before pressing `a`
+> - Your `ANDROID_HOME` path is correct (`ls $ANDROID_HOME/platform-tools/` should list files)
+> - You ran `source ~/.bashrc` after editing the file
+
+---
+
+### iOS
+
+> macOS only — iOS simulators require Xcode which is not available on Windows or Linux.
+
+1. Install [Xcode](https://apps.apple.com/app/xcode/id497799835) from the Mac App Store
+2. Open Xcode at least once to accept the license agreement and install additional components
+3. Install the Xcode Command Line Tools:
+```bash
+   xcode-select --install
+```
+4. Run the app:
+```bash
+   npx expo start
+```
+5. Press **i** to open the app in the iOS Simulator
+
+---
+
+### Writing & Running Tests
+
+Run the full test suite:
+```bash
+npm test
+```
+
+Run a specific test file:
+```bash
+npm test -- src/__tests__/your-file.test.ts
+```
+
+Run tests in watch mode during development:
+```bash
+npm test -- --watch
+```
+
 ## Community & Questions
 
 Join our Discord to connect with other contributors, ask questions, and share ideas:
