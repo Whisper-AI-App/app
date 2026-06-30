@@ -68,6 +68,7 @@ export const ContributorsList: React.FC<ContributorsListProps> = ({ variant }) =
 const styles = StyleSheet.create({
 	gridContainer: {
 		padding: 16,
+		marginTop: 40,
 		alignItems: "center",
 	},
 	avatarWrapper: {
