@@ -27,17 +27,26 @@ async function generateContributors() {
       manualContributors = JSON.parse(manualData);
     }
 
-    // 3. Merge and deduplicate (prioritizing manual entries if there's a login clash)
-    const allContributors = [...manualContributors, ...codeContributors];
-    
+   // 3. GitHub contributors first (by commit count), manual appended after
     const uniqueMap = new Map();
-    allContributors.forEach(contributor => {
+    
+    codeContributors.forEach(contributor => {
+      uniqueMap.set(contributor.login, {
+        id: contributor.id,
+        login: contributor.login,
+        avatar_url: contributor.avatar_url,
+        html_url: contributor.html_url,
+      });
+    });
+
+    manualContributors.forEach(contributor => {
       if (!uniqueMap.has(contributor.login)) {
         uniqueMap.set(contributor.login, {
           id: contributor.id,
           login: contributor.login,
           avatar_url: contributor.avatar_url,
           html_url: contributor.html_url,
+          type: contributor.type,
         });
       }
     });

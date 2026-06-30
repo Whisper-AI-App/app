@@ -1,11 +1,5 @@
 [
   {
-    "id": "manual-1",
-    "login": "marketing-guru",
-    "avatar_url": "https://avatars.githubusercontent.com/u/583231?v=4",
-    "html_url": "https://github.com/marketing-guru"
-  },
-  {
     "id": 30320791,
     "login": "mrspence",
     "avatar_url": "https://avatars.githubusercontent.com/u/30320791?v=4",
@@ -22,5 +16,19 @@
     "login": "dependabot[bot]",
     "avatar_url": "https://avatars.githubusercontent.com/in/29110?v=4",
     "html_url": "https://github.com/apps/dependabot"
+  },
+  {
+    "id": "manual-1",
+    "login": "marketing-guru",
+    "avatar_url": "https://avatars.githubusercontent.com/u/583231?v=4",
+    "html_url": "https://github.com/marketing-guru",
+    "type": "Marketing"
+  },
+  {
+    "id": "ronak-1",
+    "login": "RONAK-AI647",
+    "avatar_url": "https://avatars.githubusercontent.com/RONAK-AI647",
+    "html_url": "https://github.com/RONAK-AI647",
+    "type": "Developer"
   }
 ]
