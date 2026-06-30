@@ -4,6 +4,7 @@ import { Colors } from "@/theme/colors";
 import { Bird, ShieldCheck } from "lucide-react-native";
 import { Logo } from "../logo";
 import { LocalAuthStepContent } from "./local-auth-step";
+import { ContributorsList } from "@/components/ContributorsList";
 
 export const onboardingSteps: OnboardingStep[] = [
 	{
@@ -45,4 +46,14 @@ export const onboardingSteps: OnboardingStep[] = [
 		),
 		customContent: <LocalAuthStepContent />,
 	},
+	{ 
+		id: "4",
+		title: "Meet the Contributors",
+		description:
+			"Whisper is built by a community of privacy advocates and open-source enthusiasts.",
+		icon: null,
+		customContent: <ContributorsList variant="onboarding" />,
+	},
+
+
 ];
