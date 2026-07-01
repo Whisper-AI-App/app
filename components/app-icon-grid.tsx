@@ -7,9 +7,13 @@ import {
 import { Colors } from "@/theme/colors";
 import { BORDER_RADIUS } from "@/theme/globals";
 import Ionicons from "@expo/vector-icons/Ionicons";
+import { Plus } from "lucide-react-native";
+import { LinearGradient } from "expo-linear-gradient";
 import { Image } from "expo-image";
 import { StyleSheet, TouchableOpacity, View } from "react-native";
 import { Text } from "@/components/ui/text";
+import { useRouter } from "expo-router";
+import * as Haptics from "expo-haptics";
 
 interface AppIconGridProps {
   selectedIconId: AppIconVariant;
@@ -22,6 +26,7 @@ export function AppIconGrid({
 }: AppIconGridProps) {
   const colorScheme = useColorScheme() ?? "light";
   const theme = Colors[colorScheme];
+  const router = useRouter();
 
   return (
     <View style={styles.grid}>
@@ -55,6 +60,38 @@ export function AppIconGrid({
           </TouchableOpacity>
         );
       })}
+
+      {/* Customize Icon Grid Item */}
+      <TouchableOpacity
+        style={[styles.iconItem, { backgroundColor: theme.card }]}
+        onPress={() => {
+          Haptics.selectionAsync();
+          router.push("/settings/customize-icon");
+        }}
+        activeOpacity={0.7}
+      >
+        <View
+          style={[
+            styles.customizePreview,
+            {
+              borderColor: theme.indigo,
+              backgroundColor: colorScheme === "dark" ? "rgba(94, 92, 230, 0.08)" : "rgba(88, 86, 214, 0.06)",
+            },
+          ]}
+        >
+          <LinearGradient
+            colors={[theme.indigo, theme.purple]}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={styles.plusCircle}
+          >
+            <Plus color="#FFFFFF" strokeWidth={3.5} size={18} />
+          </LinearGradient>
+        </View>
+        <Text style={styles.iconName} numberOfLines={1}>
+          Customize
+        </Text>
+      </TouchableOpacity>
     </View>
   );
 }
@@ -78,6 +115,22 @@ const styles = StyleSheet.create({
     width: 64,
     height: 64,
     borderRadius: 14,
+  },
+  customizePreview: {
+    width: 64,
+    height: 64,
+    borderRadius: 14,
+    borderWidth: 2,
+    borderStyle: "dashed",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  plusCircle: {
+    width: 30,
+    height: 30,
+    borderRadius: 15,
+    justifyContent: "center",
+    alignItems: "center",
   },
   iconName: {
     fontSize: 12,
