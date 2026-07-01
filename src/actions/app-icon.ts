@@ -6,7 +6,7 @@ const logger = createLogger("AppIcon");
 
 export type { AppIconVariant } from "../data/app-icon-presets";
 
-// Dynamically load native module so that the app doesn't crash on startup/import in Expo Go.
+// biome-ignore lint/suspicious/noExplicitAny: dynamically loaded native module
 let AlternateAppIcons: any = null;
 try {
   AlternateAppIcons = require("expo-alternate-app-icons");
