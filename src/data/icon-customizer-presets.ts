@@ -10,13 +10,16 @@ export const BIRD_COLOR_PRESETS = [
 ];
 
 export const BACKGROUND_PRESETS: { id: string; background: IconBackground }[] =
-	[
-		{ id: "dark-blue", background: { type: "solid", color: "#1e3050" } },
-		{ id: "green", background: { type: "solid", color: "#123308" } },
-		{ id: "orange", background: { type: "solid", color: "#dd8d45" } },
-		{ id: "dark-blue-purple", background: { type: "solid", color: "#0b1243" } },
-		{ id: "light-blue-pink", background: { type: "solid", color: "#5a91de" } },
-	];
+	ICON_VARIANTS.map((v) => ({
+		id: v.id.toLowerCase(),
+		background: {
+			type: "solid",
+			color:
+				v.background.type === "solid"
+					? v.background.color
+					: v.background.stops[0].color,
+		},
+	}));
 
 function hexToRgb(hex: string): [number, number, number] {
 	const clean = hex.replace("#", "");

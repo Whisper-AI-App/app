@@ -24,6 +24,7 @@ import {
 	findNearestIconVariant,
 } from "@/src/data/icon-customizer-presets";
 import { Colors } from "@/theme/colors";
+import { CORNERS, HEIGHT } from "@/theme/globals";
 
 type PaletteTarget = "bird" | "background" | null;
 
@@ -267,12 +268,12 @@ const styles = StyleSheet.create({
 		opacity: 0.6,
 	},
 	applyButtonWrapper: {
-		borderRadius: 16,
+		borderRadius: CORNERS,
 		overflow: "hidden",
 		width: "100%",
 	},
 	applyButtonGradient: {
-		height: 56,
+		height: HEIGHT,
 		alignItems: "center",
 		justifyContent: "center",
 	},

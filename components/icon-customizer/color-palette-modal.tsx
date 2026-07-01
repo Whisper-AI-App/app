@@ -10,7 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Text } from "@/components/ui/text";
 import { useColorScheme } from "@/hooks/useColorScheme";
 import { Colors } from "@/theme/colors";
-import { BORDER_RADIUS } from "@/theme/globals";
+import { BORDER_RADIUS, FONT_SIZE } from "@/theme/globals";
 
 const SQUARE_SIZE = 260;
 const HUE_HEIGHT = 28;
@@ -244,7 +244,7 @@ const styles = StyleSheet.create({
 		alignItems: "center",
 	},
 	title: {
-		fontSize: 17,
+		fontSize: FONT_SIZE,
 		fontWeight: "600",
 		marginBottom: 16,
 	},
