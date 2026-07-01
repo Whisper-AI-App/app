@@ -1,8 +1,3 @@
-import {
-  setAlternateAppIcon,
-  getAppIconName,
-  resetAppIcon as resetAlternateAppIcon,
-} from "expo-alternate-app-icons";
 import { createLogger } from "@/src/logger";
 import { mainStore } from "../stores/main/main-store";
 import type { AppIconVariant } from "../data/app-icon-presets";
@@ -11,14 +6,27 @@ const logger = createLogger("AppIcon");
 
 export type { AppIconVariant } from "../data/app-icon-presets";
 
+// biome-ignore lint/suspicious/noExplicitAny: dynamically loaded native module
+let AlternateAppIcons: any = null;
+try {
+  AlternateAppIcons = require("expo-alternate-app-icons");
+} catch (error) {
+  logger.warn("expo-alternate-app-icons native module not available", { error });
+}
+
 export async function setAppIconVariant(
   variantId: AppIconVariant
 ): Promise<{ success: boolean; error?: string }> {
   try {
+    if (!AlternateAppIcons) {
+      throw new Error(
+        "Alternate app icons are not supported in Expo Go. Please use a development build to change the app icon."
+      );
+    }
     if (variantId === "Default") {
-      await resetAlternateAppIcon();
+      await AlternateAppIcons.resetAppIcon();
     } else {
-      await setAlternateAppIcon(variantId);
+      await AlternateAppIcons.setAlternateAppIcon(variantId);
     }
     mainStore.setValue("app_icon_variant", variantId);
     return { success: true };
@@ -44,5 +52,6 @@ export function getSelectedIconVariant(): AppIconVariant {
 }
 
 export async function getCurrentIconName(): Promise<string | null> {
-  return getAppIconName();
+  if (!AlternateAppIcons) return null;
+  return AlternateAppIcons.getAppIconName();
 }
